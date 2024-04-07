@@ -1,0 +1,5 @@
+* text=auto eol=lf
+
+/dist/** -diff linguist-generated=true
+*.[dD] linguist-detectable=false
+*.[sS][rR][cC] linguist-detectable=false

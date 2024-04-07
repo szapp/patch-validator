@@ -1,0 +1,27 @@
+name: Daedalus Patch Validator
+description: Checks if Daedalus script symbols in a Gothic VDF patch adhere to the naming conventions
+
+branding:
+  icon: check
+  color: yellow
+
+inputs:
+  patchName:
+    description: >
+      Identifier of the patch, i.e. name of the VDF.
+      Defaults to the repository name
+    required: false
+  rootPath:
+    description: >
+      Root path of the patch, i.e. the directory containing the Ninja directory and .validator.yml.
+      Defaults to the repository root
+    required: false
+  token:
+    description: >
+      Github authentication token for authoring checks.
+      Defaults to the github-actions bot
+    default: ${{ github.token }}
+
+runs:
+  using: node20
+  main: dist/index.js
