@@ -17,8 +17,8 @@ describe('formatFilters', () => {
     const result = formatFilters(patchName, prefix, ignore)
 
     expect(core.info).toHaveBeenCalledWith('Ignore:   SYMBOL1, SYMBOL2, NINJA_PATCH1_INIT, NINJA_PATCH1_MENU')
-    expect(core.info).toHaveBeenCalledWith('Prefixes: PRE1_, PRE2_, PATCH_PRE1_, PATCH_PRE2_, PATCH1_')
-    expect(result.prefix).toEqual(['PRE1_', 'PRE2_', 'PATCH_PRE1_', 'PATCH_PRE2_', 'PATCH1_'])
+    expect(core.info).toHaveBeenCalledWith('Prefixes: PRE1_, PRE2_, PATCH_PRE1_, PATCH_PRE2_, PATCH1_, PATCH_PATCH1_')
+    expect(result.prefix).toEqual(['PRE1_', 'PRE2_', 'PATCH_PRE1_', 'PATCH_PRE2_', 'PATCH1_', 'PATCH_PATCH1_'])
     expect(result.ignore).toEqual(['SYMBOL1', 'SYMBOL2', 'NINJA_PATCH1_INIT', 'NINJA_PATCH1_MENU'])
   })
 })

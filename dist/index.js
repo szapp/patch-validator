@@ -63364,7 +63364,7 @@ function formatFilters(patchName, prefix, ignore) {
     // Format and extend prefixes
     const prefixForm = prefix.map((p) => p.replace(/_$/, '').toUpperCase() + '_');
     const prefixPatch = prefixForm.map((p) => 'PATCH_' + p);
-    prefix = [...new Set([...prefixForm, ...prefixPatch, patchNameU + '_'])];
+    prefix = [...new Set([...prefixForm, ...prefixPatch, patchNameU + '_', 'PATCH_' + patchNameU + '_'])];
     // Format and extend ignore list
     const ignoreForm = ignore.map((i) => i.toUpperCase());
     ignore = [...new Set([...ignoreForm, `NINJA_${patchNameU}_INIT`, `NINJA_${patchNameU}_MENU`])];

@@ -37,10 +37,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check for validity
         uses: szapp/patch-validator@v1
-        # with:
-        #   - patchName: # Optional (see below)
-        #   - rootPath: # Optional
-        #   - token: # Optional
+        with:
+          patchName: # Optional (see below)
+          rootPath: # Optional
+          token: # Optional
 ```
 
 ## Configuration
