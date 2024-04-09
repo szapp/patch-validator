@@ -1,4 +1,5 @@
 import * as core from '@actions/core'
+import { workflow } from './cleanup.js'
 import { parseCandidates } from './parse.js'
 import { validate, formatFilters } from './validate.js'
 import { loadInputs } from './inputs.js'
@@ -7,6 +8,9 @@ import humanizeDuration from 'humanize-duration'
 
 export async function run(): Promise<void> {
   try {
+    // Clean up
+    if (await workflow()) return
+
     // Start timer
     const startedAt = new Date()
     const startTime = performance.now()

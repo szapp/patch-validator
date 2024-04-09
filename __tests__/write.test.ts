@@ -146,8 +146,8 @@ describe('annotations', () => {
         end_line: 10,
         annotation_level: 'failure',
         message:
-          'The symbol Symbol2 poses a compatibility risk. Add a prefix to its name (e.g. PATCH_). If overwriting this symbol is intended, add it to the ignore list.',
-        title: 'Naming convention violation',
+          'The symbol "Symbol2" poses a compatibility risk. Add a prefix to its name (e.g. PATCH_). If overwriting this symbol is intended, add it to the ignore list.',
+        title: 'Naming convention violation: Symbol2',
       },
       {
         path: 'path/to/file3',
@@ -155,8 +155,8 @@ describe('annotations', () => {
         end_line: 20,
         annotation_level: 'failure',
         message:
-          'The symbol Symbol3 poses a compatibility risk. Add a prefix to its name (e.g. PATCH_). If overwriting this symbol is intended, add it to the ignore list.',
-        title: 'Naming convention violation',
+          'The symbol "Symbol3" poses a compatibility risk. Add a prefix to its name (e.g. PATCH_). If overwriting this symbol is intended, add it to the ignore list.',
+        title: 'Naming convention violation: Symbol3',
       },
     ]
 
@@ -195,8 +195,8 @@ For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/
         end_line: 10,
         annotation_level: 'failure',
         message:
-          'The symbol Symbol2 poses a compatibility risk. Add a prefix to its name (e.g. PATCH_, FOO_, BAR_). If overwriting this symbol is intended, add it to the ignore list.',
-        title: 'Naming convention violation',
+          'The symbol "Symbol2" poses a compatibility risk. Add a prefix to its name (e.g. PATCH_, FOO_, BAR_). If overwriting this symbol is intended, add it to the ignore list.',
+        title: 'Naming convention violation: Symbol2',
       },
     ]
 

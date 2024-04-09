@@ -41272,6 +41272,44 @@ var __webpack_exports__ = {};
 
 // EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
 var core = __nccwpck_require__(2186);
+// EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
+var github = __nccwpck_require__(5438);
+;// CONCATENATED MODULE: ./src/cleanup.ts
+
+
+async function workflow() {
+    // Only for completed check runs
+    if (github.context.eventName !== 'check_run' || github.context.payload.action !== 'completed')
+        return false;
+    const octokit = github.getOctokit(core.getInput('token'));
+    // First, get the workflow ID
+    const { data: { workflow_id }, } = await octokit.rest.actions.getWorkflowRun({
+        ...github.context.repo,
+        run_id: github.context.runId,
+    });
+    // Then, list all workflow runs for the same commit and workflow
+    const { data: { workflow_runs }, } = await octokit.rest.actions.listWorkflowRuns({
+        ...github.context.repo,
+        workflow_id,
+        head_sha: github.context.payload.check_run.head_sha,
+    });
+    // For all workflow runs that are not check runs, delete them
+    const workflows = workflow_runs.filter((w) => w.event !== 'check_run');
+    Promise.all(workflows.map((w) => octokit.rest.actions.deleteWorkflowRun({
+        ...github.context.repo,
+        run_id: w.id,
+    }))).catch((error) => core.error(error));
+    // The summary of the workflow runs is unfortunately not available in the API
+    // So we can only link to the check run
+    await core.summary.addHeading(github.context.payload.check_run.name)
+        .addRaw(`<a href="${github.context.payload.check_run.html_url}">Details</a>`, true)
+        .write({ overwrite: false });
+    // To be able to use a badge, we need to set the exit code
+    process.exitCode = Number(github.context.payload.check_run.conclusion !== 'success');
+    // True means we stop here
+    return true;
+}
+
 ;// CONCATENATED MODULE: ./node_modules/antlr4ng/dist/index.mjs
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
@@ -63383,8 +63421,6 @@ function validate(symbols, prefix, ignore) {
     return invalidSymbols;
 }
 
-// EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
-var github = __nccwpck_require__(5438);
 // EXTERNAL MODULE: ./node_modules/yaml/dist/index.js
 var dist = __nccwpck_require__(4083);
 ;// CONCATENATED MODULE: ./src/inputs.ts
@@ -63443,8 +63479,8 @@ For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/
         start_line: s.line,
         end_line: s.line,
         annotation_level: 'failure',
-        message: `The symbol ${s.name} poses a compatibility risk. Add a prefix to its name (e.g. ${prefixes}). If overwriting this symbol is intended, add it to the ignore list.`,
-        title: 'Naming convention violation',
+        message: `The symbol "${s.name}" poses a compatibility risk. Add a prefix to its name (e.g. ${prefixes}). If overwriting this symbol is intended, add it to the ignore list.`,
+        title: `Naming convention violation: ${s.name}`,
     }));
     const octokit = github.getOctokit(core.getInput('token'));
     const { data: { html_url: details_url }, } = await octokit.rest.checks.create({
@@ -63495,8 +63531,12 @@ var humanize_duration_default = /*#__PURE__*/__nccwpck_require__.n(humanize_dura
 
 
 
+
 async function run() {
     try {
+        // Clean up
+        if (await workflow())
+            return;
         // Start timer
         const startedAt = new Date();
         const startTime = performance.now();

@@ -16,17 +16,18 @@ The content of the file should be in the following format:
 ```yaml
 name: validation
 
-# Run workflow on push with changes of src or d files
+# Trigger workflow on push events with changes in SRC or D files
 on:
   push:
     paths:
       - '**.src'
       - '**.d'
+  check_run: # This is optional, see notes below
+    types: completed
 
 # These permissions are necessary for creating the check runs
 permissions:
   checks: write
-  contents: read
 
 # The checkout action needs to be run first
 jobs:
@@ -66,3 +67,16 @@ prefix:
 ignore:
   - ... # Symbol name(s) that intentionally overwrite common symbols
 ```
+
+## Remove second commit status check
+
+The way GitHub check suites are designed, there will be two check statuses attached to a commit when using the 'push' event trigger.
+One check status is the actual check run containing the error report and line annotations, the second one is the workflow run.
+Unfortunately, the creation of the superfluous workflow check status cannot be suppressed.
+
+One workaround is to delete the entire workflow after the checks have been performed, effectively removing the check status from the commit.
+However, this is not possible with the default `GITHUB_TOKEN`, to avoid recursive workflow runs.
+To remove the additional status check, call this GitHub Action with an authentication token of a GitHub App and enable the `check_run` event with `completed` (see above).  
+For more details, see [here](https://github.com/peter-murray/workflow-application-token-action#readme).
+
+Nevertheless, this is a optional cosmetic enhancement and this GitHub action works fine without.

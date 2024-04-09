@@ -37,8 +37,8 @@ For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/
     start_line: s.line,
     end_line: s.line,
     annotation_level: 'failure',
-    message: `The symbol ${s.name} poses a compatibility risk. Add a prefix to its name (e.g. ${prefixes}). If overwriting this symbol is intended, add it to the ignore list.`,
-    title: 'Naming convention violation',
+    message: `The symbol "${s.name}" poses a compatibility risk. Add a prefix to its name (e.g. ${prefixes}). If overwriting this symbol is intended, add it to the ignore list.`,
+    title: `Naming convention violation: ${s.name}`,
   }))
   const octokit = github.getOctokit(core.getInput('token'))
   const {

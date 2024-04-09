@@ -4,6 +4,7 @@ import * as parse from '../src/parse.ts'
 import * as validate from '../src/validate.ts'
 import * as inputs from '../src/inputs.ts'
 import write from '../src/write.ts'
+import * as cleanup from '../src/cleanup.ts'
 
 const runMock = jest.spyOn(main, 'run')
 
@@ -18,12 +19,14 @@ describe('run', () => {
     jest.spyOn(write, 'symbols').mockImplementation()
     jest.spyOn(write, 'annotations').mockResolvedValue('')
     jest.spyOn(write, 'summary').mockImplementation()
+    jest.spyOn(cleanup, 'workflow').mockResolvedValue(false)
     jest.spyOn(core, 'setFailed').mockImplementation()
   })
 
   it('should run the main function successfully', async () => {
     await main.run()
     expect(runMock).toHaveReturned()
+    expect(cleanup.workflow).toHaveBeenCalledTimes(1)
     expect(inputs.loadInputs).toHaveBeenCalledTimes(1)
     expect(parse.parseCandidates).toHaveBeenCalledTimes(1)
     expect(validate.formatFilters).toHaveBeenCalledTimes(1)
@@ -34,14 +37,30 @@ describe('run', () => {
     expect(core.setFailed).not.toHaveBeenCalled()
   })
 
+  it('should run the cleanup function and return', async () => {
+    jest.spyOn(cleanup, 'workflow').mockResolvedValue(true)
+    await main.run()
+    expect(runMock).toHaveReturned()
+    expect(cleanup.workflow).toHaveBeenCalledTimes(1)
+    expect(inputs.loadInputs).not.toHaveBeenCalled()
+    expect(parse.parseCandidates).not.toHaveBeenCalled()
+    expect(validate.formatFilters).not.toHaveBeenCalled()
+    expect(validate.validate).not.toHaveBeenCalled()
+    expect(write.symbols).not.toHaveBeenCalled()
+    expect(write.annotations).not.toHaveBeenCalled()
+    expect(write.summary).not.toHaveBeenCalled()
+    expect(core.setFailed).not.toHaveBeenCalled()
+  })
+
   it('should handle errors and set the appropriate outputs (Error)', async () => {
-    jest.spyOn(inputs, 'loadInputs').mockImplementation(() => {
+    jest.spyOn(cleanup, 'workflow').mockImplementation(() => {
       throw new Error('test error')
     })
 
     await main.run()
     expect(runMock).toHaveReturned()
-    expect(inputs.loadInputs).toThrow('test error')
+    expect(cleanup.workflow).toThrow('test error')
+    expect(inputs.loadInputs).not.toHaveBeenCalled()
     expect(parse.parseCandidates).not.toHaveBeenCalled()
     expect(validate.formatFilters).not.toHaveBeenCalled()
     expect(validate.validate).not.toHaveBeenCalled()
@@ -54,13 +73,14 @@ describe('run', () => {
   })
 
   it('should handle errors and set the appropriate outputs (non-Error)', async () => {
-    jest.spyOn(inputs, 'loadInputs').mockImplementation(() => {
+    jest.spyOn(cleanup, 'workflow').mockImplementation(() => {
       throw 'test error'
     })
 
     await main.run()
     expect(runMock).toHaveReturned()
-    expect(inputs.loadInputs).toThrow('test error')
+    expect(cleanup.workflow).toThrow('test error')
+    expect(inputs.loadInputs).not.toHaveBeenCalled()
     expect(parse.parseCandidates).not.toHaveBeenCalled()
     expect(validate.formatFilters).not.toHaveBeenCalled()
     expect(validate.validate).not.toHaveBeenCalled()
