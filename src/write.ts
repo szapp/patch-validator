@@ -42,10 +42,10 @@ For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/
   }))
   const octokit = github.getOctokit(core.getInput('token'))
   const {
-    data: { details_url },
+    data: { html_url: details_url },
   } = await octokit.rest.checks.create({
     ...github.context.repo,
-    name: 'Naming Convention',
+    name: 'Patch Validator',
     head_sha: github.context.sha,
     started_at: startedAt.toISOString(),
     completed_at: new Date().toISOString(),

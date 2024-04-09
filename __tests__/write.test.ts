@@ -5,7 +5,7 @@ import { SymbolTable } from 'src/class.ts'
 
 // Mock the GitHub API
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const createCheckMock = jest.fn((_params) => ({ data: { details_url: 'https://example.com' } }))
+const createCheckMock = jest.fn((_params) => ({ data: { html_url: 'https://example.com' } }))
 jest.mock('@actions/github', () => {
   return {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -174,7 +174,7 @@ For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/
     expect(createCheckMock).toHaveBeenCalledWith(
       expect.objectContaining({
         ...github.context.repo,
-        name: 'Naming Convention',
+        name: 'Patch Validator',
         head_sha: github.context.sha,
         started_at: expect.any(String),
         completed_at: expect.any(String),
@@ -214,7 +214,7 @@ For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/
     expect(createCheckMock).toHaveBeenCalledWith(
       expect.objectContaining({
         ...github.context.repo,
-        name: 'Naming Convention',
+        name: 'Patch Validator',
         head_sha: github.context.sha,
         started_at: expect.any(String),
         completed_at: expect.any(String),
@@ -243,7 +243,7 @@ For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/
     expect(createCheckMock).toHaveBeenCalledWith(
       expect.objectContaining({
         ...github.context.repo,
-        name: 'Naming Convention',
+        name: 'Patch Validator',
         head_sha: github.context.sha,
         started_at: expect.any(String),
         completed_at: expect.any(String),
