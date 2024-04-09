@@ -27,7 +27,9 @@ on:
 
 # These permissions are necessary for creating the check runs
 permissions:
+  contents: read
   checks: write
+  actions: write # This is optional, see notes below
 
 # The checkout action needs to be run first
 jobs:
