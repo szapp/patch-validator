@@ -51,7 +51,7 @@ For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/
     completed_at: new Date().toISOString(),
     conclusion: numErr ? 'failure' : 'success',
     output: {
-      title: `${numErr || 'No'} naming convention violation${numErr !== 1 ? 's' : ''}`,
+      title: `${numErr || 'No'} violation${numErr !== 1 ? 's' : ''}`,
       summary: `The patch validator found ${numErr || 'no'} invalid symbol name${numErr !== 1 ? 's' : ''} (${duration})`,
       text: details,
       annotations,
@@ -78,7 +78,7 @@ export async function summary(
       [
         { data: 'Test result 🔬', header: true },
         { data: 'Symbol 📇', header: true },
-        { data: 'Source 📁', header: true },
+        { data: 'File 📁', header: true },
       ],
       ...rows,
     ])

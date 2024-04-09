@@ -80,7 +80,7 @@ describe('summary', () => {
       [
         { data: 'Test result 🔬', header: true },
         { data: 'Symbol 📇', header: true },
-        { data: 'Source 📁', header: true },
+        { data: 'File 📁', header: true },
       ],
       ['🔴 Fail', 'Symbol2', 'file2:10'],
       ['🔴 Fail', 'Symbol3', 'file3:20'],
@@ -102,7 +102,7 @@ describe('summary', () => {
       [
         { data: 'Test result 🔬', header: true },
         { data: 'Symbol 📇', header: true },
-        { data: 'Source 📁', header: true },
+        { data: 'File 📁', header: true },
       ],
       ['🟢 Pass', '-', '-'],
     ])
@@ -161,7 +161,7 @@ describe('annotations', () => {
     ]
 
     const expectedOutput = {
-      title: '2 naming convention violations',
+      title: '2 violations',
       summary: 'The patch validator found 2 invalid symbol names (1m 30s)',
       text: `The patch validator checked 3 global symbol names.
 
@@ -201,7 +201,7 @@ For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/
     ]
 
     const expectedOutput = {
-      title: '1 naming convention violation',
+      title: '1 violation',
       summary: 'The patch validator found 1 invalid symbol name (1m 30s)',
       text: `The patch validator checked 1 global symbol name.
 
@@ -230,7 +230,7 @@ For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/
     const expectedAnnotations: Record<string, unknown>[] = []
 
     const expectedOutput = {
-      title: 'No naming convention violations',
+      title: 'No violations',
       summary: 'The patch validator found no invalid symbol names (1m 30s)',
       text: `The patch validator checked 1 global symbol name.
 
