@@ -76,7 +76,8 @@ Unfortunately, the creation of the superfluous workflow check status cannot be s
 
 One workaround is to delete the entire workflow after the checks have been performed, effectively removing the check status from the commit.
 However, this is not possible with the default `GITHUB_TOKEN`, to avoid recursive workflow runs.
-To remove the additional status check, call this GitHub Action with an authentication token of a GitHub App and enable the `check_run` event with `completed` (see above).  
+To remove the additional status check, call this GitHub Action with an authentication `token` of a GitHub App and enable the `check_run` event with `completed` (see above).
+Always leave the additional input `cleanup-token` at its default.
 For more details, see [here](https://github.com/peter-murray/workflow-application-token-action#readme).
 
 Nevertheless, this is a optional cosmetic enhancement and this GitHub action works fine without.

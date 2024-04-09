@@ -41281,7 +41281,7 @@ async function workflow() {
     // Only for completed check runs
     if (github.context.eventName !== 'check_run' || github.context.payload.action !== 'completed')
         return false;
-    const octokit = github.getOctokit(core.getInput('token'));
+    const octokit = github.getOctokit(core.getInput('cleanup-token'));
     // First, get the workflow ID
     const { data: { workflow_id }, } = await octokit.rest.actions.getWorkflowRun({
         ...github.context.repo,

@@ -21,6 +21,10 @@ inputs:
       Github authentication token for authoring checks.
       Defaults to the github-actions bot
     default: ${{ github.token }}
+  cleanup-token:
+    description: >
+      This input is for clean up actions and should always be left at its default.
+    default: ${{ github.token }}
 
 runs:
   using: node20
