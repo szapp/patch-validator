@@ -56,7 +56,7 @@ export async function workflow(): Promise<boolean> {
           ...github.context.repo,
           run_id: w.id,
         })
-        .catch((error) => core.error(error))
+        .catch((error) => core.info(`\u001b[32m${error}\u001b[0m`))
     )
   )
 

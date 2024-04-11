@@ -41322,7 +41322,7 @@ async function workflow() {
         ...github.context.repo,
         run_id: w.id,
     })
-        .catch((error) => core.error(error))));
+        .catch((error) => core.info(`\u001b[32m${error}\u001b[0m`))));
     // The summary of the workflow runs is unfortunately not available in the API
     // So we can only link to the check run
     await core.summary.addHeading(github.context.payload.check_run.name)
