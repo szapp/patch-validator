@@ -1,4 +1,4 @@
 prefix: FOO
-ignore:
+ignore-declaration:
   - BAR
   - BAZ
