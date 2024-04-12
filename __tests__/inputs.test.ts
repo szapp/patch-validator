@@ -69,7 +69,7 @@ describe('loadInputs', () => {
     fsExistsSyncMock.mockReturnValue(true)
     fsExistsSyncMock.mockReturnValue(true)
     fsReadFileSyncMock.mockReturnValue('ignore: ignore-value')
-    yamlParseMock.mockReturnValue({ ignore: 'ignore-value' })
+    yamlParseMock.mockReturnValue({ 'ignore-declaration': 'ignore-value' })
 
     const result = loadInputs()
 

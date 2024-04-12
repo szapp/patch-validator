@@ -60,11 +60,21 @@ jobs:
 Additionally, place a file named `.validator.yml` in the root of your repository with the following content.
 All settings are optional, but the file must exist (even if empty).
 
+- `prefix`:
+  One or several additional short descriptors that prefix global symbol names. By default the `patchName` and `PATCH_` + `patchName` are expected symbol prefixes, e.g. `MyWork` and `Patch_MyWork`.  
+  May either be blank, a string or a YAML list of strings
+
+- `ignore-declaration`:
+  One or several symbols names that intentionally overwrite common symbols.  
+  May either be blank, a string or a YAML list of strings
+
+Example content:
+
 ```yaml
 prefix:
-  - ... # Alternative short descriptor(s) that prefixes global symbol names
-ignore:
-  - ... # Symbol name(s) that intentionally overwrite common symbols
+  - FOA # Either a YAML list
+  - FallOA
+ignore-declaration: DIA_NONE_9022_KALIF # Or a single entry
 ```
 
 ## Remove second commit status check
@@ -79,7 +89,8 @@ To remove the additional status check, call this GitHub Action with an authentic
 For more details the issue, see [here](https://github.com/peter-murray/workflow-application-token-action#readme).
 Always leave the additional input `cleanup-token` at its default.
 
-Nevertheless, this is a optional cosmetic enhancement and this GitHub action works fine without.
+> [!Tip]
+> This is only an optional cosmetic enhancement and this GitHub action works fine without.
 
 ```yaml
 name: validation
@@ -100,7 +111,7 @@ permissions:
 jobs:
   patch-validator:
     name: Run validator on scripts
-    if: github.event_name != 'check_run' || github.event.check_run.name == 'Patch Validator'
+    if: github.event_name != 'check_run' || github.event.check_run.external_id == github.workflow
     runs-on: ubuntu-latest
     steps:
       - uses: actions/create-github-app-token@v1
@@ -116,3 +127,6 @@ jobs:
           rootPath: # Optional
           token: ${{ steps.app-token.outputs.token }}
 ```
+
+> [!Note]
+> This procedure only works reasonably well if `patch-validator` is only called once in the workflow file.

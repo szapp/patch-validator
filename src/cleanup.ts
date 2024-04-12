@@ -5,14 +5,15 @@ import { setTimeout } from 'timers/promises'
 export async function workflow(): Promise<boolean> {
   // Only for completed check runs
   if (github.context.eventName !== 'check_run' || github.context.payload.action !== 'completed') return false
-  const octokit = github.getOctokit(core.getInput('cleanup-token'))
 
   // Check if the triggering check run is the correct one
-  if (github.context.payload.check_run.name !== 'Patch Validator') {
+  if (github.context.payload.check_run.external_id !== github.context.workflow) {
     // This workflow run here will then be also deleted by the correctly triggered run
     core.setFailed('This action is only intended to be run on the "Patch Validator" check run')
     return true
   }
+
+  const octokit = github.getOctokit(core.getInput('cleanup-token'))
 
   // Let all running workflows finish
   let status: boolean
@@ -56,7 +57,7 @@ export async function workflow(): Promise<boolean> {
           ...github.context.repo,
           run_id: w.id,
         })
-        .catch((error) => core.info(`\u001b[32m${error}\u001b[0m`))
+        .catch((error) => core.info(`\u001b[31m${error}\u001b[0m`))
     )
   )
 

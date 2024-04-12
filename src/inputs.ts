@@ -20,11 +20,11 @@ export function loadInputs(): { relPath: string; basePath: string; patchName: st
   const configPath = posix.join(rootPath, '.validator.yml')
   if (!fs.existsSync(configPath)) throw new Error(`Configuration file '${configPath}' not found`)
   const configStr = fs.readFileSync(configPath, 'utf8')
-  const config = YAML.parse(configStr) as { prefix: string | string[] | undefined; ignore: string | string[] | undefined }
+  const config = YAML.parse(configStr) as { prefix: string | string[] | undefined; 'ignore-declaration': string | string[] | undefined }
 
   // Populate configuration
   const prefix = (config.prefix ? [config.prefix] : []).flat()
-  const ignore = (config.ignore ? [config.ignore] : []).flat()
+  const ignore = (config['ignore-declaration'] ? [config['ignore-declaration']] : []).flat()
 
   // Validate configuration
   if (prefix.some((p) => p.length < 3)) throw new Error('Prefix must be at least three characters long')

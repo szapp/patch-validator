@@ -24,6 +24,7 @@ jest.mock('@actions/github', () => {
         repo: 'repo',
       },
       sha: 'sha',
+      workflow: 'workflow.yml',
     },
   }
 })
@@ -176,6 +177,7 @@ For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/
         ...github.context.repo,
         name: 'Patch Validator',
         head_sha: github.context.sha,
+        external_id: 'workflow.yml',
         started_at: expect.any(String),
         completed_at: expect.any(String),
         conclusion: 'failure',
@@ -216,6 +218,7 @@ For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/
         ...github.context.repo,
         name: 'Patch Validator',
         head_sha: github.context.sha,
+        external_id: 'workflow.yml',
         started_at: expect.any(String),
         completed_at: expect.any(String),
         conclusion: 'failure',
@@ -245,6 +248,7 @@ For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/
         ...github.context.repo,
         name: 'Patch Validator',
         head_sha: github.context.sha,
+        external_id: 'workflow.yml',
         started_at: expect.any(String),
         completed_at: expect.any(String),
         conclusion: 'success',

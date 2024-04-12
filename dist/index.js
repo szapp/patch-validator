@@ -41284,13 +41284,13 @@ async function workflow() {
     // Only for completed check runs
     if (github.context.eventName !== 'check_run' || github.context.payload.action !== 'completed')
         return false;
-    const octokit = github.getOctokit(core.getInput('cleanup-token'));
     // Check if the triggering check run is the correct one
-    if (github.context.payload.check_run.name !== 'Patch Validator') {
+    if (github.context.payload.check_run.external_id !== github.context.workflow) {
         // This workflow run here will then be also deleted by the correctly triggered run
         core.setFailed('This action is only intended to be run on the "Patch Validator" check run');
         return true;
     }
+    const octokit = github.getOctokit(core.getInput('cleanup-token'));
     // Let all running workflows finish
     let status;
     do {
@@ -41322,7 +41322,7 @@ async function workflow() {
         ...github.context.repo,
         run_id: w.id,
     })
-        .catch((error) => core.info(`\u001b[32m${error}\u001b[0m`))));
+        .catch((error) => core.info(`\u001b[31m${error}\u001b[0m`))));
     // The summary of the workflow runs is unfortunately not available in the API
     // So we can only link to the check run
     await core.summary.addHeading(github.context.payload.check_run.name)
@@ -63473,7 +63473,7 @@ function loadInputs() {
     const config = dist.parse(configStr);
     // Populate configuration
     const prefix = (config.prefix ? [config.prefix] : []).flat();
-    const ignore = (config.ignore ? [config.ignore] : []).flat();
+    const ignore = (config['ignore-declaration'] ? [config['ignore-declaration']] : []).flat();
     // Validate configuration
     if (prefix.some((p) => p.length < 3))
         throw new Error('Prefix must be at least three characters long');
@@ -63511,6 +63511,7 @@ For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/
         ...github.context.repo,
         name: 'Patch Validator',
         head_sha: github.context.sha,
+        external_id: github.context.workflow,
         started_at: startedAt.toISOString(),
         completed_at: new Date().toISOString(),
         conclusion: numErr ? 'failure' : 'success',

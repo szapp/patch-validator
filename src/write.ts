@@ -47,6 +47,7 @@ For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/
     ...github.context.repo,
     name: 'Patch Validator',
     head_sha: github.context.sha,
+    external_id: github.context.workflow,
     started_at: startedAt.toISOString(),
     completed_at: new Date().toISOString(),
     conclusion: numErr ? 'failure' : 'success',
