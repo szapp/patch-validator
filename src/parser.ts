@@ -3,6 +3,7 @@ import { DaedalusLexer } from './generated/DaedalusLexer.js'
 import { DaedalusParser } from './generated/DaedalusParser.js'
 import { SymbolVisitor, SymbolTable } from './class.js'
 import { normalizePath } from './utils.js'
+import externals from './externals.js'
 import fs from 'fs'
 import { posix } from 'path'
 
@@ -12,12 +13,14 @@ const wildcards: RegExp = /\*|\?/g
  * Parse source files and generate symbol tables.
  */
 export class Parser {
+  public readonly patchName: string
   public readonly filepath: string
   public readonly exists: boolean
   public readonly filename: string
   public readonly type: string
   public readonly version: number
   public readonly workingDir: string
+  public readonly packageDir: string
   public readonly symbolTable: SymbolTable
   public readonly referenceTable: SymbolTable
   public namingViolations: SymbolTable
@@ -30,9 +33,11 @@ export class Parser {
    * @param {string} filepath - The file path.
    * @param {string} [workingDir=''] - The working directory.
    */
-  constructor(filepath: string, workingDir: string = '') {
+  constructor(patchName: string, filepath: string, workingDir: string = '', packageDir: string = '') {
+    this.patchName = patchName.toUpperCase()
     this.filepath = normalizePath(filepath)
     this.workingDir = normalizePath(workingDir)
+    this.packageDir = normalizePath(packageDir)
     this.exists = fs.existsSync(this.filepath)
     this.filename = posix.basename(this.filepath)
     const baseName = posix.basename(this.filepath, posix.extname(this.filepath)).toUpperCase()
@@ -52,7 +57,7 @@ export class Parser {
    * @param workingDir - The working directory for the Parser instances.
    * @returns An array of Parser instances.
    */
-  public static from(basePath: string, workingDir: string): Parser[] {
+  public static from(patchName: string, basePath: string, workingDir: string): Parser[] {
     const candidateNames = ['Content', 'Menu', 'PFX', 'SFX', 'VFX', 'Music', 'Camera', 'Fight']
     const suffixes = ['_G1', '_G112', '_G130', '_G2']
     const candidates = candidateNames
@@ -61,7 +66,7 @@ export class Parser {
         return suffix.map((s) => posix.join(basePath, name + s + '.src'))
       })
       .flat()
-    const parsers = candidates.map((candidate) => new Parser(candidate, workingDir)).filter((parser) => parser.exists)
+    const parsers = candidates.map((candidate) => new Parser(patchName, candidate, workingDir)).filter((parser) => parser.exists)
     parsers.forEach((parser) => parser.parse())
     return parsers
   }
@@ -96,15 +101,34 @@ export class Parser {
    * Parses the basic symbols for content and menu parsers.
    */
   protected parseRequired(): void {
+    let symbols: string[] = []
     switch (this.type) {
       case 'CONTENT':
         // Add content externs (per game version)
         // TODO: switch (this.version) ...
-        // this.parseD(..., true)
+        symbols = []
         break
       case 'MENU':
-      // Add menu externals
-      // this.parseD(..., true)
+        // Add menu externals
+        symbols = []
+        break
+    }
+
+    // Add Ninja helper symbols (to all parser types)
+    symbols = symbols.concat([
+      'NINJA_SYMBOLS_START',
+      `NINJA_SYMBOLS_START_${this.patchName}`,
+      'NINJA_VERSION',
+      'NINJA_PATCHES',
+      `NINJA_ID_${this.patchName}`,
+      'NINJA_MODNAME',
+    ])
+
+    // Add symbols to the symbol table
+    if (symbols.length > 0) {
+      symbols.forEach((symbol) => {
+        this.symbolTable.push({ name: symbol.toUpperCase(), file: '', line: 0 })
+      })
     }
   }
 
@@ -112,9 +136,12 @@ export class Parser {
    * Parses the externals for the current instance.
    */
   protected parseExternals(): void {
-    // TODO: Find a way to add external functions
-    /* const extern =  */ posix.join('externals', `G${this.version}`, `${this.type}.d`)
-    // this.parseD(extern, true)
+    const extern = externals?.[`G${this.version}`]?.[this.type]
+    if (extern) {
+      extern.forEach((symbol) => {
+        this.symbolTable.push({ name: symbol.toUpperCase(), file: '', line: 0 })
+      })
+    }
   }
 
   /**
@@ -207,24 +234,20 @@ export class Parser {
    */
   public validateNames(prefix: string[], ignore: string[]): void {
     this.namingViolations = this.symbolTable.filter((symbol) => {
-      const name = symbol.name.toUpperCase()
       const fromPatch = symbol.file !== ''
       const isGlobal = symbol.name.indexOf('.') === -1
-      const hasPrefix = prefix.some((p) => name.includes(p))
-      const isIgnored = ignore.includes(name)
+      const hasPrefix = prefix.some((p) => symbol.name.includes(p))
+      const isIgnored = ignore.includes(symbol.name)
       return fromPatch && isGlobal && !hasPrefix && !isIgnored
     })
   }
 
   /**
    * Validates the references in the reference table against the symbol table.
-   *
-   * TODO: Consider nested variables of types (i.e. instances, prototypes, etc.)
    */
   public validateReferences(): void {
     this.referenceViolations = this.referenceTable.filter((symbol) => {
-      const name = symbol.name.toUpperCase()
-      const isDefined = this.symbolTable.some((s) => s.name.toUpperCase() === name)
+      const isDefined = this.symbolTable.some((s) => s.name === symbol.name)
       return !isDefined
     })
   }

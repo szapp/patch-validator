@@ -19,7 +19,7 @@ export async function run(): Promise<void> {
     const { relPath, basePath, patchName, prefix: prefixList, ignore: ignoreList } = loadInputs()
 
     // Collect global symbols
-    const symbolTable = Parser.from(basePath, '')[0].symbolTable
+    const symbolTable = Parser.from(patchName, basePath, '')[0].symbolTable
 
     // Validate symbols by naming convention
     const { prefix, ignore } = formatFilters(patchName, prefixList, ignoreList)

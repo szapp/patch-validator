@@ -62789,7 +62789,7 @@ class SymbolVisitor extends DaedalusVisitor {
     }
     withScope(action, scope) {
         const outerScope = this.scope;
-        this.scope = scope;
+        this.scope = scope.toUpperCase();
         try {
             return action();
         }
@@ -62799,7 +62799,7 @@ class SymbolVisitor extends DaedalusVisitor {
     }
     withType(action, type) {
         const outerType = this.type;
-        this.type = type;
+        this.type = type.toUpperCase();
         try {
             return action();
         }
@@ -62815,7 +62815,8 @@ class SymbolVisitor extends DaedalusVisitor {
         return { symbols: this.symbolTable, references: this.referenceTable };
     }
     addSymbol = (symbol) => {
-        this.symbolTable.push({ name: this.getScope() + symbol.text, file: this.file, line: symbol.line });
+        const name = (this.getScope() + symbol.text).toUpperCase();
+        this.symbolTable.push({ name, file: this.file, line: symbol.line });
     };
     defaultResult() {
         return this.passTables();
@@ -62823,13 +62824,12 @@ class SymbolVisitor extends DaedalusVisitor {
     visitReference = (ctx) => {
         let name = ctx
             .referenceAtom()
-            .map((atom) => {
-            const identifier = atom.nameNode().Identifier();
-            return identifier?.getSymbol()?.text;
-        })
-            .join('.');
+            .map((atom) => atom.nameNode().Identifier()?.getSymbol()?.text)
+            .filter((n) => n !== undefined)
+            .join('.')
+            .toUpperCase();
         if (name) {
-            const scopedName = this.getScope() + name;
+            const scopedName = (this.getScope() + name).toUpperCase();
             if (this.symbolTable.find((s) => s.name === scopedName))
                 name = scopedName;
             // istanbul ignore next: Unnecessary to test emty line
@@ -62840,7 +62840,7 @@ class SymbolVisitor extends DaedalusVisitor {
     // Fill protottypes and instances with class symbols (extends SymbolTable)
     visitParentReference = (ctx) => {
         const symbol = ctx.Identifier().getSymbol();
-        const refName = symbol.text;
+        const refName = symbol.text?.toUpperCase();
         if (refName) {
             this.symbolTable
                 .filter((s) => s.name.startsWith(refName + '.'))
@@ -62854,7 +62854,7 @@ class SymbolVisitor extends DaedalusVisitor {
         const identifier = ctx.nameNode().Identifier();
         if (identifier) {
             const symbol = identifier.getSymbol();
-            const symbolName = symbol.text;
+            const symbolName = symbol.text?.toUpperCase();
             if (symbolName) {
                 this.addSymbol(symbol);
                 if (this.type) {
@@ -62916,10 +62916,9 @@ class SymbolVisitor extends DaedalusVisitor {
         const identifier = ctx.dataType().Identifier();
         if (identifier) {
             const symbol = identifier.getSymbol();
-            const refName = symbol.text;
-            if (refName) {
+            const refName = symbol.text?.toUpperCase();
+            if (refName)
                 return this.withType(() => this.visitDecl(ctx), refName);
-            }
         }
         return this.visitDecl(ctx);
     };
@@ -62927,10 +62926,9 @@ class SymbolVisitor extends DaedalusVisitor {
         const identifier = ctx.dataType().Identifier();
         if (identifier) {
             const symbol = identifier.getSymbol();
-            const refName = symbol.text;
-            if (refName) {
+            const refName = symbol.text?.toUpperCase();
+            if (refName)
                 return this.withType(() => this.visitChildren(ctx), refName);
-            }
         }
         return this.visitChildren(ctx);
     };
@@ -62941,6 +62939,296 @@ const winRE = /[\\]/g;
 function normalizePath(filepath) {
     return filepath.replace(winRE, '/');
 }
+
+;// CONCATENATED MODULE: ./src/externals.ts
+const basic = {
+    CONTENT: [
+        'Print',
+        'PrintMulti',
+        'PrintDebug',
+        'PrintScreen',
+        'Hlp_Random',
+        'Hlp_StrCmp',
+        'Hlp_IsValidNpc',
+        'Hlp_IsValidItem',
+        'Hlp_IsItem',
+        'Hlp_GetNpc',
+        'Hlp_GetInstanceID',
+        'Hlp_GetInstanceID',
+        'AI_Wait',
+        'Npc_GetStateTime',
+        'Npc_SetStateTime',
+        'Wld_GetDay',
+        'Wld_IsTime',
+        'Wld_InsertNpc',
+        'Wld_InsertNpcAndRespawn',
+        'AI_PlayAni',
+        'AI_StandUp',
+        'AI_StandUpQuick',
+        'AI_Quicklook',
+        'AI_LookAt',
+        'AI_LookAtNpc',
+        'AI_StopLookAt',
+        'AI_PointAt',
+        'AI_PointAtNpc',
+        'AI_StopPointAt',
+        'AI_TakeItem',
+        'AI_DropItem',
+        'AI_UseItem',
+        'AI_UseItemToState',
+        'AI_UseMob',
+        'Wld_IsMobAvailable',
+        'Wld_GetMobState',
+        'AI_SetWalkmode',
+        'AI_GotoWP',
+        'AI_GotoFP',
+        'AI_GotoNextFP',
+        'AI_GotoNpc',
+        'AI_GotoItem',
+        'AI_GotoSound',
+        'AI_Teleport',
+        'Npc_GetNearestWP',
+        'Npc_GetNextWP',
+        'Wld_IsFPAvailable',
+        'Wld_IsNextFPAvailable',
+        'Npc_IsOnFP',
+        'Npc_IsWayBlocked',
+        'AI_TurnToNpc',
+        'AI_TurnAway',
+        'AI_WhirlAround',
+        'AI_TurnToSound',
+        'AI_AlignToWP',
+        'AI_Dodge',
+        'Mdl_ApplyOverlayMds',
+        'Mdl_RemoveOverlayMDS',
+        'Mdl_ApplyOverlayMDSTimed',
+        'Mdl_ApplyRandomAni',
+        'Mdl_ApplyRandomAniFreq',
+        'Mdl_StartFaceAni',
+        'Mdl_ApplyRandomFaceAni',
+        'Npc_GetBodyState',
+        'Npc_HasBodyFlag',
+        'AI_PlayAniBS',
+        'Npc_SetToFistMode',
+        'Npc_SetToFightMode',
+        'Npc_IsInFightMode',
+        'AI_DrawWeapon',
+        'AI_ReadyMeleeWeapon',
+        'AI_ReadyRangedWeapon',
+        'AI_RemoveWeapon',
+        'Npc_GetReadiedWeapon',
+        'Npc_HasReadiedWeapon',
+        'Npc_HasReadiedMeleeWeapon',
+        'Npc_HasReadiedRangedWeapon',
+        'Npc_HasRangedWeaponWithAmmo',
+        'Npc_GetTarget',
+        'Npc_GetNextTarget',
+        'Npc_IsNextTargetAvailable',
+        'Npc_SetTarget',
+        'AI_Attack',
+        'AI_FinishingMove',
+        'AI_Defend',
+        'AI_Flee',
+        'AI_AimAt',
+        'AI_ShootAt',
+        'AI_StopAim',
+        'Npc_AreWeStronger',
+        'Npc_IsAiming',
+        'Wld_InsertItem',
+        'AI_LookForItem',
+        'Wld_RemoveItem',
+        'CreateInvItem',
+        'CreateInvItems',
+        'Npc_GetInvItem',
+        'Npc_HasItems',
+        'Npc_GetInvItemBySlot',
+        'Npc_RemoveInvItem',
+        'Npc_RemoveInvItems',
+        'Mob_CreateItems',
+        'Mob_HasItems',
+        'EquipItem',
+        'AI_EquipBestMeleeWeapon',
+        'AI_EquipBestRangedWeapon',
+        'AI_EquipBestArmor',
+        'AI_UnequipWeapons',
+        'AI_UnequipArmor',
+        'AI_EquipArmor',
+        'Npc_GetEquippedMeleeWeapon',
+        'Npc_GetEquippedRangedWeapon',
+        'Npc_GetEquippedArmor',
+        'Npc_HasEquippedWeapon',
+        'Npc_HasEquippedMeleeWeapon',
+        'Npc_HasEquippedRangedWeapon',
+        'Npc_HasEquippedArmor',
+        'Npc_OwnedByNpc',
+        'Npc_OwnedByGuild',
+        'Npc_IsDetectedMobOwnedByNpc',
+        'Npc_IsDetectedMobOwnedByGuild',
+        'Npc_GiveItem',
+        'Npc_StartItemReactModules',
+        'Npc_HasOffered',
+        'Doc_Open',
+        'Doc_Font',
+        'Doc_Print',
+        'Doc_MapCoordinates',
+        'AI_Output',
+        'AI_OutputSVM',
+        'AI_OutputSVM_Overlay',
+        'AI_WaitTillEnd',
+        'AI_Ask',
+        'AI_AskText',
+        'AI_WaitForQuestion',
+        'Npc_SetRefuseTalk',
+        'Npc_RefuseTalk',
+        'Npc_MemoryEntry',
+        'Npc_MemoryEntryGuild',
+        'Npc_HasNews',
+        'Npc_IsNewsGossip',
+        'Npc_GetNewsWitness',
+        'Npc_GetNewsVictim',
+        'Npc_GetNewsOffender',
+        'Npc_IsDead',
+        'Npc_KnowsInfo',
+        'Npc_CheckInfo',
+        'NPC_GiveInfo',
+        'Npc_CheckAvailableMission',
+        'Npc_CheckRunningMission',
+        'Npc_CheckOfferMission',
+        'Mis_SetStatus',
+        'Mis_GetStatus',
+        'Mis_OnTime',
+        'AI_StopProcessInfos',
+        'Npc_IsPlayer',
+        'Wld_DetectPlayer',
+        'Npc_HasDetectedNpc',
+        'Npc_IsNear',
+        'Npc_GetDistToNpc',
+        'Npc_GetDistToWP',
+        'Npc_GetDistToItem',
+        'Npc_GetDistToPlayer',
+        'Snd_GetDistToSource',
+        'Npc_GetTrueGuild',
+        'Npc_SetAttitude',
+        'Npc_SetTempAttitude',
+        'Npc_GetAttitude',
+        'Npc_SetTrueGuild',
+        'Wld_SetGuildAttitude',
+        'Wld_GetGuildAttitude',
+        'Npc_GetPermAttitude',
+        'Wld_ExchangeGuildAttitudes',
+        'Npc_GetGuildAttitude',
+        'Npc_SetKnowsPlayer',
+        'Npc_KnowsPlayer',
+        'AI_StartState',
+        'Npc_ClearAIQueue',
+        'AI_SetNpcsToState',
+        'Npc_IsInState',
+        'Npc_WasInState',
+        'TA',
+        'TA_Min',
+        'AI_ContinueRoutine',
+        'Npc_IsInRoutine',
+        'Npc_ExchangeRoutine',
+        'Wld_SetObjectRoutine',
+        'Wld_SetMobRoutine',
+        'Rtn_Exchange',
+        'TA_BeginOverlay',
+        'TA_EndOverlay',
+        'TA_RemoveOverlay',
+        'Mdl_SetModelScale',
+        'Mdl_SetModelFatness',
+        'Npc_ChangeAttribute',
+        'Npc_HasTalent',
+        'Npc_HasFightTalent',
+        'Npc_CreateSpell',
+        'Npc_LearnSpell',
+        'Npc_SetTeleportPos',
+        'Npc_GetActiveSpell',
+        'Npc_GetActiveSpellCat',
+        'Npc_SetActiveSpellInfo',
+        'Npc_GetActiveSpellLevel',
+        'AI_ReadySpell',
+        'AI_UnreadySpell',
+        'Npc_HasSpell',
+        'Npc_PercEnable',
+        'Npc_PercDisable',
+        'Npc_SetPercTime',
+        'Perc_SetRange',
+        'Npc_SendPassivePerc',
+        'Npc_SendSinglePerc',
+        'Npc_PerceiveAll',
+        'Wld_DetectNpc',
+        'Wld_DetectNpcEx',
+        'Wld_DetectItem',
+        'Npc_GetDetectedMob',
+        'Npc_CanSeeNpc',
+        'Npc_CanSeeNpcFreeLOS',
+        'Npc_CanSeeItem',
+        'Npc_CanSeeSource',
+        'TA_CS',
+        'AI_PlayCutscene',
+        'Hlp_CutscenePlayed',
+        'Npc_IsInCutscene',
+        'Snd_Play',
+        'Snd_Play3D',
+        'Snd_IsSourceNpc',
+        'Snd_IsSourceItem',
+        'Wld_AssignRoomToGuild',
+        'Wld_AssignRoomToNpc',
+        'Wld_GetPlayerPortalOwner',
+        'Wld_GetPlayerPortalGuild',
+        'Wld_GetFormerPlayerPortalOwner',
+        'Wld_GetFormerPlayerPortalGuild',
+        'Npc_IsPlayerInMyRoom',
+        'Npc_WasPlayerInMyRoom',
+        'IntToString',
+        'FloatToInt',
+        'IntToFloat',
+        'ConcatStrings',
+        'PrintDebugInst',
+        'PrintDebugInstCh',
+        'PrintDebugCh',
+        'Log_CreateTopic',
+        'Log_SetTopicStatus',
+        'Log_AddEntry',
+        'Doc_Create',
+        'Doc_SetPages',
+        'Doc_SetPage',
+        'Doc_SetFont',
+        'Doc_SetMargins',
+        'Doc_PrintLine',
+        'Doc_PrintLines',
+        'Doc_Show',
+    ],
+    MENU: [
+        'Update_ChoiceBox',
+        'Apply_Options_Performance',
+        'Apply_Options_Video',
+        'Apply_Options_Audio',
+        'Apply_Options_Game',
+        'Apply_Options_Controls',
+        'PlayVideo',
+    ],
+};
+const G1 = {
+    ...basic,
+};
+const G112 = {
+    ...basic,
+};
+const G130 = {
+    ...basic,
+};
+const G2 = {
+    ...basic,
+};
+const list = {
+    G1,
+    G112,
+    G130,
+    G2,
+};
+/* harmony default export */ const externals = (list);
 
 // EXTERNAL MODULE: external "fs"
 var external_fs_ = __nccwpck_require__(7147);
@@ -62955,17 +63243,20 @@ var external_path_ = __nccwpck_require__(1017);
 
 
 
+
 const wildcards = /\*|\?/g;
 /**
  * Parse source files and generate symbol tables.
  */
 class parser_Parser {
+    patchName;
     filepath;
     exists;
     filename;
     type;
     version;
     workingDir;
+    packageDir;
     symbolTable;
     referenceTable;
     namingViolations;
@@ -62977,9 +63268,11 @@ class parser_Parser {
      * @param {string} filepath - The file path.
      * @param {string} [workingDir=''] - The working directory.
      */
-    constructor(filepath, workingDir = '') {
+    constructor(patchName, filepath, workingDir = '', packageDir = '') {
+        this.patchName = patchName.toUpperCase();
         this.filepath = normalizePath(filepath);
         this.workingDir = normalizePath(workingDir);
+        this.packageDir = normalizePath(packageDir);
         this.exists = external_fs_default().existsSync(this.filepath);
         this.filename = external_path_.posix.basename(this.filepath);
         const baseName = external_path_.posix.basename(this.filepath, external_path_.posix.extname(this.filepath)).toUpperCase();
@@ -62998,7 +63291,7 @@ class parser_Parser {
      * @param workingDir - The working directory for the Parser instances.
      * @returns An array of Parser instances.
      */
-    static from(basePath, workingDir) {
+    static from(patchName, basePath, workingDir) {
         const candidateNames = ['Content', 'Menu', 'PFX', 'SFX', 'VFX', 'Music', 'Camera', 'Fight'];
         const suffixes = ['_G1', '_G112', '_G130', '_G2'];
         const candidates = candidateNames
@@ -63007,7 +63300,7 @@ class parser_Parser {
             return suffix.map((s) => external_path_.posix.join(basePath, name + s + '.src'));
         })
             .flat();
-        const parsers = candidates.map((candidate) => new parser_Parser(candidate, workingDir)).filter((parser) => parser.exists);
+        const parsers = candidates.map((candidate) => new parser_Parser(patchName, candidate, workingDir)).filter((parser) => parser.exists);
         parsers.forEach((parser) => parser.parse());
         return parsers;
     }
@@ -63037,24 +63330,44 @@ class parser_Parser {
      * Parses the basic symbols for content and menu parsers.
      */
     parseRequired() {
+        let symbols = [];
         switch (this.type) {
             case 'CONTENT':
                 // Add content externs (per game version)
                 // TODO: switch (this.version) ...
-                // this.parseD(..., true)
+                symbols = [];
                 break;
             case 'MENU':
-            // Add menu externals
-            // this.parseD(..., true)
+                // Add menu externals
+                symbols = [];
+                break;
+        }
+        // Add Ninja helper symbols (to all parser types)
+        symbols = symbols.concat([
+            'NINJA_SYMBOLS_START',
+            `NINJA_SYMBOLS_START_${this.patchName}`,
+            'NINJA_VERSION',
+            'NINJA_PATCHES',
+            `NINJA_ID_${this.patchName}`,
+            'NINJA_MODNAME',
+        ]);
+        // Add symbols to the symbol table
+        if (symbols.length > 0) {
+            symbols.forEach((symbol) => {
+                this.symbolTable.push({ name: symbol.toUpperCase(), file: '', line: 0 });
+            });
         }
     }
     /**
      * Parses the externals for the current instance.
      */
     parseExternals() {
-        // TODO: Find a way to add external functions
-        /* const extern =  */ external_path_.posix.join('externals', `G${this.version}`, `${this.type}.d`);
-        // this.parseD(extern, true)
+        const extern = externals?.[`G${this.version}`]?.[this.type];
+        if (extern) {
+            extern.forEach((symbol) => {
+                this.symbolTable.push({ name: symbol.toUpperCase(), file: '', line: 0 });
+            });
+        }
     }
     /**
      * Parses a special line in a SRC file.
@@ -63144,23 +63457,19 @@ class parser_Parser {
      */
     validateNames(prefix, ignore) {
         this.namingViolations = this.symbolTable.filter((symbol) => {
-            const name = symbol.name.toUpperCase();
             const fromPatch = symbol.file !== '';
             const isGlobal = symbol.name.indexOf('.') === -1;
-            const hasPrefix = prefix.some((p) => name.includes(p));
-            const isIgnored = ignore.includes(name);
+            const hasPrefix = prefix.some((p) => symbol.name.includes(p));
+            const isIgnored = ignore.includes(symbol.name);
             return fromPatch && isGlobal && !hasPrefix && !isIgnored;
         });
     }
     /**
      * Validates the references in the reference table against the symbol table.
-     *
-     * TODO: Consider nested variables of types (i.e. instances, prototypes, etc.)
      */
     validateReferences() {
         this.referenceViolations = this.referenceTable.filter((symbol) => {
-            const name = symbol.name.toUpperCase();
-            const isDefined = this.symbolTable.some((s) => s.name.toUpperCase() === name);
+            const isDefined = this.symbolTable.some((s) => s.name === symbol.name);
             return !isDefined;
         });
     }
@@ -63317,7 +63626,7 @@ async function run() {
         // Format inputs
         const { relPath, basePath, patchName, prefix: prefixList, ignore: ignoreList } = loadInputs();
         // Collect global symbols
-        const symbolTable = parser_Parser.from(basePath, '')[0].symbolTable;
+        const symbolTable = parser_Parser.from(patchName, basePath, '')[0].symbolTable;
         // Validate symbols by naming convention
         const { prefix, ignore } = formatFilters(patchName, prefixList, ignoreList);
         const symbolTableInvalid = validate(symbolTable, prefix, ignore);

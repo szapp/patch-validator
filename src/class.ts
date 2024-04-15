@@ -38,7 +38,7 @@ export class SymbolVisitor extends DaedalusVisitor<Tables> {
 
   protected withScope<T>(action: () => T, scope: string): T {
     const outerScope = this.scope
-    this.scope = scope
+    this.scope = scope.toUpperCase()
     try {
       return action()
     } finally {
@@ -48,7 +48,7 @@ export class SymbolVisitor extends DaedalusVisitor<Tables> {
 
   protected withType<T>(action: () => T, type: string): T {
     const outerType = this.type
-    this.type = type
+    this.type = type.toUpperCase()
     try {
       return action()
     } finally {
@@ -66,7 +66,8 @@ export class SymbolVisitor extends DaedalusVisitor<Tables> {
   }
 
   private addSymbol = (symbol: Token): void => {
-    this.symbolTable.push({ name: this.getScope() + symbol.text, file: this.file, line: symbol.line })
+    const name = (this.getScope() + symbol.text).toUpperCase()
+    this.symbolTable.push({ name, file: this.file, line: symbol.line })
   }
 
   protected defaultResult(): Tables {
@@ -76,13 +77,12 @@ export class SymbolVisitor extends DaedalusVisitor<Tables> {
   public visitReference = (ctx: ReferenceContext): Tables => {
     let name = ctx
       .referenceAtom()
-      .map((atom) => {
-        const identifier = atom.nameNode().Identifier()
-        return identifier?.getSymbol()?.text
-      })
+      .map((atom) => atom.nameNode().Identifier()?.getSymbol()?.text)
+      .filter((n) => n !== undefined)
       .join('.')
+      .toUpperCase()
     if (name) {
-      const scopedName = this.getScope() + name
+      const scopedName = (this.getScope() + name).toUpperCase()
       if (this.symbolTable.find((s) => s.name === scopedName)) name = scopedName
       // istanbul ignore next: Unnecessary to test emty line
       this.referenceTable.push({ name, file: this.file, line: ctx.start?.line ?? 0 })
@@ -93,7 +93,7 @@ export class SymbolVisitor extends DaedalusVisitor<Tables> {
   // Fill protottypes and instances with class symbols (extends SymbolTable)
   public visitParentReference = (ctx: ParentReferenceContext): Tables => {
     const symbol = ctx.Identifier().getSymbol()
-    const refName = symbol.text
+    const refName = symbol.text?.toUpperCase()
     if (refName) {
       this.symbolTable
         .filter((s) => s.name.startsWith(refName + '.'))
@@ -110,7 +110,7 @@ export class SymbolVisitor extends DaedalusVisitor<Tables> {
     const identifier = ctx.nameNode().Identifier()
     if (identifier) {
       const symbol = identifier.getSymbol()
-      const symbolName = symbol.text
+      const symbolName = symbol.text?.toUpperCase()
       if (symbolName) {
         this.addSymbol(symbol)
         if (this.type) {
@@ -184,10 +184,8 @@ export class SymbolVisitor extends DaedalusVisitor<Tables> {
     const identifier = ctx.dataType().Identifier()
     if (identifier) {
       const symbol = identifier.getSymbol()
-      const refName = symbol.text
-      if (refName) {
-        return this.withType(() => this.visitDecl(ctx), refName) as Tables
-      }
+      const refName = symbol.text?.toUpperCase()
+      if (refName) return this.withType(() => this.visitDecl(ctx), refName) as Tables
     }
     return this.visitDecl(ctx)
   }
@@ -196,10 +194,8 @@ export class SymbolVisitor extends DaedalusVisitor<Tables> {
     const identifier = ctx.dataType().Identifier()
     if (identifier) {
       const symbol = identifier.getSymbol()
-      const refName = symbol.text
-      if (refName) {
-        return this.withType(() => this.visitChildren(ctx), refName) as Tables
-      }
+      const refName = symbol.text?.toUpperCase()
+      if (refName) return this.withType(() => this.visitChildren(ctx), refName) as Tables
     }
     return this.visitChildren(ctx) as Tables
   }
