@@ -3,45 +3,55 @@ import * as github from '@actions/github'
 import { workflow } from '../src/cleanup.ts'
 import timers from 'timers/promises'
 
-// Mock the GitHub API
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const getWorkflowRunMock = jest.fn(async (_params) => ({
-  data: { workflow_id: 123 },
-}))
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const listWorkflowRunsMock = jest.fn(async (_params) => ({
-  data: {
-    workflow_runs: [
-      { id: 1, event: 'push', status: 'in_progress' },
-      { id: 2, event: 'check_run', status: 'in_progress' },
-      { id: 3, event: 'workflow_run', status: 'completed' },
-    ],
-  },
-}))
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const listWorkflowRunsForRepoMock = jest.fn(async (_params) => ({
-  data: {
-    workflow_runs: [] as { id: number; event: string }[],
-  },
-}))
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const deleteWorkflowRunMock = jest.fn(async (_params) => {})
-jest.mock('@actions/github', () => {
-  return {
+let getWorkflowRunMock: jest.Mock
+let listWorkflowRunsMock: jest.Mock
+let listWorkflowRunsForRepoMock: jest.Mock
+let deleteWorkflowRunMock: jest.Mock
+
+describe('cleanup', () => {
+  beforeEach(() => {
+    jest.spyOn(core.summary, 'addHeading').mockImplementation(() => core.summary)
+    jest.spyOn(core.summary, 'addRaw').mockImplementation(() => core.summary)
+    jest.spyOn(core.summary, 'write').mockImplementation()
+    jest.spyOn(core, 'info').mockImplementation()
+    jest.spyOn(core, 'setFailed').mockImplementation()
+    jest.spyOn(process, 'exit').mockImplementation()
+    jest.spyOn(timers, 'setTimeout').mockImplementation()
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getOctokit: (_token: string) => {
-      return {
-        rest: {
-          actions: {
-            getWorkflowRun: getWorkflowRunMock,
-            listWorkflowRuns: listWorkflowRunsMock,
-            listWorkflowRunsForRepo: listWorkflowRunsForRepoMock,
-            deleteWorkflowRun: deleteWorkflowRunMock,
-          },
+    getWorkflowRunMock = jest.fn(async (_params) => ({
+      data: { workflow_id: 123 },
+    }))
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    listWorkflowRunsMock = jest.fn(async (_params) => ({
+      data: {
+        workflow_runs: [
+          { id: 1, event: 'push', status: 'in_progress' },
+          { id: 2, event: 'check_run', status: 'in_progress' },
+          { id: 3, event: 'workflow_run', status: 'completed' },
+        ],
+      },
+    }))
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    listWorkflowRunsForRepoMock = jest.fn(async (_params) => ({
+      data: {
+        workflow_runs: [] as { id: number; event: string }[],
+      },
+    }))
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    deleteWorkflowRunMock = jest.fn(async (_params) => {})
+
+    jest.spyOn(github, 'getOctokit').mockReturnValue({
+      rest: {
+        actions: {
+          getWorkflowRun: getWorkflowRunMock,
+          listWorkflowRuns: listWorkflowRunsMock,
+          listWorkflowRunsForRepo: listWorkflowRunsForRepoMock,
+          deleteWorkflowRun: deleteWorkflowRunMock,
         },
-      }
-    },
-    context: {
+      },
+    } as unknown as ReturnType<typeof github.getOctokit>)
+    jest.replaceProperty(github, 'context', {
       eventName: 'check_run',
       workflow: 'workflow.yml',
       payload: {
@@ -59,21 +69,7 @@ jest.mock('@actions/github', () => {
         repo: 'repo',
       },
       runId: 2,
-    },
-  }
-})
-
-describe('cleanup', () => {
-  beforeEach(() => {
-    jest.clearAllMocks()
-
-    jest.spyOn(core.summary, 'addHeading').mockImplementation(() => core.summary)
-    jest.spyOn(core.summary, 'addRaw').mockImplementation(() => core.summary)
-    jest.spyOn(core.summary, 'write').mockImplementation()
-    jest.spyOn(core, 'info').mockImplementation()
-    jest.spyOn(core, 'setFailed').mockImplementation()
-    jest.spyOn(process, 'exit').mockImplementation()
-    jest.spyOn(timers, 'setTimeout').mockImplementation()
+    } as unknown as typeof github.context)
   })
 
   it('should return false if the event is not check_run or action is not completed', async () => {
@@ -136,13 +132,6 @@ describe('cleanup', () => {
       status: 'in_progress',
       head_sha: github.context.payload.check_run.head_sha,
     })
-    expect(listWorkflowRunsForRepoMock).toHaveReturnedWith(
-      Promise.resolve({
-        data: {
-          workflow_runs: [{ id: 1, event: 'push' }],
-        },
-      })
-    )
     expect(listWorkflowRunsForRepoMock).toHaveBeenCalledTimes(2)
     expect(getWorkflowRunMock).toHaveBeenCalledWith({
       ...github.context.repo,

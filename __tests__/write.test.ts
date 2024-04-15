@@ -3,31 +3,7 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import { SymbolTable } from 'src/class.ts'
 
-// Mock the GitHub API
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const createCheckMock = jest.fn((_params) => ({ data: { html_url: 'https://example.com' } }))
-jest.mock('@actions/github', () => {
-  return {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getOctokit: (_token: string) => {
-      return {
-        rest: {
-          checks: {
-            create: createCheckMock,
-          },
-        },
-      }
-    },
-    context: {
-      repo: {
-        owner: 'owner',
-        repo: 'repo',
-      },
-      sha: 'sha',
-      workflow: 'workflow.yml',
-    },
-  }
-})
+let createCheckMock: jest.Mock
 
 describe('symbols', () => {
   it('prints global symbols with invalid symbols highlighted in red', () => {
@@ -57,13 +33,30 @@ describe('symbols', () => {
 
 describe('summary', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
-
     jest.spyOn(core.summary, 'addHeading').mockImplementation(() => core.summary)
     jest.spyOn(core.summary, 'addTable').mockImplementation(() => core.summary)
     jest.spyOn(core.summary, 'addRaw').mockImplementation(() => core.summary)
     jest.spyOn(core.summary, 'addEOL').mockImplementation(() => core.summary)
     jest.spyOn(core.summary, 'write').mockImplementation()
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    createCheckMock = jest.fn((_params) => ({ data: { html_url: 'https://example.com' } }))
+
+    jest.spyOn(github, 'getOctokit').mockReturnValue({
+      rest: {
+        checks: {
+          create: createCheckMock,
+        },
+      },
+    } as unknown as ReturnType<typeof github.getOctokit>)
+    jest.replaceProperty(github, 'context', {
+      repo: {
+        owner: 'owner',
+        repo: 'repo',
+      },
+      sha: 'sha',
+      workflow: 'workflow.yml',
+    } as unknown as typeof github.context)
   })
 
   it('adds validation results to the summary', async () => {
@@ -129,9 +122,26 @@ describe('summary', () => {
 
 describe('annotations', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
-
     jest.spyOn(core, 'getInput').mockReturnValue('dummy-token')
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    createCheckMock = jest.fn((_params) => ({ data: { html_url: 'https://example.com' } }))
+
+    jest.spyOn(github, 'getOctokit').mockReturnValue({
+      rest: {
+        checks: {
+          create: createCheckMock,
+        },
+      },
+    } as unknown as ReturnType<typeof github.getOctokit>)
+    jest.replaceProperty(github, 'context', {
+      repo: {
+        owner: 'owner',
+        repo: 'repo',
+      },
+      sha: 'sha',
+      workflow: 'workflow.yml',
+    } as unknown as typeof github.context)
   })
 
   it('creates annotations for invalid symbols', async () => {

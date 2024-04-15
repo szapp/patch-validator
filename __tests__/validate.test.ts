@@ -4,8 +4,6 @@ import { validate, formatFilters } from '../src/validate.ts'
 
 describe('formatFilters', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
-
     jest.spyOn(core, 'info').mockImplementation()
   })
 
@@ -25,13 +23,15 @@ describe('formatFilters', () => {
 
 describe('validate', () => {
   it('returns invalid symbols', () => {
-    const emptyProp = { file: '', line: 0 }
+    const emptyProp = { file: 'test.d', line: 0 }
     const ignSymbols: SymbolTable = [{ name: 'symbol1', ...emptyProp }]
+    const scpSymbols: SymbolTable = [{ name: 'symbol2.foo', ...emptyProp }]
+    const outSymbols: SymbolTable = [{ name: 'symbol3', file: '', line: 0 }]
     const invSymbols: SymbolTable = [
-      { name: 'SYMBOL2', ...emptyProp },
-      { name: 'Symbol3', ...emptyProp },
+      { name: 'SYMBOL4', ...emptyProp },
+      { name: 'Symbol5', ...emptyProp },
     ]
-    const symbols: SymbolTable = [...ignSymbols, ...invSymbols]
+    const symbols: SymbolTable = [...scpSymbols, ...outSymbols, ...ignSymbols, ...invSymbols]
     const prefix: string[] = []
     const ignore = ['SYMBOL1']
 

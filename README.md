@@ -71,10 +71,10 @@ All settings are optional, but the file must exist (even if empty).
 Example content:
 
 ```yaml
-prefix:
-  - FOA # Either a YAML list
-  - FallOA
-ignore-declaration: DIA_NONE_9022_KALIF # Or a single entry
+prefix: FOA # Either a single entry
+ignore-declaration:
+  - DIA_NONE_9022_KALIF # Or a YAML list
+  - B_SomeFunction
 ```
 
 ## Remove second commit status check

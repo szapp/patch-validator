@@ -10,8 +10,6 @@ let yamlParseMock: jest.SpiedFunction<typeof YAML.parse>
 
 describe('loadInputs', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
-
     getInputMock = jest.spyOn(core, 'getInput')
     fsExistsSyncMock = jest.spyOn(fs, 'existsSync')
     fsReadFileSyncMock = jest.spyOn(fs, 'readFileSync')

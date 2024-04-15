@@ -1,8 +1,12 @@
 import * as main from '../src/main.ts'
 
-const runMock = jest.spyOn(main, 'run').mockImplementation()
+let runMock: jest.SpiedFunction<typeof main.run>
 
 describe('index', () => {
+  beforeEach(() => {
+    runMock = jest.spyOn(main, 'run')
+  })
+
   it('calls run when imported', async () => {
     require('../src/index.js')
 

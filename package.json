@@ -44,6 +44,8 @@
     "preset": "ts-jest/presets/default-esm",
     "verbose": true,
     "clearMocks": true,
+    "resetMocks": true,
+    "restoreMocks": true,
     "testEnvironment": "node",
     "moduleFileExtensions": [
       "js",
