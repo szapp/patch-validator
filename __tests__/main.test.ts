@@ -1,19 +1,20 @@
 import * as core from '@actions/core'
 import * as main from '../src/main.ts'
-import * as parse from '../src/parse.ts'
+import { Parser } from '../src/parser.ts'
+import { SymbolTable } from '../src/class.ts'
 import * as validate from '../src/validate.ts'
 import * as inputs from '../src/inputs.ts'
 import write from '../src/write.ts'
 import * as cleanup from '../src/cleanup.ts'
 
-const runMock = jest.spyOn(main, 'run')
+let runMock: jest.SpiedFunction<typeof main.run>
 
 describe('run', () => {
   beforeEach(() => {
     jest.clearAllMocks()
 
     jest.spyOn(inputs, 'loadInputs').mockReturnValue({ relPath: '', basePath: '', patchName: '', prefix: [], ignore: [] })
-    jest.spyOn(parse, 'parseCandidates').mockResolvedValue([])
+    jest.spyOn(Parser, 'from').mockReturnValue([{ symbolTable: [] as SymbolTable } as Parser])
     jest.spyOn(validate, 'formatFilters').mockReturnValue({ prefix: [], ignore: [] })
     jest.spyOn(validate, 'validate').mockReturnValue([])
     jest.spyOn(write, 'symbols').mockImplementation()
@@ -21,6 +22,7 @@ describe('run', () => {
     jest.spyOn(write, 'summary').mockImplementation()
     jest.spyOn(cleanup, 'workflow').mockResolvedValue(false)
     jest.spyOn(core, 'setFailed').mockImplementation()
+    runMock = jest.spyOn(main, 'run')
   })
 
   it('should run the main function successfully', async () => {
@@ -28,7 +30,7 @@ describe('run', () => {
     expect(runMock).toHaveReturned()
     expect(cleanup.workflow).toHaveBeenCalledTimes(1)
     expect(inputs.loadInputs).toHaveBeenCalledTimes(1)
-    expect(parse.parseCandidates).toHaveBeenCalledTimes(1)
+    expect(Parser.from).toHaveBeenCalledTimes(1)
     expect(validate.formatFilters).toHaveBeenCalledTimes(1)
     expect(validate.validate).toHaveBeenCalledTimes(1)
     expect(write.symbols).toHaveBeenCalledTimes(1)
@@ -43,7 +45,7 @@ describe('run', () => {
     expect(runMock).toHaveReturned()
     expect(cleanup.workflow).toHaveBeenCalledTimes(1)
     expect(inputs.loadInputs).not.toHaveBeenCalled()
-    expect(parse.parseCandidates).not.toHaveBeenCalled()
+    expect(Parser.from).not.toHaveBeenCalled()
     expect(validate.formatFilters).not.toHaveBeenCalled()
     expect(validate.validate).not.toHaveBeenCalled()
     expect(write.symbols).not.toHaveBeenCalled()
@@ -61,7 +63,7 @@ describe('run', () => {
     expect(runMock).toHaveReturned()
     expect(cleanup.workflow).toThrow('test error')
     expect(inputs.loadInputs).not.toHaveBeenCalled()
-    expect(parse.parseCandidates).not.toHaveBeenCalled()
+    expect(Parser.from).not.toHaveBeenCalled()
     expect(validate.formatFilters).not.toHaveBeenCalled()
     expect(validate.validate).not.toHaveBeenCalled()
     expect(write.symbols).not.toHaveBeenCalled()
@@ -81,7 +83,7 @@ describe('run', () => {
     expect(runMock).toHaveReturned()
     expect(cleanup.workflow).toThrow('test error')
     expect(inputs.loadInputs).not.toHaveBeenCalled()
-    expect(parse.parseCandidates).not.toHaveBeenCalled()
+    expect(Parser.from).not.toHaveBeenCalled()
     expect(validate.formatFilters).not.toHaveBeenCalled()
     expect(validate.validate).not.toHaveBeenCalled()
     expect(write.symbols).not.toHaveBeenCalled()

@@ -23,9 +23,11 @@ export function formatFilters(patchName: string, prefix: string[], ignore: strin
 export function validate(symbols: SymbolTable, prefix: string[], ignore: string[]): SymbolTable {
   const invalidSymbols = symbols.filter((symbol) => {
     const name = symbol.name.toUpperCase()
+    const fromPatch = symbol.file !== ''
+    const isGlobal = symbol.name.indexOf('.') === -1
     const hasPrefix = prefix.some((p) => name.includes(p))
     const isIgnored = ignore.includes(name)
-    return !hasPrefix && !isIgnored
+    return fromPatch && isGlobal && !hasPrefix && !isIgnored
   })
   return invalidSymbols
 }

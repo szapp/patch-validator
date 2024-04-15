@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import { workflow } from './cleanup.js'
-import { parseCandidates } from './parse.js'
+import { Parser } from './parser.js'
 import { validate, formatFilters } from './validate.js'
 import { loadInputs } from './inputs.js'
 import write from './write.js'
@@ -19,7 +19,7 @@ export async function run(): Promise<void> {
     const { relPath, basePath, patchName, prefix: prefixList, ignore: ignoreList } = loadInputs()
 
     // Collect global symbols
-    const symbolTable = await parseCandidates(basePath)
+    const symbolTable = Parser.from(basePath, '')[0].symbolTable
 
     // Validate symbols by naming convention
     const { prefix, ignore } = formatFilters(patchName, prefixList, ignoreList)

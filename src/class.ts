@@ -1,3 +1,4 @@
+import { Token } from 'antlr4ng'
 import {
   ClassDefContext,
   PrototypeDefContext,
@@ -8,6 +9,10 @@ import {
   VarValueDeclContext,
   VarArrayDeclContext,
   InstanceDeclContext,
+  ParameterDeclContext,
+  ParentReferenceContext,
+  ReferenceContext,
+  VarDeclContext,
 } from './generated/DaedalusParser.js'
 import { DaedalusVisitor } from './generated/DaedalusVisitor.js'
 
@@ -18,73 +23,184 @@ export type Symb = {
 }
 export type SymbolTable = Symb[]
 
-export class UnscopedVisitor extends DaedalusVisitor<SymbolTable> {
-  constructor(protected readonly symbolTable: SymbolTable = []) {
+export type Tables = { symbols: SymbolTable; references: SymbolTable }
+
+export class SymbolVisitor extends DaedalusVisitor<Tables> {
+  constructor(
+    protected readonly file: string,
+    protected readonly symbolTable: SymbolTable = [],
+    protected readonly referenceTable: SymbolTable = [],
+    protected scope: string = '',
+    protected type: string = ''
+  ) {
     super()
   }
 
-  protected defaultResult(): SymbolTable {
-    return this.symbolTable
+  protected withScope<T>(action: () => T, scope: string): T {
+    const outerScope = this.scope
+    this.scope = scope
+    try {
+      return action()
+    } finally {
+      this.scope = outerScope
+    }
   }
 
-  private visitDef = (
-    ctx:
-      | ClassDefContext
-      | PrototypeDefContext
-      | InstanceDefContext
-      | FunctionDefContext
-      | ConstValueDefContext
-      | ConstArrayDefContext
-      | VarValueDeclContext
-      | VarArrayDeclContext
-  ): SymbolTable => {
+  protected withType<T>(action: () => T, type: string): T {
+    const outerType = this.type
+    this.type = type
+    try {
+      return action()
+    } finally {
+      this.type = outerType
+    }
+  }
+
+  private getScope(): string {
+    const scope = this.scope ? this.scope + '.' : ''
+    return scope
+  }
+
+  private passTables(): Tables {
+    return { symbols: this.symbolTable, references: this.referenceTable }
+  }
+
+  private addSymbol = (symbol: Token): void => {
+    this.symbolTable.push({ name: this.getScope() + symbol.text, file: this.file, line: symbol.line })
+  }
+
+  protected defaultResult(): Tables {
+    return this.passTables()
+  }
+
+  public visitReference = (ctx: ReferenceContext): Tables => {
+    let name = ctx
+      .referenceAtom()
+      .map((atom) => {
+        const identifier = atom.nameNode().Identifier()
+        return identifier?.getSymbol()?.text
+      })
+      .join('.')
+    if (name) {
+      const scopedName = this.getScope() + name
+      if (this.symbolTable.find((s) => s.name === scopedName)) name = scopedName
+      // istanbul ignore next: Unnecessary to test emty line
+      this.referenceTable.push({ name, file: this.file, line: ctx.start?.line ?? 0 })
+    }
+    return this.visitChildren(ctx) as Tables
+  }
+
+  // Fill protottypes and instances with class symbols (extends SymbolTable)
+  public visitParentReference = (ctx: ParentReferenceContext): Tables => {
+    const symbol = ctx.Identifier().getSymbol()
+    const refName = symbol.text
+    if (refName) {
+      this.symbolTable
+        .filter((s) => s.name.startsWith(refName + '.'))
+        .forEach((s) => {
+          this.addSymbol({ text: s.name.substring(refName.length + 1), line: symbol.line } as Token)
+        })
+    }
+    return this.visitChildren(ctx) as Tables
+  }
+
+  private visitDecl = (
+    ctx: ConstValueDefContext | ConstArrayDefContext | VarValueDeclContext | VarArrayDeclContext | ParameterDeclContext
+  ): Tables => {
     const identifier = ctx.nameNode().Identifier()
     if (identifier) {
       const symbol = identifier.getSymbol()
-      if (symbol.text) this.symbolTable.push({ name: symbol.text, file: '', line: symbol.line })
+      const symbolName = symbol.text
+      if (symbolName) {
+        this.addSymbol(symbol)
+        if (this.type) {
+          this.symbolTable
+            .filter((s) => s.name.startsWith(this.type + '.'))
+            .forEach((s) => {
+              const subName = s.name.substring(this.type.length + 1)
+              this.addSymbol({ text: `${symbolName}.${subName}`, line: symbol.line } as Token)
+            })
+        }
+      }
     }
-    return this.symbolTable
+    return this.visitChildren(ctx) as Tables
   }
 
-  public visitClassDef = (ctx: ClassDefContext): SymbolTable => {
-    return this.visitDef(ctx)
-  }
-
-  public visitPrototypeDef = (ctx: PrototypeDefContext): SymbolTable => {
-    return this.visitDef(ctx)
-  }
-  public visitInstanceDef = (ctx: InstanceDefContext): SymbolTable => {
-    return this.visitDef(ctx)
-  }
-
-  public visitFunctionDef = (ctx: FunctionDefContext): SymbolTable => {
-    return this.visitDef(ctx)
-  }
-
-  public visitConstValueDef = (ctx: ConstValueDefContext): SymbolTable => {
-    return this.visitDef(ctx)
-  }
-
-  public visitConstArrayDef = (ctx: ConstArrayDefContext): SymbolTable => {
-    return this.visitDef(ctx)
-  }
-
-  public visitVarValueDecl = (ctx: VarValueDeclContext): SymbolTable => {
-    return this.visitDef(ctx)
-  }
-
-  public visitVarArrayDecl = (ctx: VarArrayDeclContext): SymbolTable => {
-    return this.visitDef(ctx)
-  }
-
-  public visitInstanceDecl = (ctx: InstanceDeclContext): SymbolTable => {
-    ctx.nameNode().forEach((node) => {
+  private visitDef = (
+    ctx: ClassDefContext | PrototypeDefContext | InstanceDefContext | FunctionDefContext | InstanceDeclContext
+  ): Tables => {
+    const nodes = [ctx.nameNode()].flat()
+    nodes.forEach((node) => {
       const identifier = node.Identifier()
       if (identifier) {
         const symbol = identifier.getSymbol()
-        if (symbol.text) this.symbolTable.push({ name: symbol.text, file: '', line: symbol.line })
+        if (symbol.text) {
+          this.addSymbol(symbol)
+          return this.withScope(() => this.visitChildren(ctx), symbol.text) as Tables
+        }
       }
+      // istanbul ignore next: Unlikely to reach this line
+      return this.visitChildren(ctx) as Tables
     })
-    return this.symbolTable
+    return this.passTables()
+  }
+
+  public visitClassDef = (ctx: ClassDefContext): Tables => {
+    return this.visitDef(ctx)
+  }
+
+  public visitPrototypeDef = (ctx: PrototypeDefContext): Tables => {
+    return this.visitDef(ctx)
+  }
+  public visitInstanceDef = (ctx: InstanceDefContext): Tables => {
+    return this.visitDef(ctx)
+  }
+
+  public visitFunctionDef = (ctx: FunctionDefContext): Tables => {
+    return this.visitDef(ctx)
+  }
+
+  public visitInstanceDecl = (ctx: InstanceDeclContext): Tables => {
+    return this.visitDef(ctx)
+  }
+
+  public visitConstValueDef = (ctx: ConstValueDefContext): Tables => {
+    return this.visitDecl(ctx)
+  }
+
+  public visitConstArrayDef = (ctx: ConstArrayDefContext): Tables => {
+    return this.visitDecl(ctx)
+  }
+
+  public visitVarValueDecl = (ctx: VarValueDeclContext): Tables => {
+    return this.visitDecl(ctx)
+  }
+
+  public visitVarArrayDecl = (ctx: VarArrayDeclContext): Tables => {
+    return this.visitDecl(ctx)
+  }
+
+  public visitParameterDecl = (ctx: ParameterDeclContext): Tables => {
+    const identifier = ctx.dataType().Identifier()
+    if (identifier) {
+      const symbol = identifier.getSymbol()
+      const refName = symbol.text
+      if (refName) {
+        return this.withType(() => this.visitDecl(ctx), refName) as Tables
+      }
+    }
+    return this.visitDecl(ctx)
+  }
+
+  public visitVarDecl = (ctx: VarDeclContext): Tables => {
+    const identifier = ctx.dataType().Identifier()
+    if (identifier) {
+      const symbol = identifier.getSymbol()
+      const refName = symbol.text
+      if (refName) {
+        return this.withType(() => this.visitChildren(ctx), refName) as Tables
+      }
+    }
+    return this.visitChildren(ctx) as Tables
   }
 }

@@ -16,10 +16,6 @@ Prototype: 'prototype' | 'PROTOTYPE';
 Instance: 'instance' | 'INSTANCE';
 Null: 'null' | 'Null' | 'NULL' ;
 NoFunc: 'nofunc' | 'NoFunc' | 'NOFUNC';
-While: 'while';
-Break: 'break';
-Continue: 'continue';
-Extern: 'extern';
 
 Identifier : IdStart IdContinue*;
 IntegerLiteral : Digit+;
@@ -47,9 +43,8 @@ fragment Exponent : [eE] [+-]? Digit+;
 //parser
 daedalusFile:  (blockDef | inlineDef)*? EOF;
 blockDef : (functionDef | classDef | prototypeDef | instanceDef)';'?;
-inlineDef :  (externFunctionDecl | constDef | varDecl | instanceDecl)';'; 
+inlineDef :  (constDef | varDecl | instanceDecl)';'; 
 
-externFunctionDecl: Extern Func dataType nameNode parameterList;
 functionDef: Func dataType nameNode parameterList statementBlock;
 constDef: Const dataType (constValueDef | constArrayDef) (',' (constValueDef | constArrayDef) )*;
 classDef: Class nameNode '{' ( varDecl ';' )*? '}';
@@ -64,16 +59,14 @@ constArrayAssignment: '=' '{' ( expression (',' expression)*? ) '}';
 constValueDef: nameNode constValueAssignment;
 constValueAssignment: '=' expression;
 
-varArrayDecl: nameNode '[' arraySize ']' varArrayAssignment?;
-varArrayAssignment: '=' '{' expression (',' expression)*  '}';
+varArrayDecl: nameNode '[' arraySize ']';
 
-varValueDecl: nameNode varValueAssignment?;
-varValueAssignment: '=' expression;
+varValueDecl: nameNode;
 
 parameterList: '(' (parameterDecl (',' parameterDecl)*? )? ')';
 parameterDecl: Var dataType nameNode ('[' arraySize ']')?;
-statementBlock: '{' ( ( (statement ';')  | ( (ifBlockStatement | whileStatement) ';'? ) ) )*? '}';
-statement: assignment | returnStatement | constDef | varDecl | breakStatement | continueStatement | expression;
+statementBlock: '{' ( ( (statement ';')  | ( ifBlockStatement ';'? ) ) )*? '}';
+statement: assignment | returnStatement | constDef | varDecl | expression;
 functionCall: nameNode '(' ( expression ( ',' expression )*? )? ')';
 assignment: reference assignmentOperator expression;
 elseBlock: Else statementBlock;
@@ -81,9 +74,6 @@ elseIfBlock: Else If expression statementBlock;
 ifBlock: If expression statementBlock;
 ifBlockStatement: ifBlock ( elseIfBlock )*? ( elseBlock )?;
 returnStatement: Return ( expression )?;
-whileStatement: While '(' expression ')' statementBlock;
-breakStatement: Break;
-continueStatement: Continue;
 
 expression
     : '(' expression ')' #bracketExpression
@@ -116,9 +106,9 @@ value
 referenceAtom: nameNode ( '[' arrayIndex ']')?;
 reference: referenceAtom ( '.' referenceAtom )*;
 
-dataType: Identifier | Void | Int | Float | String | Func | Instance;
+dataType: Identifier | Void | Int | Float | String | Func;
 
-nameNode: Identifier | While | Break | Continue;
+nameNode: Identifier;
 
 parentReference: Identifier;
 
