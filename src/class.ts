@@ -77,7 +77,7 @@ export class SymbolVisitor extends DaedalusVisitor<Tables> {
   public visitReference = (ctx: ReferenceContext): Tables => {
     let name = ctx
       .referenceAtom()
-      .map((atom) => atom.nameNode().Identifier()?.getSymbol()?.text)
+      .map((atom) => atom.nameNode().anyIdentifier().Identifier()?.getSymbol()?.text)
       .filter((n) => n !== undefined)
       .join('.')
       .toUpperCase()
@@ -107,7 +107,7 @@ export class SymbolVisitor extends DaedalusVisitor<Tables> {
   private visitDecl = (
     ctx: ConstValueDefContext | ConstArrayDefContext | VarValueDeclContext | VarArrayDeclContext | ParameterDeclContext
   ): Tables => {
-    const identifier = ctx.nameNode().Identifier()
+    const identifier = ctx.nameNode().anyIdentifier().Identifier()
     if (identifier) {
       const symbol = identifier.getSymbol()
       const symbolName = symbol.text?.toUpperCase()
@@ -131,7 +131,7 @@ export class SymbolVisitor extends DaedalusVisitor<Tables> {
   ): Tables => {
     const nodes = [ctx.nameNode()].flat()
     nodes.forEach((node) => {
-      const identifier = node.Identifier()
+      const identifier = node.anyIdentifier().Identifier()
       if (identifier) {
         const symbol = identifier.getSymbol()
         if (symbol.text) {
@@ -181,7 +181,7 @@ export class SymbolVisitor extends DaedalusVisitor<Tables> {
   }
 
   public visitParameterDecl = (ctx: ParameterDeclContext): Tables => {
-    const identifier = ctx.dataType().Identifier()
+    const identifier = ctx.typeReference().Identifier()
     if (identifier) {
       const symbol = identifier.getSymbol()
       const refName = symbol.text?.toUpperCase()
@@ -191,7 +191,7 @@ export class SymbolVisitor extends DaedalusVisitor<Tables> {
   }
 
   public visitVarDecl = (ctx: VarDeclContext): Tables => {
-    const identifier = ctx.dataType().Identifier()
+    const identifier = ctx.typeReference().Identifier()
     if (identifier) {
       const symbol = identifier.getSymbol()
       const refName = symbol.text?.toUpperCase()

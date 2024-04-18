@@ -4,10 +4,13 @@ import { DaedalusParser } from './generated/DaedalusParser.js'
 import { SymbolVisitor, SymbolTable } from './class.js'
 import { normalizePath } from './utils.js'
 import externals from './externals.js'
+import * as io from '@actions/io'
+import * as tc from '@actions/tool-cache'
+import * as glob from '@actions/glob'
 import fs from 'fs'
-import { posix } from 'path'
+import path, { posix } from 'path'
 
-const wildcards: RegExp = /\*|\?/g
+const wildcards: RegExp = /\*|\?/
 
 /**
  * Parse source files and generate symbol tables.
@@ -25,6 +28,7 @@ export class Parser {
   public readonly referenceTable: SymbolTable
   public namingViolations: SymbolTable
   public referenceViolations: SymbolTable
+  public overwriteViolations: SymbolTable
   public readonly filelist: string[]
 
   /**
@@ -47,6 +51,7 @@ export class Parser {
     this.referenceTable = []
     this.namingViolations = []
     this.referenceViolations = []
+    this.overwriteViolations = []
     this.filelist = []
   }
 
@@ -86,7 +91,7 @@ export class Parser {
   /**
    * Parses the file and fills the symbol table with basic symbols based on the parser type.
    */
-  public parse(): void {
+  public async parse(): Promise<void> {
     // Fill the symbol table with the externals
     this.parseExternals()
 
@@ -94,7 +99,7 @@ export class Parser {
     this.parseRequired()
 
     // Parse the files
-    this.parseSrc(this.filepath, true)
+    await this.parseSrc(this.filepath, true)
   }
 
   /**
@@ -104,13 +109,21 @@ export class Parser {
     let symbols: string[] = []
     switch (this.type) {
       case 'CONTENT':
-        // Add content externs (per game version)
-        // TODO: switch (this.version) ...
-        symbols = []
+        symbols = ['C_NPC', 'C_ITEM', 'SELF', 'OTHER', 'VICTIM', 'ITEM', 'HERO']
+        switch (this.version) {
+          case 130:
+          case 2:
+            symbols.push('INIT_GLOBAL')
+          // eslint-disable-next-line no-fallthrough
+          case 1:
+            symbols.push('STARTUP_GLOBAL')
+        }
         break
       case 'MENU':
-        // Add menu externals
-        symbols = []
+        symbols = ['MENU_MAIN']
+        break
+      case 'CAMERA':
+        symbols = ['CAMMODNORMAL']
         break
     }
 
@@ -150,16 +163,67 @@ export class Parser {
    *
    * @param pattern - The pattern to handle.
    */
-  protected parseSpecial(pattern: string): void {
+  protected async parseSpecial(pattern: string): Promise<void> {
     if (this.type !== 'CONTENT') return
+
+    let symbols: string[] = []
+    let repoUrl: string = ''
+    let srcPath: string = ''
+    const tmpPath = '.patch-validator-special'
+
     switch (pattern.toLowerCase()) {
-      case 'lego':
-        // TODO: Parse LeGo
-        // this.parseD(..., true)
-        break
       case 'ikarus':
-      // TODO: Parse Ikarus
-      // this.parseD(..., true)
+        // Download Ikarus from the official repository (caution: not the compatibility version)
+        repoUrl = 'https://github.com/Lehona/Ikarus/archive/refs/heads/gameversions.tar.gz'
+        srcPath = posix.join(tmpPath, 'Ikarus-gameversions', `Ikarus_G${this.version}.src`)
+
+        // Provisionally add Ninja-specific compatibility symbols
+        symbols = [
+          'DAM_INDEX_MAX',
+          'PROT_INDEX_MAX',
+          'ITM_TEXT_MAX',
+          'ATR_HITPOINTS',
+          'ATR_HITPOINTS_MAX',
+          'ATR_MANA',
+          'ATR_MANA_MAX',
+          'PERC_ASSESSDAMAGE',
+          'ITEM_KAT_NF',
+          'ITEM_KAT_FF',
+          'TRUE',
+          'FALSE',
+          'LOOP_CONTINUE',
+          'LOOP_END',
+          'ATT_FRIENDLY',
+          'ATT_NEUTRAL',
+          'ATT_ANGRY',
+          'ATT_HOSTILE',
+        ]
+        break
+      case 'lego':
+        // Download LeGo from the official repository (caution: not the compatibility version)
+        repoUrl = 'https://github.com/Lehona/LeGo/archive/refs/heads/gameversions.tar.gz'
+        srcPath = posix.join(tmpPath, 'LeGo-gameversions', `Header_G${this.version}.src`)
+
+        // Provisionally add Ninja-specific compatibility symbols
+        symbols = ['LEGO_MERGEFLAGS', 'FOREACHPATCHHNDL']
+        break
+      default:
+        return
+    }
+
+    // Download the repository and parse its files
+    const archivePath = await tc.downloadTool(repoUrl)
+    await io.mkdirP(tmpPath)
+    await tc.extractTar(archivePath, tmpPath)
+    await io.rmRF(archivePath)
+    await this.parseSrc(srcPath, false, true)
+    await io.rmRF(tmpPath)
+
+    // Completement the symbol table
+    if (symbols.length > 0) {
+      symbols.forEach((symbol) => {
+        this.symbolTable.push({ name: symbol.toUpperCase(), file: '', line: 0 })
+      })
     }
   }
 
@@ -168,31 +232,41 @@ export class Parser {
    *
    * @param filepath - The path of the source file to parse.
    * @param root - Indicates whether the source file is the root file.
+   * @param exclude - Indicates whether the source file is not part of the patch.
    * @throws An error if wildcards are used in the filepath.
    */
-  protected parseSrc(filepath: string, root: boolean = false): void {
+  protected async parseSrc(filepath: string, root: boolean = false, exclude: boolean = false): Promise<void> {
     const { fullPath } = this.stripPath(filepath)
+    if (!fs.existsSync(fullPath)) return
 
-    if (wildcards.test(filepath)) throw new Error('Wildcards are not supported')
-    if (posix.extname(fullPath) !== '.src' || !fs.existsSync(fullPath)) return
-
-    const input = fs.readFileSync(fullPath, 'ascii')
     const srcRootPath = posix.dirname(fullPath)
-    const lines = input.split(/\r?\n/).filter((line) => line.trim() !== '')
-    for (const line of lines) {
-      const lineF = line.trim().toLowerCase()
-      const subfile = normalizePath(lineF)
+    const input = fs.readFileSync(fullPath, 'ascii')
+    let lines = input.split(/\r?\n/).filter((line) => line.trim() !== '')
+
+    // Iterate over the lines in the file
+    while (lines.length > 0) {
+      const line = lines.shift()!.trim()
+      const subfile = normalizePath(line)
       const fullPath = posix.join(srcRootPath, subfile)
-      const ext = posix.extname(subfile)
+
+      if (wildcards.test(line)) {
+        if (!exclude) throw new Error('Wildcards are not supported')
+        const nativeSrcRootPath = path.resolve(srcRootPath) + path.sep
+        const resolved = await glob.create(fullPath).then((g) => g.glob().then((f) => f.map((h) => h.replace(nativeSrcRootPath, ''))))
+        lines = resolved.concat(lines)
+        continue
+      }
+
+      const ext = posix.extname(subfile).toLowerCase()
       switch (ext) {
         case '.d':
-          this.parseD(fullPath)
+          this.parseD(fullPath, exclude)
           break
         case '.src':
-          this.parseSrc(fullPath)
+          await this.parseSrc(fullPath, false, exclude)
           break
         default:
-          if (root) this.parseSpecial(lineF)
+          if (root) await this.parseSpecial(line.toLowerCase())
       }
     }
   }
@@ -204,9 +278,7 @@ export class Parser {
    */
   protected parseD(filepath: string, exclude: boolean = false): void {
     const { fullPath, relPath } = this.stripPath(filepath)
-
-    if (wildcards.test(filepath)) throw new Error('Wildcards are not supported')
-    if (posix.extname(fullPath) !== '.d' || !fs.existsSync(fullPath)) return
+    if (!fs.existsSync(fullPath)) return
 
     if (this.filelist.includes(relPath)) return
     this.filelist.push(relPath)
@@ -223,7 +295,7 @@ export class Parser {
     const visitor = new SymbolVisitor(exclude ? '' : relPath)
     const { symbols, references } = visitor.visit(tree) as { symbols: SymbolTable; references: SymbolTable }
     this.symbolTable.push(...symbols)
-    this.referenceTable.push(...references)
+    if (!exclude) this.referenceTable.push(...references)
   }
 
   /**
@@ -247,8 +319,66 @@ export class Parser {
    */
   public validateReferences(): void {
     this.referenceViolations = this.referenceTable.filter((symbol) => {
+      const fromPatch = symbol.file !== ''
       const isDefined = this.symbolTable.some((s) => s.name === symbol.name)
-      return !isDefined
+      return fromPatch && !isDefined
+    })
+  }
+
+  /**
+   * Validates the symbol tables for illegal overwrites.
+   */
+  public validateOverwrites(): void {
+    if (this.type !== 'CONTENT') return
+    // See: https://ninja.szapp.de/s/src/data/symbols.asm
+    const illegal = [
+      'INIT_GLOBAL',
+      'INITPERCEPTIONS',
+      'REPEAT',
+      'WHILE',
+      'MEM_LABEL',
+      'MEM_GOTO',
+      'ALLOWSAVING',
+      'ONALLOWSAVING',
+      'ONDISALLOWSAVING',
+      'FOCUSNAMES_COLOR_FRIENDLY',
+      'FOCUSNAMES_COLOR_NEUTRAL',
+      'FOCUSNAMES_COLOR_ANGRY',
+      'FOCUSNAMES_COLOR_HOSTILE',
+      '_FOCUSNAMES',
+      'BW_SAVEGAME',
+      'BR_SAVEGAME',
+      'CURSOR_TEXTURE',
+      'PF_FONT',
+      'PRINT_LINESEPERATOR',
+      'DIAG_PREFIX',
+      'DIAG_SUFFIX',
+      'BLOODSPLAT_NUM',
+      'BLOODSPLAT_TEX',
+      'BLOODSPLAT_DAM',
+      'BUFFS_DISPLAYFORHERO',
+      'BUFF_FADEOUT',
+      'PF_PRINTX',
+      'PF_PRINTY',
+      'PF_TEXTHEIGHT',
+      'PF_FADEINTIME',
+      'PF_FADEOUTTIME',
+      'PF_MOVEYTIME',
+      'PF_WAITTIME',
+      'AIV_TALENT_INDEX',
+      'AIV_TALENT',
+      'NINJA_SYMBOLS_START',
+      'NINJA_SYMBOLS_END',
+      'NINJA_VERSION',
+      'NINJA_PATCHES',
+      'NINJA_MODNAME',
+      `NINJA_SYMBOLS_START_${this.patchName}`,
+      `NINJA_SYMBOLS_END_${this.patchName}`,
+    ]
+    this.overwriteViolations = this.symbolTable.filter((symbol) => {
+      const fromPatch = symbol.file !== ''
+      const isIllegal = illegal.some((p) => symbol.name === p)
+      return fromPatch && isIllegal
     })
   }
 }

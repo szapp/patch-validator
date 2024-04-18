@@ -987,6 +987,739 @@ exports.toCommandProperties = toCommandProperties;
 
 /***/ }),
 
+/***/ 1514:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getExecOutput = exports.exec = void 0;
+const string_decoder_1 = __nccwpck_require__(1576);
+const tr = __importStar(__nccwpck_require__(8159));
+/**
+ * Exec a command.
+ * Output will be streamed to the live console.
+ * Returns promise with return code
+ *
+ * @param     commandLine        command to execute (can include additional args). Must be correctly escaped.
+ * @param     args               optional arguments for tool. Escaping is handled by the lib.
+ * @param     options            optional exec options.  See ExecOptions
+ * @returns   Promise<number>    exit code
+ */
+function exec(commandLine, args, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const commandArgs = tr.argStringToArray(commandLine);
+        if (commandArgs.length === 0) {
+            throw new Error(`Parameter 'commandLine' cannot be null or empty.`);
+        }
+        // Path to tool to execute should be first arg
+        const toolPath = commandArgs[0];
+        args = commandArgs.slice(1).concat(args || []);
+        const runner = new tr.ToolRunner(toolPath, args, options);
+        return runner.exec();
+    });
+}
+exports.exec = exec;
+/**
+ * Exec a command and get the output.
+ * Output will be streamed to the live console.
+ * Returns promise with the exit code and collected stdout and stderr
+ *
+ * @param     commandLine           command to execute (can include additional args). Must be correctly escaped.
+ * @param     args                  optional arguments for tool. Escaping is handled by the lib.
+ * @param     options               optional exec options.  See ExecOptions
+ * @returns   Promise<ExecOutput>   exit code, stdout, and stderr
+ */
+function getExecOutput(commandLine, args, options) {
+    var _a, _b;
+    return __awaiter(this, void 0, void 0, function* () {
+        let stdout = '';
+        let stderr = '';
+        //Using string decoder covers the case where a mult-byte character is split
+        const stdoutDecoder = new string_decoder_1.StringDecoder('utf8');
+        const stderrDecoder = new string_decoder_1.StringDecoder('utf8');
+        const originalStdoutListener = (_a = options === null || options === void 0 ? void 0 : options.listeners) === null || _a === void 0 ? void 0 : _a.stdout;
+        const originalStdErrListener = (_b = options === null || options === void 0 ? void 0 : options.listeners) === null || _b === void 0 ? void 0 : _b.stderr;
+        const stdErrListener = (data) => {
+            stderr += stderrDecoder.write(data);
+            if (originalStdErrListener) {
+                originalStdErrListener(data);
+            }
+        };
+        const stdOutListener = (data) => {
+            stdout += stdoutDecoder.write(data);
+            if (originalStdoutListener) {
+                originalStdoutListener(data);
+            }
+        };
+        const listeners = Object.assign(Object.assign({}, options === null || options === void 0 ? void 0 : options.listeners), { stdout: stdOutListener, stderr: stdErrListener });
+        const exitCode = yield exec(commandLine, args, Object.assign(Object.assign({}, options), { listeners }));
+        //flush any remaining characters
+        stdout += stdoutDecoder.end();
+        stderr += stderrDecoder.end();
+        return {
+            exitCode,
+            stdout,
+            stderr
+        };
+    });
+}
+exports.getExecOutput = getExecOutput;
+//# sourceMappingURL=exec.js.map
+
+/***/ }),
+
+/***/ 8159:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.argStringToArray = exports.ToolRunner = void 0;
+const os = __importStar(__nccwpck_require__(2037));
+const events = __importStar(__nccwpck_require__(2361));
+const child = __importStar(__nccwpck_require__(2081));
+const path = __importStar(__nccwpck_require__(1017));
+const io = __importStar(__nccwpck_require__(7436));
+const ioUtil = __importStar(__nccwpck_require__(1962));
+const timers_1 = __nccwpck_require__(9512);
+/* eslint-disable @typescript-eslint/unbound-method */
+const IS_WINDOWS = process.platform === 'win32';
+/*
+ * Class for running command line tools. Handles quoting and arg parsing in a platform agnostic way.
+ */
+class ToolRunner extends events.EventEmitter {
+    constructor(toolPath, args, options) {
+        super();
+        if (!toolPath) {
+            throw new Error("Parameter 'toolPath' cannot be null or empty.");
+        }
+        this.toolPath = toolPath;
+        this.args = args || [];
+        this.options = options || {};
+    }
+    _debug(message) {
+        if (this.options.listeners && this.options.listeners.debug) {
+            this.options.listeners.debug(message);
+        }
+    }
+    _getCommandString(options, noPrefix) {
+        const toolPath = this._getSpawnFileName();
+        const args = this._getSpawnArgs(options);
+        let cmd = noPrefix ? '' : '[command]'; // omit prefix when piped to a second tool
+        if (IS_WINDOWS) {
+            // Windows + cmd file
+            if (this._isCmdFile()) {
+                cmd += toolPath;
+                for (const a of args) {
+                    cmd += ` ${a}`;
+                }
+            }
+            // Windows + verbatim
+            else if (options.windowsVerbatimArguments) {
+                cmd += `"${toolPath}"`;
+                for (const a of args) {
+                    cmd += ` ${a}`;
+                }
+            }
+            // Windows (regular)
+            else {
+                cmd += this._windowsQuoteCmdArg(toolPath);
+                for (const a of args) {
+                    cmd += ` ${this._windowsQuoteCmdArg(a)}`;
+                }
+            }
+        }
+        else {
+            // OSX/Linux - this can likely be improved with some form of quoting.
+            // creating processes on Unix is fundamentally different than Windows.
+            // on Unix, execvp() takes an arg array.
+            cmd += toolPath;
+            for (const a of args) {
+                cmd += ` ${a}`;
+            }
+        }
+        return cmd;
+    }
+    _processLineBuffer(data, strBuffer, onLine) {
+        try {
+            let s = strBuffer + data.toString();
+            let n = s.indexOf(os.EOL);
+            while (n > -1) {
+                const line = s.substring(0, n);
+                onLine(line);
+                // the rest of the string ...
+                s = s.substring(n + os.EOL.length);
+                n = s.indexOf(os.EOL);
+            }
+            return s;
+        }
+        catch (err) {
+            // streaming lines to console is best effort.  Don't fail a build.
+            this._debug(`error processing line. Failed with error ${err}`);
+            return '';
+        }
+    }
+    _getSpawnFileName() {
+        if (IS_WINDOWS) {
+            if (this._isCmdFile()) {
+                return process.env['COMSPEC'] || 'cmd.exe';
+            }
+        }
+        return this.toolPath;
+    }
+    _getSpawnArgs(options) {
+        if (IS_WINDOWS) {
+            if (this._isCmdFile()) {
+                let argline = `/D /S /C "${this._windowsQuoteCmdArg(this.toolPath)}`;
+                for (const a of this.args) {
+                    argline += ' ';
+                    argline += options.windowsVerbatimArguments
+                        ? a
+                        : this._windowsQuoteCmdArg(a);
+                }
+                argline += '"';
+                return [argline];
+            }
+        }
+        return this.args;
+    }
+    _endsWith(str, end) {
+        return str.endsWith(end);
+    }
+    _isCmdFile() {
+        const upperToolPath = this.toolPath.toUpperCase();
+        return (this._endsWith(upperToolPath, '.CMD') ||
+            this._endsWith(upperToolPath, '.BAT'));
+    }
+    _windowsQuoteCmdArg(arg) {
+        // for .exe, apply the normal quoting rules that libuv applies
+        if (!this._isCmdFile()) {
+            return this._uvQuoteCmdArg(arg);
+        }
+        // otherwise apply quoting rules specific to the cmd.exe command line parser.
+        // the libuv rules are generic and are not designed specifically for cmd.exe
+        // command line parser.
+        //
+        // for a detailed description of the cmd.exe command line parser, refer to
+        // http://stackoverflow.com/questions/4094699/how-does-the-windows-command-interpreter-cmd-exe-parse-scripts/7970912#7970912
+        // need quotes for empty arg
+        if (!arg) {
+            return '""';
+        }
+        // determine whether the arg needs to be quoted
+        const cmdSpecialChars = [
+            ' ',
+            '\t',
+            '&',
+            '(',
+            ')',
+            '[',
+            ']',
+            '{',
+            '}',
+            '^',
+            '=',
+            ';',
+            '!',
+            "'",
+            '+',
+            ',',
+            '`',
+            '~',
+            '|',
+            '<',
+            '>',
+            '"'
+        ];
+        let needsQuotes = false;
+        for (const char of arg) {
+            if (cmdSpecialChars.some(x => x === char)) {
+                needsQuotes = true;
+                break;
+            }
+        }
+        // short-circuit if quotes not needed
+        if (!needsQuotes) {
+            return arg;
+        }
+        // the following quoting rules are very similar to the rules that by libuv applies.
+        //
+        // 1) wrap the string in quotes
+        //
+        // 2) double-up quotes - i.e. " => ""
+        //
+        //    this is different from the libuv quoting rules. libuv replaces " with \", which unfortunately
+        //    doesn't work well with a cmd.exe command line.
+        //
+        //    note, replacing " with "" also works well if the arg is passed to a downstream .NET console app.
+        //    for example, the command line:
+        //          foo.exe "myarg:""my val"""
+        //    is parsed by a .NET console app into an arg array:
+        //          [ "myarg:\"my val\"" ]
+        //    which is the same end result when applying libuv quoting rules. although the actual
+        //    command line from libuv quoting rules would look like:
+        //          foo.exe "myarg:\"my val\""
+        //
+        // 3) double-up slashes that precede a quote,
+        //    e.g.  hello \world    => "hello \world"
+        //          hello\"world    => "hello\\""world"
+        //          hello\\"world   => "hello\\\\""world"
+        //          hello world\    => "hello world\\"
+        //
+        //    technically this is not required for a cmd.exe command line, or the batch argument parser.
+        //    the reasons for including this as a .cmd quoting rule are:
+        //
+        //    a) this is optimized for the scenario where the argument is passed from the .cmd file to an
+        //       external program. many programs (e.g. .NET console apps) rely on the slash-doubling rule.
+        //
+        //    b) it's what we've been doing previously (by deferring to node default behavior) and we
+        //       haven't heard any complaints about that aspect.
+        //
+        // note, a weakness of the quoting rules chosen here, is that % is not escaped. in fact, % cannot be
+        // escaped when used on the command line directly - even though within a .cmd file % can be escaped
+        // by using %%.
+        //
+        // the saving grace is, on the command line, %var% is left as-is if var is not defined. this contrasts
+        // the line parsing rules within a .cmd file, where if var is not defined it is replaced with nothing.
+        //
+        // one option that was explored was replacing % with ^% - i.e. %var% => ^%var^%. this hack would
+        // often work, since it is unlikely that var^ would exist, and the ^ character is removed when the
+        // variable is used. the problem, however, is that ^ is not removed when %* is used to pass the args
+        // to an external program.
+        //
+        // an unexplored potential solution for the % escaping problem, is to create a wrapper .cmd file.
+        // % can be escaped within a .cmd file.
+        let reverse = '"';
+        let quoteHit = true;
+        for (let i = arg.length; i > 0; i--) {
+            // walk the string in reverse
+            reverse += arg[i - 1];
+            if (quoteHit && arg[i - 1] === '\\') {
+                reverse += '\\'; // double the slash
+            }
+            else if (arg[i - 1] === '"') {
+                quoteHit = true;
+                reverse += '"'; // double the quote
+            }
+            else {
+                quoteHit = false;
+            }
+        }
+        reverse += '"';
+        return reverse
+            .split('')
+            .reverse()
+            .join('');
+    }
+    _uvQuoteCmdArg(arg) {
+        // Tool runner wraps child_process.spawn() and needs to apply the same quoting as
+        // Node in certain cases where the undocumented spawn option windowsVerbatimArguments
+        // is used.
+        //
+        // Since this function is a port of quote_cmd_arg from Node 4.x (technically, lib UV,
+        // see https://github.com/nodejs/node/blob/v4.x/deps/uv/src/win/process.c for details),
+        // pasting copyright notice from Node within this function:
+        //
+        //      Copyright Joyent, Inc. and other Node contributors. All rights reserved.
+        //
+        //      Permission is hereby granted, free of charge, to any person obtaining a copy
+        //      of this software and associated documentation files (the "Software"), to
+        //      deal in the Software without restriction, including without limitation the
+        //      rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+        //      sell copies of the Software, and to permit persons to whom the Software is
+        //      furnished to do so, subject to the following conditions:
+        //
+        //      The above copyright notice and this permission notice shall be included in
+        //      all copies or substantial portions of the Software.
+        //
+        //      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+        //      IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+        //      FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+        //      AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+        //      LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+        //      FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+        //      IN THE SOFTWARE.
+        if (!arg) {
+            // Need double quotation for empty argument
+            return '""';
+        }
+        if (!arg.includes(' ') && !arg.includes('\t') && !arg.includes('"')) {
+            // No quotation needed
+            return arg;
+        }
+        if (!arg.includes('"') && !arg.includes('\\')) {
+            // No embedded double quotes or backslashes, so I can just wrap
+            // quote marks around the whole thing.
+            return `"${arg}"`;
+        }
+        // Expected input/output:
+        //   input : hello"world
+        //   output: "hello\"world"
+        //   input : hello""world
+        //   output: "hello\"\"world"
+        //   input : hello\world
+        //   output: hello\world
+        //   input : hello\\world
+        //   output: hello\\world
+        //   input : hello\"world
+        //   output: "hello\\\"world"
+        //   input : hello\\"world
+        //   output: "hello\\\\\"world"
+        //   input : hello world\
+        //   output: "hello world\\" - note the comment in libuv actually reads "hello world\"
+        //                             but it appears the comment is wrong, it should be "hello world\\"
+        let reverse = '"';
+        let quoteHit = true;
+        for (let i = arg.length; i > 0; i--) {
+            // walk the string in reverse
+            reverse += arg[i - 1];
+            if (quoteHit && arg[i - 1] === '\\') {
+                reverse += '\\';
+            }
+            else if (arg[i - 1] === '"') {
+                quoteHit = true;
+                reverse += '\\';
+            }
+            else {
+                quoteHit = false;
+            }
+        }
+        reverse += '"';
+        return reverse
+            .split('')
+            .reverse()
+            .join('');
+    }
+    _cloneExecOptions(options) {
+        options = options || {};
+        const result = {
+            cwd: options.cwd || process.cwd(),
+            env: options.env || process.env,
+            silent: options.silent || false,
+            windowsVerbatimArguments: options.windowsVerbatimArguments || false,
+            failOnStdErr: options.failOnStdErr || false,
+            ignoreReturnCode: options.ignoreReturnCode || false,
+            delay: options.delay || 10000
+        };
+        result.outStream = options.outStream || process.stdout;
+        result.errStream = options.errStream || process.stderr;
+        return result;
+    }
+    _getSpawnOptions(options, toolPath) {
+        options = options || {};
+        const result = {};
+        result.cwd = options.cwd;
+        result.env = options.env;
+        result['windowsVerbatimArguments'] =
+            options.windowsVerbatimArguments || this._isCmdFile();
+        if (options.windowsVerbatimArguments) {
+            result.argv0 = `"${toolPath}"`;
+        }
+        return result;
+    }
+    /**
+     * Exec a tool.
+     * Output will be streamed to the live console.
+     * Returns promise with return code
+     *
+     * @param     tool     path to tool to exec
+     * @param     options  optional exec options.  See ExecOptions
+     * @returns   number
+     */
+    exec() {
+        return __awaiter(this, void 0, void 0, function* () {
+            // root the tool path if it is unrooted and contains relative pathing
+            if (!ioUtil.isRooted(this.toolPath) &&
+                (this.toolPath.includes('/') ||
+                    (IS_WINDOWS && this.toolPath.includes('\\')))) {
+                // prefer options.cwd if it is specified, however options.cwd may also need to be rooted
+                this.toolPath = path.resolve(process.cwd(), this.options.cwd || process.cwd(), this.toolPath);
+            }
+            // if the tool is only a file name, then resolve it from the PATH
+            // otherwise verify it exists (add extension on Windows if necessary)
+            this.toolPath = yield io.which(this.toolPath, true);
+            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+                this._debug(`exec tool: ${this.toolPath}`);
+                this._debug('arguments:');
+                for (const arg of this.args) {
+                    this._debug(`   ${arg}`);
+                }
+                const optionsNonNull = this._cloneExecOptions(this.options);
+                if (!optionsNonNull.silent && optionsNonNull.outStream) {
+                    optionsNonNull.outStream.write(this._getCommandString(optionsNonNull) + os.EOL);
+                }
+                const state = new ExecState(optionsNonNull, this.toolPath);
+                state.on('debug', (message) => {
+                    this._debug(message);
+                });
+                if (this.options.cwd && !(yield ioUtil.exists(this.options.cwd))) {
+                    return reject(new Error(`The cwd: ${this.options.cwd} does not exist!`));
+                }
+                const fileName = this._getSpawnFileName();
+                const cp = child.spawn(fileName, this._getSpawnArgs(optionsNonNull), this._getSpawnOptions(this.options, fileName));
+                let stdbuffer = '';
+                if (cp.stdout) {
+                    cp.stdout.on('data', (data) => {
+                        if (this.options.listeners && this.options.listeners.stdout) {
+                            this.options.listeners.stdout(data);
+                        }
+                        if (!optionsNonNull.silent && optionsNonNull.outStream) {
+                            optionsNonNull.outStream.write(data);
+                        }
+                        stdbuffer = this._processLineBuffer(data, stdbuffer, (line) => {
+                            if (this.options.listeners && this.options.listeners.stdline) {
+                                this.options.listeners.stdline(line);
+                            }
+                        });
+                    });
+                }
+                let errbuffer = '';
+                if (cp.stderr) {
+                    cp.stderr.on('data', (data) => {
+                        state.processStderr = true;
+                        if (this.options.listeners && this.options.listeners.stderr) {
+                            this.options.listeners.stderr(data);
+                        }
+                        if (!optionsNonNull.silent &&
+                            optionsNonNull.errStream &&
+                            optionsNonNull.outStream) {
+                            const s = optionsNonNull.failOnStdErr
+                                ? optionsNonNull.errStream
+                                : optionsNonNull.outStream;
+                            s.write(data);
+                        }
+                        errbuffer = this._processLineBuffer(data, errbuffer, (line) => {
+                            if (this.options.listeners && this.options.listeners.errline) {
+                                this.options.listeners.errline(line);
+                            }
+                        });
+                    });
+                }
+                cp.on('error', (err) => {
+                    state.processError = err.message;
+                    state.processExited = true;
+                    state.processClosed = true;
+                    state.CheckComplete();
+                });
+                cp.on('exit', (code) => {
+                    state.processExitCode = code;
+                    state.processExited = true;
+                    this._debug(`Exit code ${code} received from tool '${this.toolPath}'`);
+                    state.CheckComplete();
+                });
+                cp.on('close', (code) => {
+                    state.processExitCode = code;
+                    state.processExited = true;
+                    state.processClosed = true;
+                    this._debug(`STDIO streams have closed for tool '${this.toolPath}'`);
+                    state.CheckComplete();
+                });
+                state.on('done', (error, exitCode) => {
+                    if (stdbuffer.length > 0) {
+                        this.emit('stdline', stdbuffer);
+                    }
+                    if (errbuffer.length > 0) {
+                        this.emit('errline', errbuffer);
+                    }
+                    cp.removeAllListeners();
+                    if (error) {
+                        reject(error);
+                    }
+                    else {
+                        resolve(exitCode);
+                    }
+                });
+                if (this.options.input) {
+                    if (!cp.stdin) {
+                        throw new Error('child process missing stdin');
+                    }
+                    cp.stdin.end(this.options.input);
+                }
+            }));
+        });
+    }
+}
+exports.ToolRunner = ToolRunner;
+/**
+ * Convert an arg string to an array of args. Handles escaping
+ *
+ * @param    argString   string of arguments
+ * @returns  string[]    array of arguments
+ */
+function argStringToArray(argString) {
+    const args = [];
+    let inQuotes = false;
+    let escaped = false;
+    let arg = '';
+    function append(c) {
+        // we only escape double quotes.
+        if (escaped && c !== '"') {
+            arg += '\\';
+        }
+        arg += c;
+        escaped = false;
+    }
+    for (let i = 0; i < argString.length; i++) {
+        const c = argString.charAt(i);
+        if (c === '"') {
+            if (!escaped) {
+                inQuotes = !inQuotes;
+            }
+            else {
+                append(c);
+            }
+            continue;
+        }
+        if (c === '\\' && escaped) {
+            append(c);
+            continue;
+        }
+        if (c === '\\' && inQuotes) {
+            escaped = true;
+            continue;
+        }
+        if (c === ' ' && !inQuotes) {
+            if (arg.length > 0) {
+                args.push(arg);
+                arg = '';
+            }
+            continue;
+        }
+        append(c);
+    }
+    if (arg.length > 0) {
+        args.push(arg.trim());
+    }
+    return args;
+}
+exports.argStringToArray = argStringToArray;
+class ExecState extends events.EventEmitter {
+    constructor(options, toolPath) {
+        super();
+        this.processClosed = false; // tracks whether the process has exited and stdio is closed
+        this.processError = '';
+        this.processExitCode = 0;
+        this.processExited = false; // tracks whether the process has exited
+        this.processStderr = false; // tracks whether stderr was written to
+        this.delay = 10000; // 10 seconds
+        this.done = false;
+        this.timeout = null;
+        if (!toolPath) {
+            throw new Error('toolPath must not be empty');
+        }
+        this.options = options;
+        this.toolPath = toolPath;
+        if (options.delay) {
+            this.delay = options.delay;
+        }
+    }
+    CheckComplete() {
+        if (this.done) {
+            return;
+        }
+        if (this.processClosed) {
+            this._setResult();
+        }
+        else if (this.processExited) {
+            this.timeout = timers_1.setTimeout(ExecState.HandleTimeout, this.delay, this);
+        }
+    }
+    _debug(message) {
+        this.emit('debug', message);
+    }
+    _setResult() {
+        // determine whether there is an error
+        let error;
+        if (this.processExited) {
+            if (this.processError) {
+                error = new Error(`There was an error when attempting to execute the process '${this.toolPath}'. This may indicate the process failed to start. Error: ${this.processError}`);
+            }
+            else if (this.processExitCode !== 0 && !this.options.ignoreReturnCode) {
+                error = new Error(`The process '${this.toolPath}' failed with exit code ${this.processExitCode}`);
+            }
+            else if (this.processStderr && this.options.failOnStdErr) {
+                error = new Error(`The process '${this.toolPath}' failed because one or more lines were written to the STDERR stream`);
+            }
+        }
+        // clear the timeout
+        if (this.timeout) {
+            clearTimeout(this.timeout);
+            this.timeout = null;
+        }
+        this.done = true;
+        this.emit('done', error, this.processExitCode);
+    }
+    static HandleTimeout(state) {
+        if (state.done) {
+            return;
+        }
+        if (!state.processClosed && state.processExited) {
+            const message = `The STDIO streams did not close within ${state.delay /
+                1000} seconds of the exit event from process '${state.toolPath}'. This may indicate a child process inherited the STDIO streams and has not yet exited.`;
+            state._debug(message);
+        }
+        state._setResult();
+    }
+}
+//# sourceMappingURL=toolrunner.js.map
+
+/***/ }),
+
 /***/ 4087:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -1233,6 +1966,1188 @@ function getOctokitOptions(token, options) {
 }
 exports.getOctokitOptions = getOctokitOptions;
 //# sourceMappingURL=utils.js.map
+
+/***/ }),
+
+/***/ 8090:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.hashFiles = exports.create = void 0;
+const internal_globber_1 = __nccwpck_require__(8298);
+const internal_hash_files_1 = __nccwpck_require__(2448);
+/**
+ * Constructs a globber
+ *
+ * @param patterns  Patterns separated by newlines
+ * @param options   Glob options
+ */
+function create(patterns, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return yield internal_globber_1.DefaultGlobber.create(patterns, options);
+    });
+}
+exports.create = create;
+/**
+ * Computes the sha256 hash of a glob
+ *
+ * @param patterns  Patterns separated by newlines
+ * @param currentWorkspace  Workspace used when matching files
+ * @param options   Glob options
+ * @param verbose   Enables verbose logging
+ */
+function hashFiles(patterns, currentWorkspace = '', options, verbose = false) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let followSymbolicLinks = true;
+        if (options && typeof options.followSymbolicLinks === 'boolean') {
+            followSymbolicLinks = options.followSymbolicLinks;
+        }
+        const globber = yield create(patterns, { followSymbolicLinks });
+        return internal_hash_files_1.hashFiles(globber, currentWorkspace, verbose);
+    });
+}
+exports.hashFiles = hashFiles;
+//# sourceMappingURL=glob.js.map
+
+/***/ }),
+
+/***/ 1026:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getOptions = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+/**
+ * Returns a copy with defaults filled in.
+ */
+function getOptions(copy) {
+    const result = {
+        followSymbolicLinks: true,
+        implicitDescendants: true,
+        matchDirectories: true,
+        omitBrokenSymbolicLinks: true
+    };
+    if (copy) {
+        if (typeof copy.followSymbolicLinks === 'boolean') {
+            result.followSymbolicLinks = copy.followSymbolicLinks;
+            core.debug(`followSymbolicLinks '${result.followSymbolicLinks}'`);
+        }
+        if (typeof copy.implicitDescendants === 'boolean') {
+            result.implicitDescendants = copy.implicitDescendants;
+            core.debug(`implicitDescendants '${result.implicitDescendants}'`);
+        }
+        if (typeof copy.matchDirectories === 'boolean') {
+            result.matchDirectories = copy.matchDirectories;
+            core.debug(`matchDirectories '${result.matchDirectories}'`);
+        }
+        if (typeof copy.omitBrokenSymbolicLinks === 'boolean') {
+            result.omitBrokenSymbolicLinks = copy.omitBrokenSymbolicLinks;
+            core.debug(`omitBrokenSymbolicLinks '${result.omitBrokenSymbolicLinks}'`);
+        }
+    }
+    return result;
+}
+exports.getOptions = getOptions;
+//# sourceMappingURL=internal-glob-options-helper.js.map
+
+/***/ }),
+
+/***/ 8298:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __asyncValues = (this && this.__asyncValues) || function (o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+};
+var __await = (this && this.__await) || function (v) { return this instanceof __await ? (this.v = v, this) : new __await(v); }
+var __asyncGenerator = (this && this.__asyncGenerator) || function (thisArg, _arguments, generator) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var g = generator.apply(thisArg, _arguments || []), i, q = [];
+    return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i;
+    function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }
+    function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
+    function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r); }
+    function fulfill(value) { resume("next", value); }
+    function reject(value) { resume("throw", value); }
+    function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.DefaultGlobber = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+const fs = __importStar(__nccwpck_require__(7147));
+const globOptionsHelper = __importStar(__nccwpck_require__(1026));
+const path = __importStar(__nccwpck_require__(1017));
+const patternHelper = __importStar(__nccwpck_require__(9005));
+const internal_match_kind_1 = __nccwpck_require__(1063);
+const internal_pattern_1 = __nccwpck_require__(4536);
+const internal_search_state_1 = __nccwpck_require__(9117);
+const IS_WINDOWS = process.platform === 'win32';
+class DefaultGlobber {
+    constructor(options) {
+        this.patterns = [];
+        this.searchPaths = [];
+        this.options = globOptionsHelper.getOptions(options);
+    }
+    getSearchPaths() {
+        // Return a copy
+        return this.searchPaths.slice();
+    }
+    glob() {
+        var e_1, _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            const result = [];
+            try {
+                for (var _b = __asyncValues(this.globGenerator()), _c; _c = yield _b.next(), !_c.done;) {
+                    const itemPath = _c.value;
+                    result.push(itemPath);
+                }
+            }
+            catch (e_1_1) { e_1 = { error: e_1_1 }; }
+            finally {
+                try {
+                    if (_c && !_c.done && (_a = _b.return)) yield _a.call(_b);
+                }
+                finally { if (e_1) throw e_1.error; }
+            }
+            return result;
+        });
+    }
+    globGenerator() {
+        return __asyncGenerator(this, arguments, function* globGenerator_1() {
+            // Fill in defaults options
+            const options = globOptionsHelper.getOptions(this.options);
+            // Implicit descendants?
+            const patterns = [];
+            for (const pattern of this.patterns) {
+                patterns.push(pattern);
+                if (options.implicitDescendants &&
+                    (pattern.trailingSeparator ||
+                        pattern.segments[pattern.segments.length - 1] !== '**')) {
+                    patterns.push(new internal_pattern_1.Pattern(pattern.negate, true, pattern.segments.concat('**')));
+                }
+            }
+            // Push the search paths
+            const stack = [];
+            for (const searchPath of patternHelper.getSearchPaths(patterns)) {
+                core.debug(`Search path '${searchPath}'`);
+                // Exists?
+                try {
+                    // Intentionally using lstat. Detection for broken symlink
+                    // will be performed later (if following symlinks).
+                    yield __await(fs.promises.lstat(searchPath));
+                }
+                catch (err) {
+                    if (err.code === 'ENOENT') {
+                        continue;
+                    }
+                    throw err;
+                }
+                stack.unshift(new internal_search_state_1.SearchState(searchPath, 1));
+            }
+            // Search
+            const traversalChain = []; // used to detect cycles
+            while (stack.length) {
+                // Pop
+                const item = stack.pop();
+                // Match?
+                const match = patternHelper.match(patterns, item.path);
+                const partialMatch = !!match || patternHelper.partialMatch(patterns, item.path);
+                if (!match && !partialMatch) {
+                    continue;
+                }
+                // Stat
+                const stats = yield __await(DefaultGlobber.stat(item, options, traversalChain)
+                // Broken symlink, or symlink cycle detected, or no longer exists
+                );
+                // Broken symlink, or symlink cycle detected, or no longer exists
+                if (!stats) {
+                    continue;
+                }
+                // Directory
+                if (stats.isDirectory()) {
+                    // Matched
+                    if (match & internal_match_kind_1.MatchKind.Directory && options.matchDirectories) {
+                        yield yield __await(item.path);
+                    }
+                    // Descend?
+                    else if (!partialMatch) {
+                        continue;
+                    }
+                    // Push the child items in reverse
+                    const childLevel = item.level + 1;
+                    const childItems = (yield __await(fs.promises.readdir(item.path))).map(x => new internal_search_state_1.SearchState(path.join(item.path, x), childLevel));
+                    stack.push(...childItems.reverse());
+                }
+                // File
+                else if (match & internal_match_kind_1.MatchKind.File) {
+                    yield yield __await(item.path);
+                }
+            }
+        });
+    }
+    /**
+     * Constructs a DefaultGlobber
+     */
+    static create(patterns, options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const result = new DefaultGlobber(options);
+            if (IS_WINDOWS) {
+                patterns = patterns.replace(/\r\n/g, '\n');
+                patterns = patterns.replace(/\r/g, '\n');
+            }
+            const lines = patterns.split('\n').map(x => x.trim());
+            for (const line of lines) {
+                // Empty or comment
+                if (!line || line.startsWith('#')) {
+                    continue;
+                }
+                // Pattern
+                else {
+                    result.patterns.push(new internal_pattern_1.Pattern(line));
+                }
+            }
+            result.searchPaths.push(...patternHelper.getSearchPaths(result.patterns));
+            return result;
+        });
+    }
+    static stat(item, options, traversalChain) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // Note:
+            // `stat` returns info about the target of a symlink (or symlink chain)
+            // `lstat` returns info about a symlink itself
+            let stats;
+            if (options.followSymbolicLinks) {
+                try {
+                    // Use `stat` (following symlinks)
+                    stats = yield fs.promises.stat(item.path);
+                }
+                catch (err) {
+                    if (err.code === 'ENOENT') {
+                        if (options.omitBrokenSymbolicLinks) {
+                            core.debug(`Broken symlink '${item.path}'`);
+                            return undefined;
+                        }
+                        throw new Error(`No information found for the path '${item.path}'. This may indicate a broken symbolic link.`);
+                    }
+                    throw err;
+                }
+            }
+            else {
+                // Use `lstat` (not following symlinks)
+                stats = yield fs.promises.lstat(item.path);
+            }
+            // Note, isDirectory() returns false for the lstat of a symlink
+            if (stats.isDirectory() && options.followSymbolicLinks) {
+                // Get the realpath
+                const realPath = yield fs.promises.realpath(item.path);
+                // Fixup the traversal chain to match the item level
+                while (traversalChain.length >= item.level) {
+                    traversalChain.pop();
+                }
+                // Test for a cycle
+                if (traversalChain.some((x) => x === realPath)) {
+                    core.debug(`Symlink cycle detected for path '${item.path}' and realpath '${realPath}'`);
+                    return undefined;
+                }
+                // Update the traversal chain
+                traversalChain.push(realPath);
+            }
+            return stats;
+        });
+    }
+}
+exports.DefaultGlobber = DefaultGlobber;
+//# sourceMappingURL=internal-globber.js.map
+
+/***/ }),
+
+/***/ 2448:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __asyncValues = (this && this.__asyncValues) || function (o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.hashFiles = void 0;
+const crypto = __importStar(__nccwpck_require__(6113));
+const core = __importStar(__nccwpck_require__(2186));
+const fs = __importStar(__nccwpck_require__(7147));
+const stream = __importStar(__nccwpck_require__(2781));
+const util = __importStar(__nccwpck_require__(3837));
+const path = __importStar(__nccwpck_require__(1017));
+function hashFiles(globber, currentWorkspace, verbose = false) {
+    var e_1, _a;
+    var _b;
+    return __awaiter(this, void 0, void 0, function* () {
+        const writeDelegate = verbose ? core.info : core.debug;
+        let hasMatch = false;
+        const githubWorkspace = currentWorkspace
+            ? currentWorkspace
+            : (_b = process.env['GITHUB_WORKSPACE']) !== null && _b !== void 0 ? _b : process.cwd();
+        const result = crypto.createHash('sha256');
+        let count = 0;
+        try {
+            for (var _c = __asyncValues(globber.globGenerator()), _d; _d = yield _c.next(), !_d.done;) {
+                const file = _d.value;
+                writeDelegate(file);
+                if (!file.startsWith(`${githubWorkspace}${path.sep}`)) {
+                    writeDelegate(`Ignore '${file}' since it is not under GITHUB_WORKSPACE.`);
+                    continue;
+                }
+                if (fs.statSync(file).isDirectory()) {
+                    writeDelegate(`Skip directory '${file}'.`);
+                    continue;
+                }
+                const hash = crypto.createHash('sha256');
+                const pipeline = util.promisify(stream.pipeline);
+                yield pipeline(fs.createReadStream(file), hash);
+                result.write(hash.digest());
+                count++;
+                if (!hasMatch) {
+                    hasMatch = true;
+                }
+            }
+        }
+        catch (e_1_1) { e_1 = { error: e_1_1 }; }
+        finally {
+            try {
+                if (_d && !_d.done && (_a = _c.return)) yield _a.call(_c);
+            }
+            finally { if (e_1) throw e_1.error; }
+        }
+        result.end();
+        if (hasMatch) {
+            writeDelegate(`Found ${count} files to hash.`);
+            return result.digest('hex');
+        }
+        else {
+            writeDelegate(`No matches found for glob`);
+            return '';
+        }
+    });
+}
+exports.hashFiles = hashFiles;
+//# sourceMappingURL=internal-hash-files.js.map
+
+/***/ }),
+
+/***/ 1063:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.MatchKind = void 0;
+/**
+ * Indicates whether a pattern matches a path
+ */
+var MatchKind;
+(function (MatchKind) {
+    /** Not matched */
+    MatchKind[MatchKind["None"] = 0] = "None";
+    /** Matched if the path is a directory */
+    MatchKind[MatchKind["Directory"] = 1] = "Directory";
+    /** Matched if the path is a regular file */
+    MatchKind[MatchKind["File"] = 2] = "File";
+    /** Matched */
+    MatchKind[MatchKind["All"] = 3] = "All";
+})(MatchKind = exports.MatchKind || (exports.MatchKind = {}));
+//# sourceMappingURL=internal-match-kind.js.map
+
+/***/ }),
+
+/***/ 1849:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.safeTrimTrailingSeparator = exports.normalizeSeparators = exports.hasRoot = exports.hasAbsoluteRoot = exports.ensureAbsoluteRoot = exports.dirname = void 0;
+const path = __importStar(__nccwpck_require__(1017));
+const assert_1 = __importDefault(__nccwpck_require__(9491));
+const IS_WINDOWS = process.platform === 'win32';
+/**
+ * Similar to path.dirname except normalizes the path separators and slightly better handling for Windows UNC paths.
+ *
+ * For example, on Linux/macOS:
+ * - `/               => /`
+ * - `/hello          => /`
+ *
+ * For example, on Windows:
+ * - `C:\             => C:\`
+ * - `C:\hello        => C:\`
+ * - `C:              => C:`
+ * - `C:hello         => C:`
+ * - `\               => \`
+ * - `\hello          => \`
+ * - `\\hello         => \\hello`
+ * - `\\hello\world   => \\hello\world`
+ */
+function dirname(p) {
+    // Normalize slashes and trim unnecessary trailing slash
+    p = safeTrimTrailingSeparator(p);
+    // Windows UNC root, e.g. \\hello or \\hello\world
+    if (IS_WINDOWS && /^\\\\[^\\]+(\\[^\\]+)?$/.test(p)) {
+        return p;
+    }
+    // Get dirname
+    let result = path.dirname(p);
+    // Trim trailing slash for Windows UNC root, e.g. \\hello\world\
+    if (IS_WINDOWS && /^\\\\[^\\]+\\[^\\]+\\$/.test(result)) {
+        result = safeTrimTrailingSeparator(result);
+    }
+    return result;
+}
+exports.dirname = dirname;
+/**
+ * Roots the path if not already rooted. On Windows, relative roots like `\`
+ * or `C:` are expanded based on the current working directory.
+ */
+function ensureAbsoluteRoot(root, itemPath) {
+    assert_1.default(root, `ensureAbsoluteRoot parameter 'root' must not be empty`);
+    assert_1.default(itemPath, `ensureAbsoluteRoot parameter 'itemPath' must not be empty`);
+    // Already rooted
+    if (hasAbsoluteRoot(itemPath)) {
+        return itemPath;
+    }
+    // Windows
+    if (IS_WINDOWS) {
+        // Check for itemPath like C: or C:foo
+        if (itemPath.match(/^[A-Z]:[^\\/]|^[A-Z]:$/i)) {
+            let cwd = process.cwd();
+            assert_1.default(cwd.match(/^[A-Z]:\\/i), `Expected current directory to start with an absolute drive root. Actual '${cwd}'`);
+            // Drive letter matches cwd? Expand to cwd
+            if (itemPath[0].toUpperCase() === cwd[0].toUpperCase()) {
+                // Drive only, e.g. C:
+                if (itemPath.length === 2) {
+                    // Preserve specified drive letter case (upper or lower)
+                    return `${itemPath[0]}:\\${cwd.substr(3)}`;
+                }
+                // Drive + path, e.g. C:foo
+                else {
+                    if (!cwd.endsWith('\\')) {
+                        cwd += '\\';
+                    }
+                    // Preserve specified drive letter case (upper or lower)
+                    return `${itemPath[0]}:\\${cwd.substr(3)}${itemPath.substr(2)}`;
+                }
+            }
+            // Different drive
+            else {
+                return `${itemPath[0]}:\\${itemPath.substr(2)}`;
+            }
+        }
+        // Check for itemPath like \ or \foo
+        else if (normalizeSeparators(itemPath).match(/^\\$|^\\[^\\]/)) {
+            const cwd = process.cwd();
+            assert_1.default(cwd.match(/^[A-Z]:\\/i), `Expected current directory to start with an absolute drive root. Actual '${cwd}'`);
+            return `${cwd[0]}:\\${itemPath.substr(1)}`;
+        }
+    }
+    assert_1.default(hasAbsoluteRoot(root), `ensureAbsoluteRoot parameter 'root' must have an absolute root`);
+    // Otherwise ensure root ends with a separator
+    if (root.endsWith('/') || (IS_WINDOWS && root.endsWith('\\'))) {
+        // Intentionally empty
+    }
+    else {
+        // Append separator
+        root += path.sep;
+    }
+    return root + itemPath;
+}
+exports.ensureAbsoluteRoot = ensureAbsoluteRoot;
+/**
+ * On Linux/macOS, true if path starts with `/`. On Windows, true for paths like:
+ * `\\hello\share` and `C:\hello` (and using alternate separator).
+ */
+function hasAbsoluteRoot(itemPath) {
+    assert_1.default(itemPath, `hasAbsoluteRoot parameter 'itemPath' must not be empty`);
+    // Normalize separators
+    itemPath = normalizeSeparators(itemPath);
+    // Windows
+    if (IS_WINDOWS) {
+        // E.g. \\hello\share or C:\hello
+        return itemPath.startsWith('\\\\') || /^[A-Z]:\\/i.test(itemPath);
+    }
+    // E.g. /hello
+    return itemPath.startsWith('/');
+}
+exports.hasAbsoluteRoot = hasAbsoluteRoot;
+/**
+ * On Linux/macOS, true if path starts with `/`. On Windows, true for paths like:
+ * `\`, `\hello`, `\\hello\share`, `C:`, and `C:\hello` (and using alternate separator).
+ */
+function hasRoot(itemPath) {
+    assert_1.default(itemPath, `isRooted parameter 'itemPath' must not be empty`);
+    // Normalize separators
+    itemPath = normalizeSeparators(itemPath);
+    // Windows
+    if (IS_WINDOWS) {
+        // E.g. \ or \hello or \\hello
+        // E.g. C: or C:\hello
+        return itemPath.startsWith('\\') || /^[A-Z]:/i.test(itemPath);
+    }
+    // E.g. /hello
+    return itemPath.startsWith('/');
+}
+exports.hasRoot = hasRoot;
+/**
+ * Removes redundant slashes and converts `/` to `\` on Windows
+ */
+function normalizeSeparators(p) {
+    p = p || '';
+    // Windows
+    if (IS_WINDOWS) {
+        // Convert slashes on Windows
+        p = p.replace(/\//g, '\\');
+        // Remove redundant slashes
+        const isUnc = /^\\\\+[^\\]/.test(p); // e.g. \\hello
+        return (isUnc ? '\\' : '') + p.replace(/\\\\+/g, '\\'); // preserve leading \\ for UNC
+    }
+    // Remove redundant slashes
+    return p.replace(/\/\/+/g, '/');
+}
+exports.normalizeSeparators = normalizeSeparators;
+/**
+ * Normalizes the path separators and trims the trailing separator (when safe).
+ * For example, `/foo/ => /foo` but `/ => /`
+ */
+function safeTrimTrailingSeparator(p) {
+    // Short-circuit if empty
+    if (!p) {
+        return '';
+    }
+    // Normalize separators
+    p = normalizeSeparators(p);
+    // No trailing slash
+    if (!p.endsWith(path.sep)) {
+        return p;
+    }
+    // Check '/' on Linux/macOS and '\' on Windows
+    if (p === path.sep) {
+        return p;
+    }
+    // On Windows check if drive root. E.g. C:\
+    if (IS_WINDOWS && /^[A-Z]:\\$/i.test(p)) {
+        return p;
+    }
+    // Otherwise trim trailing slash
+    return p.substr(0, p.length - 1);
+}
+exports.safeTrimTrailingSeparator = safeTrimTrailingSeparator;
+//# sourceMappingURL=internal-path-helper.js.map
+
+/***/ }),
+
+/***/ 6836:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Path = void 0;
+const path = __importStar(__nccwpck_require__(1017));
+const pathHelper = __importStar(__nccwpck_require__(1849));
+const assert_1 = __importDefault(__nccwpck_require__(9491));
+const IS_WINDOWS = process.platform === 'win32';
+/**
+ * Helper class for parsing paths into segments
+ */
+class Path {
+    /**
+     * Constructs a Path
+     * @param itemPath Path or array of segments
+     */
+    constructor(itemPath) {
+        this.segments = [];
+        // String
+        if (typeof itemPath === 'string') {
+            assert_1.default(itemPath, `Parameter 'itemPath' must not be empty`);
+            // Normalize slashes and trim unnecessary trailing slash
+            itemPath = pathHelper.safeTrimTrailingSeparator(itemPath);
+            // Not rooted
+            if (!pathHelper.hasRoot(itemPath)) {
+                this.segments = itemPath.split(path.sep);
+            }
+            // Rooted
+            else {
+                // Add all segments, while not at the root
+                let remaining = itemPath;
+                let dir = pathHelper.dirname(remaining);
+                while (dir !== remaining) {
+                    // Add the segment
+                    const basename = path.basename(remaining);
+                    this.segments.unshift(basename);
+                    // Truncate the last segment
+                    remaining = dir;
+                    dir = pathHelper.dirname(remaining);
+                }
+                // Remainder is the root
+                this.segments.unshift(remaining);
+            }
+        }
+        // Array
+        else {
+            // Must not be empty
+            assert_1.default(itemPath.length > 0, `Parameter 'itemPath' must not be an empty array`);
+            // Each segment
+            for (let i = 0; i < itemPath.length; i++) {
+                let segment = itemPath[i];
+                // Must not be empty
+                assert_1.default(segment, `Parameter 'itemPath' must not contain any empty segments`);
+                // Normalize slashes
+                segment = pathHelper.normalizeSeparators(itemPath[i]);
+                // Root segment
+                if (i === 0 && pathHelper.hasRoot(segment)) {
+                    segment = pathHelper.safeTrimTrailingSeparator(segment);
+                    assert_1.default(segment === pathHelper.dirname(segment), `Parameter 'itemPath' root segment contains information for multiple segments`);
+                    this.segments.push(segment);
+                }
+                // All other segments
+                else {
+                    // Must not contain slash
+                    assert_1.default(!segment.includes(path.sep), `Parameter 'itemPath' contains unexpected path separators`);
+                    this.segments.push(segment);
+                }
+            }
+        }
+    }
+    /**
+     * Converts the path to it's string representation
+     */
+    toString() {
+        // First segment
+        let result = this.segments[0];
+        // All others
+        let skipSlash = result.endsWith(path.sep) || (IS_WINDOWS && /^[A-Z]:$/i.test(result));
+        for (let i = 1; i < this.segments.length; i++) {
+            if (skipSlash) {
+                skipSlash = false;
+            }
+            else {
+                result += path.sep;
+            }
+            result += this.segments[i];
+        }
+        return result;
+    }
+}
+exports.Path = Path;
+//# sourceMappingURL=internal-path.js.map
+
+/***/ }),
+
+/***/ 9005:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.partialMatch = exports.match = exports.getSearchPaths = void 0;
+const pathHelper = __importStar(__nccwpck_require__(1849));
+const internal_match_kind_1 = __nccwpck_require__(1063);
+const IS_WINDOWS = process.platform === 'win32';
+/**
+ * Given an array of patterns, returns an array of paths to search.
+ * Duplicates and paths under other included paths are filtered out.
+ */
+function getSearchPaths(patterns) {
+    // Ignore negate patterns
+    patterns = patterns.filter(x => !x.negate);
+    // Create a map of all search paths
+    const searchPathMap = {};
+    for (const pattern of patterns) {
+        const key = IS_WINDOWS
+            ? pattern.searchPath.toUpperCase()
+            : pattern.searchPath;
+        searchPathMap[key] = 'candidate';
+    }
+    const result = [];
+    for (const pattern of patterns) {
+        // Check if already included
+        const key = IS_WINDOWS
+            ? pattern.searchPath.toUpperCase()
+            : pattern.searchPath;
+        if (searchPathMap[key] === 'included') {
+            continue;
+        }
+        // Check for an ancestor search path
+        let foundAncestor = false;
+        let tempKey = key;
+        let parent = pathHelper.dirname(tempKey);
+        while (parent !== tempKey) {
+            if (searchPathMap[parent]) {
+                foundAncestor = true;
+                break;
+            }
+            tempKey = parent;
+            parent = pathHelper.dirname(tempKey);
+        }
+        // Include the search pattern in the result
+        if (!foundAncestor) {
+            result.push(pattern.searchPath);
+            searchPathMap[key] = 'included';
+        }
+    }
+    return result;
+}
+exports.getSearchPaths = getSearchPaths;
+/**
+ * Matches the patterns against the path
+ */
+function match(patterns, itemPath) {
+    let result = internal_match_kind_1.MatchKind.None;
+    for (const pattern of patterns) {
+        if (pattern.negate) {
+            result &= ~pattern.match(itemPath);
+        }
+        else {
+            result |= pattern.match(itemPath);
+        }
+    }
+    return result;
+}
+exports.match = match;
+/**
+ * Checks whether to descend further into the directory
+ */
+function partialMatch(patterns, itemPath) {
+    return patterns.some(x => !x.negate && x.partialMatch(itemPath));
+}
+exports.partialMatch = partialMatch;
+//# sourceMappingURL=internal-pattern-helper.js.map
+
+/***/ }),
+
+/***/ 4536:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Pattern = void 0;
+const os = __importStar(__nccwpck_require__(2037));
+const path = __importStar(__nccwpck_require__(1017));
+const pathHelper = __importStar(__nccwpck_require__(1849));
+const assert_1 = __importDefault(__nccwpck_require__(9491));
+const minimatch_1 = __nccwpck_require__(3973);
+const internal_match_kind_1 = __nccwpck_require__(1063);
+const internal_path_1 = __nccwpck_require__(6836);
+const IS_WINDOWS = process.platform === 'win32';
+class Pattern {
+    constructor(patternOrNegate, isImplicitPattern = false, segments, homedir) {
+        /**
+         * Indicates whether matches should be excluded from the result set
+         */
+        this.negate = false;
+        // Pattern overload
+        let pattern;
+        if (typeof patternOrNegate === 'string') {
+            pattern = patternOrNegate.trim();
+        }
+        // Segments overload
+        else {
+            // Convert to pattern
+            segments = segments || [];
+            assert_1.default(segments.length, `Parameter 'segments' must not empty`);
+            const root = Pattern.getLiteral(segments[0]);
+            assert_1.default(root && pathHelper.hasAbsoluteRoot(root), `Parameter 'segments' first element must be a root path`);
+            pattern = new internal_path_1.Path(segments).toString().trim();
+            if (patternOrNegate) {
+                pattern = `!${pattern}`;
+            }
+        }
+        // Negate
+        while (pattern.startsWith('!')) {
+            this.negate = !this.negate;
+            pattern = pattern.substr(1).trim();
+        }
+        // Normalize slashes and ensures absolute root
+        pattern = Pattern.fixupPattern(pattern, homedir);
+        // Segments
+        this.segments = new internal_path_1.Path(pattern).segments;
+        // Trailing slash indicates the pattern should only match directories, not regular files
+        this.trailingSeparator = pathHelper
+            .normalizeSeparators(pattern)
+            .endsWith(path.sep);
+        pattern = pathHelper.safeTrimTrailingSeparator(pattern);
+        // Search path (literal path prior to the first glob segment)
+        let foundGlob = false;
+        const searchSegments = this.segments
+            .map(x => Pattern.getLiteral(x))
+            .filter(x => !foundGlob && !(foundGlob = x === ''));
+        this.searchPath = new internal_path_1.Path(searchSegments).toString();
+        // Root RegExp (required when determining partial match)
+        this.rootRegExp = new RegExp(Pattern.regExpEscape(searchSegments[0]), IS_WINDOWS ? 'i' : '');
+        this.isImplicitPattern = isImplicitPattern;
+        // Create minimatch
+        const minimatchOptions = {
+            dot: true,
+            nobrace: true,
+            nocase: IS_WINDOWS,
+            nocomment: true,
+            noext: true,
+            nonegate: true
+        };
+        pattern = IS_WINDOWS ? pattern.replace(/\\/g, '/') : pattern;
+        this.minimatch = new minimatch_1.Minimatch(pattern, minimatchOptions);
+    }
+    /**
+     * Matches the pattern against the specified path
+     */
+    match(itemPath) {
+        // Last segment is globstar?
+        if (this.segments[this.segments.length - 1] === '**') {
+            // Normalize slashes
+            itemPath = pathHelper.normalizeSeparators(itemPath);
+            // Append a trailing slash. Otherwise Minimatch will not match the directory immediately
+            // preceding the globstar. For example, given the pattern `/foo/**`, Minimatch returns
+            // false for `/foo` but returns true for `/foo/`. Append a trailing slash to handle that quirk.
+            if (!itemPath.endsWith(path.sep) && this.isImplicitPattern === false) {
+                // Note, this is safe because the constructor ensures the pattern has an absolute root.
+                // For example, formats like C: and C:foo on Windows are resolved to an absolute root.
+                itemPath = `${itemPath}${path.sep}`;
+            }
+        }
+        else {
+            // Normalize slashes and trim unnecessary trailing slash
+            itemPath = pathHelper.safeTrimTrailingSeparator(itemPath);
+        }
+        // Match
+        if (this.minimatch.match(itemPath)) {
+            return this.trailingSeparator ? internal_match_kind_1.MatchKind.Directory : internal_match_kind_1.MatchKind.All;
+        }
+        return internal_match_kind_1.MatchKind.None;
+    }
+    /**
+     * Indicates whether the pattern may match descendants of the specified path
+     */
+    partialMatch(itemPath) {
+        // Normalize slashes and trim unnecessary trailing slash
+        itemPath = pathHelper.safeTrimTrailingSeparator(itemPath);
+        // matchOne does not handle root path correctly
+        if (pathHelper.dirname(itemPath) === itemPath) {
+            return this.rootRegExp.test(itemPath);
+        }
+        return this.minimatch.matchOne(itemPath.split(IS_WINDOWS ? /\\+/ : /\/+/), this.minimatch.set[0], true);
+    }
+    /**
+     * Escapes glob patterns within a path
+     */
+    static globEscape(s) {
+        return (IS_WINDOWS ? s : s.replace(/\\/g, '\\\\')) // escape '\' on Linux/macOS
+            .replace(/(\[)(?=[^/]+\])/g, '[[]') // escape '[' when ']' follows within the path segment
+            .replace(/\?/g, '[?]') // escape '?'
+            .replace(/\*/g, '[*]'); // escape '*'
+    }
+    /**
+     * Normalizes slashes and ensures absolute root
+     */
+    static fixupPattern(pattern, homedir) {
+        // Empty
+        assert_1.default(pattern, 'pattern cannot be empty');
+        // Must not contain `.` segment, unless first segment
+        // Must not contain `..` segment
+        const literalSegments = new internal_path_1.Path(pattern).segments.map(x => Pattern.getLiteral(x));
+        assert_1.default(literalSegments.every((x, i) => (x !== '.' || i === 0) && x !== '..'), `Invalid pattern '${pattern}'. Relative pathing '.' and '..' is not allowed.`);
+        // Must not contain globs in root, e.g. Windows UNC path \\foo\b*r
+        assert_1.default(!pathHelper.hasRoot(pattern) || literalSegments[0], `Invalid pattern '${pattern}'. Root segment must not contain globs.`);
+        // Normalize slashes
+        pattern = pathHelper.normalizeSeparators(pattern);
+        // Replace leading `.` segment
+        if (pattern === '.' || pattern.startsWith(`.${path.sep}`)) {
+            pattern = Pattern.globEscape(process.cwd()) + pattern.substr(1);
+        }
+        // Replace leading `~` segment
+        else if (pattern === '~' || pattern.startsWith(`~${path.sep}`)) {
+            homedir = homedir || os.homedir();
+            assert_1.default(homedir, 'Unable to determine HOME directory');
+            assert_1.default(pathHelper.hasAbsoluteRoot(homedir), `Expected HOME directory to be a rooted path. Actual '${homedir}'`);
+            pattern = Pattern.globEscape(homedir) + pattern.substr(1);
+        }
+        // Replace relative drive root, e.g. pattern is C: or C:foo
+        else if (IS_WINDOWS &&
+            (pattern.match(/^[A-Z]:$/i) || pattern.match(/^[A-Z]:[^\\]/i))) {
+            let root = pathHelper.ensureAbsoluteRoot('C:\\dummy-root', pattern.substr(0, 2));
+            if (pattern.length > 2 && !root.endsWith('\\')) {
+                root += '\\';
+            }
+            pattern = Pattern.globEscape(root) + pattern.substr(2);
+        }
+        // Replace relative root, e.g. pattern is \ or \foo
+        else if (IS_WINDOWS && (pattern === '\\' || pattern.match(/^\\[^\\]/))) {
+            let root = pathHelper.ensureAbsoluteRoot('C:\\dummy-root', '\\');
+            if (!root.endsWith('\\')) {
+                root += '\\';
+            }
+            pattern = Pattern.globEscape(root) + pattern.substr(1);
+        }
+        // Otherwise ensure absolute root
+        else {
+            pattern = pathHelper.ensureAbsoluteRoot(Pattern.globEscape(process.cwd()), pattern);
+        }
+        return pathHelper.normalizeSeparators(pattern);
+    }
+    /**
+     * Attempts to unescape a pattern segment to create a literal path segment.
+     * Otherwise returns empty string.
+     */
+    static getLiteral(segment) {
+        let literal = '';
+        for (let i = 0; i < segment.length; i++) {
+            const c = segment[i];
+            // Escape
+            if (c === '\\' && !IS_WINDOWS && i + 1 < segment.length) {
+                literal += segment[++i];
+                continue;
+            }
+            // Wildcard
+            else if (c === '*' || c === '?') {
+                return '';
+            }
+            // Character set
+            else if (c === '[' && i + 1 < segment.length) {
+                let set = '';
+                let closed = -1;
+                for (let i2 = i + 1; i2 < segment.length; i2++) {
+                    const c2 = segment[i2];
+                    // Escape
+                    if (c2 === '\\' && !IS_WINDOWS && i2 + 1 < segment.length) {
+                        set += segment[++i2];
+                        continue;
+                    }
+                    // Closed
+                    else if (c2 === ']') {
+                        closed = i2;
+                        break;
+                    }
+                    // Otherwise
+                    else {
+                        set += c2;
+                    }
+                }
+                // Closed?
+                if (closed >= 0) {
+                    // Cannot convert
+                    if (set.length > 1) {
+                        return '';
+                    }
+                    // Convert to literal
+                    if (set) {
+                        literal += set;
+                        i = closed;
+                        continue;
+                    }
+                }
+                // Otherwise fall thru
+            }
+            // Append
+            literal += c;
+        }
+        return literal;
+    }
+    /**
+     * Escapes regexp special characters
+     * https://javascript.info/regexp-escaping
+     */
+    static regExpEscape(s) {
+        return s.replace(/[[\\^$.|?*+()]/g, '\\$&');
+    }
+}
+exports.Pattern = Pattern;
+//# sourceMappingURL=internal-pattern.js.map
+
+/***/ }),
+
+/***/ 9117:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.SearchState = void 0;
+class SearchState {
+    constructor(path, level) {
+        this.path = path;
+        this.level = level;
+    }
+}
+exports.SearchState = SearchState;
+//# sourceMappingURL=internal-search-state.js.map
 
 /***/ }),
 
@@ -2066,6 +3981,1478 @@ function isLoopbackAddress(host) {
         hostLower.startsWith('[0:0:0:0:0:0:0:1]'));
 }
 //# sourceMappingURL=proxy.js.map
+
+/***/ }),
+
+/***/ 1962:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getCmdPath = exports.tryGetExecutablePath = exports.isRooted = exports.isDirectory = exports.exists = exports.READONLY = exports.UV_FS_O_EXLOCK = exports.IS_WINDOWS = exports.unlink = exports.symlink = exports.stat = exports.rmdir = exports.rm = exports.rename = exports.readlink = exports.readdir = exports.open = exports.mkdir = exports.lstat = exports.copyFile = exports.chmod = void 0;
+const fs = __importStar(__nccwpck_require__(7147));
+const path = __importStar(__nccwpck_require__(1017));
+_a = fs.promises
+// export const {open} = 'fs'
+, exports.chmod = _a.chmod, exports.copyFile = _a.copyFile, exports.lstat = _a.lstat, exports.mkdir = _a.mkdir, exports.open = _a.open, exports.readdir = _a.readdir, exports.readlink = _a.readlink, exports.rename = _a.rename, exports.rm = _a.rm, exports.rmdir = _a.rmdir, exports.stat = _a.stat, exports.symlink = _a.symlink, exports.unlink = _a.unlink;
+// export const {open} = 'fs'
+exports.IS_WINDOWS = process.platform === 'win32';
+// See https://github.com/nodejs/node/blob/d0153aee367422d0858105abec186da4dff0a0c5/deps/uv/include/uv/win.h#L691
+exports.UV_FS_O_EXLOCK = 0x10000000;
+exports.READONLY = fs.constants.O_RDONLY;
+function exists(fsPath) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            yield exports.stat(fsPath);
+        }
+        catch (err) {
+            if (err.code === 'ENOENT') {
+                return false;
+            }
+            throw err;
+        }
+        return true;
+    });
+}
+exports.exists = exists;
+function isDirectory(fsPath, useStat = false) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const stats = useStat ? yield exports.stat(fsPath) : yield exports.lstat(fsPath);
+        return stats.isDirectory();
+    });
+}
+exports.isDirectory = isDirectory;
+/**
+ * On OSX/Linux, true if path starts with '/'. On Windows, true for paths like:
+ * \, \hello, \\hello\share, C:, and C:\hello (and corresponding alternate separator cases).
+ */
+function isRooted(p) {
+    p = normalizeSeparators(p);
+    if (!p) {
+        throw new Error('isRooted() parameter "p" cannot be empty');
+    }
+    if (exports.IS_WINDOWS) {
+        return (p.startsWith('\\') || /^[A-Z]:/i.test(p) // e.g. \ or \hello or \\hello
+        ); // e.g. C: or C:\hello
+    }
+    return p.startsWith('/');
+}
+exports.isRooted = isRooted;
+/**
+ * Best effort attempt to determine whether a file exists and is executable.
+ * @param filePath    file path to check
+ * @param extensions  additional file extensions to try
+ * @return if file exists and is executable, returns the file path. otherwise empty string.
+ */
+function tryGetExecutablePath(filePath, extensions) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let stats = undefined;
+        try {
+            // test file exists
+            stats = yield exports.stat(filePath);
+        }
+        catch (err) {
+            if (err.code !== 'ENOENT') {
+                // eslint-disable-next-line no-console
+                console.log(`Unexpected error attempting to determine if executable file exists '${filePath}': ${err}`);
+            }
+        }
+        if (stats && stats.isFile()) {
+            if (exports.IS_WINDOWS) {
+                // on Windows, test for valid extension
+                const upperExt = path.extname(filePath).toUpperCase();
+                if (extensions.some(validExt => validExt.toUpperCase() === upperExt)) {
+                    return filePath;
+                }
+            }
+            else {
+                if (isUnixExecutable(stats)) {
+                    return filePath;
+                }
+            }
+        }
+        // try each extension
+        const originalFilePath = filePath;
+        for (const extension of extensions) {
+            filePath = originalFilePath + extension;
+            stats = undefined;
+            try {
+                stats = yield exports.stat(filePath);
+            }
+            catch (err) {
+                if (err.code !== 'ENOENT') {
+                    // eslint-disable-next-line no-console
+                    console.log(`Unexpected error attempting to determine if executable file exists '${filePath}': ${err}`);
+                }
+            }
+            if (stats && stats.isFile()) {
+                if (exports.IS_WINDOWS) {
+                    // preserve the case of the actual file (since an extension was appended)
+                    try {
+                        const directory = path.dirname(filePath);
+                        const upperName = path.basename(filePath).toUpperCase();
+                        for (const actualName of yield exports.readdir(directory)) {
+                            if (upperName === actualName.toUpperCase()) {
+                                filePath = path.join(directory, actualName);
+                                break;
+                            }
+                        }
+                    }
+                    catch (err) {
+                        // eslint-disable-next-line no-console
+                        console.log(`Unexpected error attempting to determine the actual case of the file '${filePath}': ${err}`);
+                    }
+                    return filePath;
+                }
+                else {
+                    if (isUnixExecutable(stats)) {
+                        return filePath;
+                    }
+                }
+            }
+        }
+        return '';
+    });
+}
+exports.tryGetExecutablePath = tryGetExecutablePath;
+function normalizeSeparators(p) {
+    p = p || '';
+    if (exports.IS_WINDOWS) {
+        // convert slashes on Windows
+        p = p.replace(/\//g, '\\');
+        // remove redundant slashes
+        return p.replace(/\\\\+/g, '\\');
+    }
+    // remove redundant slashes
+    return p.replace(/\/\/+/g, '/');
+}
+// on Mac/Linux, test the execute bit
+//     R   W  X  R  W X R W X
+//   256 128 64 32 16 8 4 2 1
+function isUnixExecutable(stats) {
+    return ((stats.mode & 1) > 0 ||
+        ((stats.mode & 8) > 0 && stats.gid === process.getgid()) ||
+        ((stats.mode & 64) > 0 && stats.uid === process.getuid()));
+}
+// Get the path of cmd.exe in windows
+function getCmdPath() {
+    var _a;
+    return (_a = process.env['COMSPEC']) !== null && _a !== void 0 ? _a : `cmd.exe`;
+}
+exports.getCmdPath = getCmdPath;
+//# sourceMappingURL=io-util.js.map
+
+/***/ }),
+
+/***/ 7436:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.findInPath = exports.which = exports.mkdirP = exports.rmRF = exports.mv = exports.cp = void 0;
+const assert_1 = __nccwpck_require__(9491);
+const path = __importStar(__nccwpck_require__(1017));
+const ioUtil = __importStar(__nccwpck_require__(1962));
+/**
+ * Copies a file or folder.
+ * Based off of shelljs - https://github.com/shelljs/shelljs/blob/9237f66c52e5daa40458f94f9565e18e8132f5a6/src/cp.js
+ *
+ * @param     source    source path
+ * @param     dest      destination path
+ * @param     options   optional. See CopyOptions.
+ */
+function cp(source, dest, options = {}) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { force, recursive, copySourceDirectory } = readCopyOptions(options);
+        const destStat = (yield ioUtil.exists(dest)) ? yield ioUtil.stat(dest) : null;
+        // Dest is an existing file, but not forcing
+        if (destStat && destStat.isFile() && !force) {
+            return;
+        }
+        // If dest is an existing directory, should copy inside.
+        const newDest = destStat && destStat.isDirectory() && copySourceDirectory
+            ? path.join(dest, path.basename(source))
+            : dest;
+        if (!(yield ioUtil.exists(source))) {
+            throw new Error(`no such file or directory: ${source}`);
+        }
+        const sourceStat = yield ioUtil.stat(source);
+        if (sourceStat.isDirectory()) {
+            if (!recursive) {
+                throw new Error(`Failed to copy. ${source} is a directory, but tried to copy without recursive flag.`);
+            }
+            else {
+                yield cpDirRecursive(source, newDest, 0, force);
+            }
+        }
+        else {
+            if (path.relative(source, newDest) === '') {
+                // a file cannot be copied to itself
+                throw new Error(`'${newDest}' and '${source}' are the same file`);
+            }
+            yield copyFile(source, newDest, force);
+        }
+    });
+}
+exports.cp = cp;
+/**
+ * Moves a path.
+ *
+ * @param     source    source path
+ * @param     dest      destination path
+ * @param     options   optional. See MoveOptions.
+ */
+function mv(source, dest, options = {}) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (yield ioUtil.exists(dest)) {
+            let destExists = true;
+            if (yield ioUtil.isDirectory(dest)) {
+                // If dest is directory copy src into dest
+                dest = path.join(dest, path.basename(source));
+                destExists = yield ioUtil.exists(dest);
+            }
+            if (destExists) {
+                if (options.force == null || options.force) {
+                    yield rmRF(dest);
+                }
+                else {
+                    throw new Error('Destination already exists');
+                }
+            }
+        }
+        yield mkdirP(path.dirname(dest));
+        yield ioUtil.rename(source, dest);
+    });
+}
+exports.mv = mv;
+/**
+ * Remove a path recursively with force
+ *
+ * @param inputPath path to remove
+ */
+function rmRF(inputPath) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (ioUtil.IS_WINDOWS) {
+            // Check for invalid characters
+            // https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
+            if (/[*"<>|]/.test(inputPath)) {
+                throw new Error('File path must not contain `*`, `"`, `<`, `>` or `|` on Windows');
+            }
+        }
+        try {
+            // note if path does not exist, error is silent
+            yield ioUtil.rm(inputPath, {
+                force: true,
+                maxRetries: 3,
+                recursive: true,
+                retryDelay: 300
+            });
+        }
+        catch (err) {
+            throw new Error(`File was unable to be removed ${err}`);
+        }
+    });
+}
+exports.rmRF = rmRF;
+/**
+ * Make a directory.  Creates the full path with folders in between
+ * Will throw if it fails
+ *
+ * @param   fsPath        path to create
+ * @returns Promise<void>
+ */
+function mkdirP(fsPath) {
+    return __awaiter(this, void 0, void 0, function* () {
+        assert_1.ok(fsPath, 'a path argument must be provided');
+        yield ioUtil.mkdir(fsPath, { recursive: true });
+    });
+}
+exports.mkdirP = mkdirP;
+/**
+ * Returns path of a tool had the tool actually been invoked.  Resolves via paths.
+ * If you check and the tool does not exist, it will throw.
+ *
+ * @param     tool              name of the tool
+ * @param     check             whether to check if tool exists
+ * @returns   Promise<string>   path to tool
+ */
+function which(tool, check) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (!tool) {
+            throw new Error("parameter 'tool' is required");
+        }
+        // recursive when check=true
+        if (check) {
+            const result = yield which(tool, false);
+            if (!result) {
+                if (ioUtil.IS_WINDOWS) {
+                    throw new Error(`Unable to locate executable file: ${tool}. Please verify either the file path exists or the file can be found within a directory specified by the PATH environment variable. Also verify the file has a valid extension for an executable file.`);
+                }
+                else {
+                    throw new Error(`Unable to locate executable file: ${tool}. Please verify either the file path exists or the file can be found within a directory specified by the PATH environment variable. Also check the file mode to verify the file is executable.`);
+                }
+            }
+            return result;
+        }
+        const matches = yield findInPath(tool);
+        if (matches && matches.length > 0) {
+            return matches[0];
+        }
+        return '';
+    });
+}
+exports.which = which;
+/**
+ * Returns a list of all occurrences of the given tool on the system path.
+ *
+ * @returns   Promise<string[]>  the paths of the tool
+ */
+function findInPath(tool) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (!tool) {
+            throw new Error("parameter 'tool' is required");
+        }
+        // build the list of extensions to try
+        const extensions = [];
+        if (ioUtil.IS_WINDOWS && process.env['PATHEXT']) {
+            for (const extension of process.env['PATHEXT'].split(path.delimiter)) {
+                if (extension) {
+                    extensions.push(extension);
+                }
+            }
+        }
+        // if it's rooted, return it if exists. otherwise return empty.
+        if (ioUtil.isRooted(tool)) {
+            const filePath = yield ioUtil.tryGetExecutablePath(tool, extensions);
+            if (filePath) {
+                return [filePath];
+            }
+            return [];
+        }
+        // if any path separators, return empty
+        if (tool.includes(path.sep)) {
+            return [];
+        }
+        // build the list of directories
+        //
+        // Note, technically "where" checks the current directory on Windows. From a toolkit perspective,
+        // it feels like we should not do this. Checking the current directory seems like more of a use
+        // case of a shell, and the which() function exposed by the toolkit should strive for consistency
+        // across platforms.
+        const directories = [];
+        if (process.env.PATH) {
+            for (const p of process.env.PATH.split(path.delimiter)) {
+                if (p) {
+                    directories.push(p);
+                }
+            }
+        }
+        // find all matches
+        const matches = [];
+        for (const directory of directories) {
+            const filePath = yield ioUtil.tryGetExecutablePath(path.join(directory, tool), extensions);
+            if (filePath) {
+                matches.push(filePath);
+            }
+        }
+        return matches;
+    });
+}
+exports.findInPath = findInPath;
+function readCopyOptions(options) {
+    const force = options.force == null ? true : options.force;
+    const recursive = Boolean(options.recursive);
+    const copySourceDirectory = options.copySourceDirectory == null
+        ? true
+        : Boolean(options.copySourceDirectory);
+    return { force, recursive, copySourceDirectory };
+}
+function cpDirRecursive(sourceDir, destDir, currentDepth, force) {
+    return __awaiter(this, void 0, void 0, function* () {
+        // Ensure there is not a run away recursive copy
+        if (currentDepth >= 255)
+            return;
+        currentDepth++;
+        yield mkdirP(destDir);
+        const files = yield ioUtil.readdir(sourceDir);
+        for (const fileName of files) {
+            const srcFile = `${sourceDir}/${fileName}`;
+            const destFile = `${destDir}/${fileName}`;
+            const srcFileStat = yield ioUtil.lstat(srcFile);
+            if (srcFileStat.isDirectory()) {
+                // Recurse
+                yield cpDirRecursive(srcFile, destFile, currentDepth, force);
+            }
+            else {
+                yield copyFile(srcFile, destFile, force);
+            }
+        }
+        // Change the mode for the newly created directory
+        yield ioUtil.chmod(destDir, (yield ioUtil.stat(sourceDir)).mode);
+    });
+}
+// Buffered file copy
+function copyFile(srcFile, destFile, force) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if ((yield ioUtil.lstat(srcFile)).isSymbolicLink()) {
+            // unlink/re-link it
+            try {
+                yield ioUtil.lstat(destFile);
+                yield ioUtil.unlink(destFile);
+            }
+            catch (e) {
+                // Try to override file permission
+                if (e.code === 'EPERM') {
+                    yield ioUtil.chmod(destFile, '0666');
+                    yield ioUtil.unlink(destFile);
+                }
+                // other errors = it doesn't exist, no work to do
+            }
+            // Copy over symlink
+            const symlinkFull = yield ioUtil.readlink(srcFile);
+            yield ioUtil.symlink(symlinkFull, destFile, ioUtil.IS_WINDOWS ? 'junction' : null);
+        }
+        else if (!(yield ioUtil.exists(destFile)) || force) {
+            yield ioUtil.copyFile(srcFile, destFile);
+        }
+    });
+}
+//# sourceMappingURL=io.js.map
+
+/***/ }),
+
+/***/ 2473:
+/***/ (function(module, exports, __nccwpck_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports._readLinuxVersionFile = exports._getOsVersion = exports._findMatch = void 0;
+const semver = __importStar(__nccwpck_require__(5911));
+const core_1 = __nccwpck_require__(2186);
+// needs to be require for core node modules to be mocked
+/* eslint @typescript-eslint/no-require-imports: 0 */
+const os = __nccwpck_require__(2037);
+const cp = __nccwpck_require__(2081);
+const fs = __nccwpck_require__(7147);
+function _findMatch(versionSpec, stable, candidates, archFilter) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const platFilter = os.platform();
+        let result;
+        let match;
+        let file;
+        for (const candidate of candidates) {
+            const version = candidate.version;
+            core_1.debug(`check ${version} satisfies ${versionSpec}`);
+            if (semver.satisfies(version, versionSpec) &&
+                (!stable || candidate.stable === stable)) {
+                file = candidate.files.find(item => {
+                    core_1.debug(`${item.arch}===${archFilter} && ${item.platform}===${platFilter}`);
+                    let chk = item.arch === archFilter && item.platform === platFilter;
+                    if (chk && item.platform_version) {
+                        const osVersion = module.exports._getOsVersion();
+                        if (osVersion === item.platform_version) {
+                            chk = true;
+                        }
+                        else {
+                            chk = semver.satisfies(osVersion, item.platform_version);
+                        }
+                    }
+                    return chk;
+                });
+                if (file) {
+                    core_1.debug(`matched ${candidate.version}`);
+                    match = candidate;
+                    break;
+                }
+            }
+        }
+        if (match && file) {
+            // clone since we're mutating the file list to be only the file that matches
+            result = Object.assign({}, match);
+            result.files = [file];
+        }
+        return result;
+    });
+}
+exports._findMatch = _findMatch;
+function _getOsVersion() {
+    // TODO: add windows and other linux, arm variants
+    // right now filtering on version is only an ubuntu and macos scenario for tools we build for hosted (python)
+    const plat = os.platform();
+    let version = '';
+    if (plat === 'darwin') {
+        version = cp.execSync('sw_vers -productVersion').toString();
+    }
+    else if (plat === 'linux') {
+        // lsb_release process not in some containers, readfile
+        // Run cat /etc/lsb-release
+        // DISTRIB_ID=Ubuntu
+        // DISTRIB_RELEASE=18.04
+        // DISTRIB_CODENAME=bionic
+        // DISTRIB_DESCRIPTION="Ubuntu 18.04.4 LTS"
+        const lsbContents = module.exports._readLinuxVersionFile();
+        if (lsbContents) {
+            const lines = lsbContents.split('\n');
+            for (const line of lines) {
+                const parts = line.split('=');
+                if (parts.length === 2 &&
+                    (parts[0].trim() === 'VERSION_ID' ||
+                        parts[0].trim() === 'DISTRIB_RELEASE')) {
+                    version = parts[1]
+                        .trim()
+                        .replace(/^"/, '')
+                        .replace(/"$/, '');
+                    break;
+                }
+            }
+        }
+    }
+    return version;
+}
+exports._getOsVersion = _getOsVersion;
+function _readLinuxVersionFile() {
+    const lsbReleaseFile = '/etc/lsb-release';
+    const osReleaseFile = '/etc/os-release';
+    let contents = '';
+    if (fs.existsSync(lsbReleaseFile)) {
+        contents = fs.readFileSync(lsbReleaseFile).toString();
+    }
+    else if (fs.existsSync(osReleaseFile)) {
+        contents = fs.readFileSync(osReleaseFile).toString();
+    }
+    return contents;
+}
+exports._readLinuxVersionFile = _readLinuxVersionFile;
+//# sourceMappingURL=manifest.js.map
+
+/***/ }),
+
+/***/ 8279:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.RetryHelper = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+/**
+ * Internal class for retries
+ */
+class RetryHelper {
+    constructor(maxAttempts, minSeconds, maxSeconds) {
+        if (maxAttempts < 1) {
+            throw new Error('max attempts should be greater than or equal to 1');
+        }
+        this.maxAttempts = maxAttempts;
+        this.minSeconds = Math.floor(minSeconds);
+        this.maxSeconds = Math.floor(maxSeconds);
+        if (this.minSeconds > this.maxSeconds) {
+            throw new Error('min seconds should be less than or equal to max seconds');
+        }
+    }
+    execute(action, isRetryable) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let attempt = 1;
+            while (attempt < this.maxAttempts) {
+                // Try
+                try {
+                    return yield action();
+                }
+                catch (err) {
+                    if (isRetryable && !isRetryable(err)) {
+                        throw err;
+                    }
+                    core.info(err.message);
+                }
+                // Sleep
+                const seconds = this.getSleepAmount();
+                core.info(`Waiting ${seconds} seconds before trying again`);
+                yield this.sleep(seconds);
+                attempt++;
+            }
+            // Last attempt
+            return yield action();
+        });
+    }
+    getSleepAmount() {
+        return (Math.floor(Math.random() * (this.maxSeconds - this.minSeconds + 1)) +
+            this.minSeconds);
+    }
+    sleep(seconds) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise(resolve => setTimeout(resolve, seconds * 1000));
+        });
+    }
+}
+exports.RetryHelper = RetryHelper;
+//# sourceMappingURL=retry-helper.js.map
+
+/***/ }),
+
+/***/ 7784:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.evaluateVersions = exports.isExplicitVersion = exports.findFromManifest = exports.getManifestFromRepo = exports.findAllVersions = exports.find = exports.cacheFile = exports.cacheDir = exports.extractZip = exports.extractXar = exports.extractTar = exports.extract7z = exports.downloadTool = exports.HTTPError = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+const io = __importStar(__nccwpck_require__(7436));
+const fs = __importStar(__nccwpck_require__(7147));
+const mm = __importStar(__nccwpck_require__(2473));
+const os = __importStar(__nccwpck_require__(2037));
+const path = __importStar(__nccwpck_require__(1017));
+const httpm = __importStar(__nccwpck_require__(6255));
+const semver = __importStar(__nccwpck_require__(5911));
+const stream = __importStar(__nccwpck_require__(2781));
+const util = __importStar(__nccwpck_require__(3837));
+const assert_1 = __nccwpck_require__(9491);
+const v4_1 = __importDefault(__nccwpck_require__(7468));
+const exec_1 = __nccwpck_require__(1514);
+const retry_helper_1 = __nccwpck_require__(8279);
+class HTTPError extends Error {
+    constructor(httpStatusCode) {
+        super(`Unexpected HTTP response: ${httpStatusCode}`);
+        this.httpStatusCode = httpStatusCode;
+        Object.setPrototypeOf(this, new.target.prototype);
+    }
+}
+exports.HTTPError = HTTPError;
+const IS_WINDOWS = process.platform === 'win32';
+const IS_MAC = process.platform === 'darwin';
+const userAgent = 'actions/tool-cache';
+/**
+ * Download a tool from an url and stream it into a file
+ *
+ * @param url       url of tool to download
+ * @param dest      path to download tool
+ * @param auth      authorization header
+ * @param headers   other headers
+ * @returns         path to downloaded tool
+ */
+function downloadTool(url, dest, auth, headers) {
+    return __awaiter(this, void 0, void 0, function* () {
+        dest = dest || path.join(_getTempDirectory(), v4_1.default());
+        yield io.mkdirP(path.dirname(dest));
+        core.debug(`Downloading ${url}`);
+        core.debug(`Destination ${dest}`);
+        const maxAttempts = 3;
+        const minSeconds = _getGlobal('TEST_DOWNLOAD_TOOL_RETRY_MIN_SECONDS', 10);
+        const maxSeconds = _getGlobal('TEST_DOWNLOAD_TOOL_RETRY_MAX_SECONDS', 20);
+        const retryHelper = new retry_helper_1.RetryHelper(maxAttempts, minSeconds, maxSeconds);
+        return yield retryHelper.execute(() => __awaiter(this, void 0, void 0, function* () {
+            return yield downloadToolAttempt(url, dest || '', auth, headers);
+        }), (err) => {
+            if (err instanceof HTTPError && err.httpStatusCode) {
+                // Don't retry anything less than 500, except 408 Request Timeout and 429 Too Many Requests
+                if (err.httpStatusCode < 500 &&
+                    err.httpStatusCode !== 408 &&
+                    err.httpStatusCode !== 429) {
+                    return false;
+                }
+            }
+            // Otherwise retry
+            return true;
+        });
+    });
+}
+exports.downloadTool = downloadTool;
+function downloadToolAttempt(url, dest, auth, headers) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (fs.existsSync(dest)) {
+            throw new Error(`Destination file path ${dest} already exists`);
+        }
+        // Get the response headers
+        const http = new httpm.HttpClient(userAgent, [], {
+            allowRetries: false
+        });
+        if (auth) {
+            core.debug('set auth');
+            if (headers === undefined) {
+                headers = {};
+            }
+            headers.authorization = auth;
+        }
+        const response = yield http.get(url, headers);
+        if (response.message.statusCode !== 200) {
+            const err = new HTTPError(response.message.statusCode);
+            core.debug(`Failed to download from "${url}". Code(${response.message.statusCode}) Message(${response.message.statusMessage})`);
+            throw err;
+        }
+        // Download the response body
+        const pipeline = util.promisify(stream.pipeline);
+        const responseMessageFactory = _getGlobal('TEST_DOWNLOAD_TOOL_RESPONSE_MESSAGE_FACTORY', () => response.message);
+        const readStream = responseMessageFactory();
+        let succeeded = false;
+        try {
+            yield pipeline(readStream, fs.createWriteStream(dest));
+            core.debug('download complete');
+            succeeded = true;
+            return dest;
+        }
+        finally {
+            // Error, delete dest before retry
+            if (!succeeded) {
+                core.debug('download failed');
+                try {
+                    yield io.rmRF(dest);
+                }
+                catch (err) {
+                    core.debug(`Failed to delete '${dest}'. ${err.message}`);
+                }
+            }
+        }
+    });
+}
+/**
+ * Extract a .7z file
+ *
+ * @param file     path to the .7z file
+ * @param dest     destination directory. Optional.
+ * @param _7zPath  path to 7zr.exe. Optional, for long path support. Most .7z archives do not have this
+ * problem. If your .7z archive contains very long paths, you can pass the path to 7zr.exe which will
+ * gracefully handle long paths. By default 7zdec.exe is used because it is a very small program and is
+ * bundled with the tool lib. However it does not support long paths. 7zr.exe is the reduced command line
+ * interface, it is smaller than the full command line interface, and it does support long paths. At the
+ * time of this writing, it is freely available from the LZMA SDK that is available on the 7zip website.
+ * Be sure to check the current license agreement. If 7zr.exe is bundled with your action, then the path
+ * to 7zr.exe can be pass to this function.
+ * @returns        path to the destination directory
+ */
+function extract7z(file, dest, _7zPath) {
+    return __awaiter(this, void 0, void 0, function* () {
+        assert_1.ok(IS_WINDOWS, 'extract7z() not supported on current OS');
+        assert_1.ok(file, 'parameter "file" is required');
+        dest = yield _createExtractFolder(dest);
+        const originalCwd = process.cwd();
+        process.chdir(dest);
+        if (_7zPath) {
+            try {
+                const logLevel = core.isDebug() ? '-bb1' : '-bb0';
+                const args = [
+                    'x',
+                    logLevel,
+                    '-bd',
+                    '-sccUTF-8',
+                    file
+                ];
+                const options = {
+                    silent: true
+                };
+                yield exec_1.exec(`"${_7zPath}"`, args, options);
+            }
+            finally {
+                process.chdir(originalCwd);
+            }
+        }
+        else {
+            const escapedScript = path
+                .join(__dirname, '..', 'scripts', 'Invoke-7zdec.ps1')
+                .replace(/'/g, "''")
+                .replace(/"|\n|\r/g, ''); // double-up single quotes, remove double quotes and newlines
+            const escapedFile = file.replace(/'/g, "''").replace(/"|\n|\r/g, '');
+            const escapedTarget = dest.replace(/'/g, "''").replace(/"|\n|\r/g, '');
+            const command = `& '${escapedScript}' -Source '${escapedFile}' -Target '${escapedTarget}'`;
+            const args = [
+                '-NoLogo',
+                '-Sta',
+                '-NoProfile',
+                '-NonInteractive',
+                '-ExecutionPolicy',
+                'Unrestricted',
+                '-Command',
+                command
+            ];
+            const options = {
+                silent: true
+            };
+            try {
+                const powershellPath = yield io.which('powershell', true);
+                yield exec_1.exec(`"${powershellPath}"`, args, options);
+            }
+            finally {
+                process.chdir(originalCwd);
+            }
+        }
+        return dest;
+    });
+}
+exports.extract7z = extract7z;
+/**
+ * Extract a compressed tar archive
+ *
+ * @param file     path to the tar
+ * @param dest     destination directory. Optional.
+ * @param flags    flags for the tar command to use for extraction. Defaults to 'xz' (extracting gzipped tars). Optional.
+ * @returns        path to the destination directory
+ */
+function extractTar(file, dest, flags = 'xz') {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (!file) {
+            throw new Error("parameter 'file' is required");
+        }
+        // Create dest
+        dest = yield _createExtractFolder(dest);
+        // Determine whether GNU tar
+        core.debug('Checking tar --version');
+        let versionOutput = '';
+        yield exec_1.exec('tar --version', [], {
+            ignoreReturnCode: true,
+            silent: true,
+            listeners: {
+                stdout: (data) => (versionOutput += data.toString()),
+                stderr: (data) => (versionOutput += data.toString())
+            }
+        });
+        core.debug(versionOutput.trim());
+        const isGnuTar = versionOutput.toUpperCase().includes('GNU TAR');
+        // Initialize args
+        let args;
+        if (flags instanceof Array) {
+            args = flags;
+        }
+        else {
+            args = [flags];
+        }
+        if (core.isDebug() && !flags.includes('v')) {
+            args.push('-v');
+        }
+        let destArg = dest;
+        let fileArg = file;
+        if (IS_WINDOWS && isGnuTar) {
+            args.push('--force-local');
+            destArg = dest.replace(/\\/g, '/');
+            // Technically only the dest needs to have `/` but for aesthetic consistency
+            // convert slashes in the file arg too.
+            fileArg = file.replace(/\\/g, '/');
+        }
+        if (isGnuTar) {
+            // Suppress warnings when using GNU tar to extract archives created by BSD tar
+            args.push('--warning=no-unknown-keyword');
+            args.push('--overwrite');
+        }
+        args.push('-C', destArg, '-f', fileArg);
+        yield exec_1.exec(`tar`, args);
+        return dest;
+    });
+}
+exports.extractTar = extractTar;
+/**
+ * Extract a xar compatible archive
+ *
+ * @param file     path to the archive
+ * @param dest     destination directory. Optional.
+ * @param flags    flags for the xar. Optional.
+ * @returns        path to the destination directory
+ */
+function extractXar(file, dest, flags = []) {
+    return __awaiter(this, void 0, void 0, function* () {
+        assert_1.ok(IS_MAC, 'extractXar() not supported on current OS');
+        assert_1.ok(file, 'parameter "file" is required');
+        dest = yield _createExtractFolder(dest);
+        let args;
+        if (flags instanceof Array) {
+            args = flags;
+        }
+        else {
+            args = [flags];
+        }
+        args.push('-x', '-C', dest, '-f', file);
+        if (core.isDebug()) {
+            args.push('-v');
+        }
+        const xarPath = yield io.which('xar', true);
+        yield exec_1.exec(`"${xarPath}"`, _unique(args));
+        return dest;
+    });
+}
+exports.extractXar = extractXar;
+/**
+ * Extract a zip
+ *
+ * @param file     path to the zip
+ * @param dest     destination directory. Optional.
+ * @returns        path to the destination directory
+ */
+function extractZip(file, dest) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (!file) {
+            throw new Error("parameter 'file' is required");
+        }
+        dest = yield _createExtractFolder(dest);
+        if (IS_WINDOWS) {
+            yield extractZipWin(file, dest);
+        }
+        else {
+            yield extractZipNix(file, dest);
+        }
+        return dest;
+    });
+}
+exports.extractZip = extractZip;
+function extractZipWin(file, dest) {
+    return __awaiter(this, void 0, void 0, function* () {
+        // build the powershell command
+        const escapedFile = file.replace(/'/g, "''").replace(/"|\n|\r/g, ''); // double-up single quotes, remove double quotes and newlines
+        const escapedDest = dest.replace(/'/g, "''").replace(/"|\n|\r/g, '');
+        const pwshPath = yield io.which('pwsh', false);
+        //To match the file overwrite behavior on nix systems, we use the overwrite = true flag for ExtractToDirectory
+        //and the -Force flag for Expand-Archive as a fallback
+        if (pwshPath) {
+            //attempt to use pwsh with ExtractToDirectory, if this fails attempt Expand-Archive
+            const pwshCommand = [
+                `$ErrorActionPreference = 'Stop' ;`,
+                `try { Add-Type -AssemblyName System.IO.Compression.ZipFile } catch { } ;`,
+                `try { [System.IO.Compression.ZipFile]::ExtractToDirectory('${escapedFile}', '${escapedDest}', $true) }`,
+                `catch { if (($_.Exception.GetType().FullName -eq 'System.Management.Automation.MethodException') -or ($_.Exception.GetType().FullName -eq 'System.Management.Automation.RuntimeException') ){ Expand-Archive -LiteralPath '${escapedFile}' -DestinationPath '${escapedDest}' -Force } else { throw $_ } } ;`
+            ].join(' ');
+            const args = [
+                '-NoLogo',
+                '-NoProfile',
+                '-NonInteractive',
+                '-ExecutionPolicy',
+                'Unrestricted',
+                '-Command',
+                pwshCommand
+            ];
+            core.debug(`Using pwsh at path: ${pwshPath}`);
+            yield exec_1.exec(`"${pwshPath}"`, args);
+        }
+        else {
+            const powershellCommand = [
+                `$ErrorActionPreference = 'Stop' ;`,
+                `try { Add-Type -AssemblyName System.IO.Compression.FileSystem } catch { } ;`,
+                `if ((Get-Command -Name Expand-Archive -Module Microsoft.PowerShell.Archive -ErrorAction Ignore)) { Expand-Archive -LiteralPath '${escapedFile}' -DestinationPath '${escapedDest}' -Force }`,
+                `else {[System.IO.Compression.ZipFile]::ExtractToDirectory('${escapedFile}', '${escapedDest}', $true) }`
+            ].join(' ');
+            const args = [
+                '-NoLogo',
+                '-Sta',
+                '-NoProfile',
+                '-NonInteractive',
+                '-ExecutionPolicy',
+                'Unrestricted',
+                '-Command',
+                powershellCommand
+            ];
+            const powershellPath = yield io.which('powershell', true);
+            core.debug(`Using powershell at path: ${powershellPath}`);
+            yield exec_1.exec(`"${powershellPath}"`, args);
+        }
+    });
+}
+function extractZipNix(file, dest) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const unzipPath = yield io.which('unzip', true);
+        const args = [file];
+        if (!core.isDebug()) {
+            args.unshift('-q');
+        }
+        args.unshift('-o'); //overwrite with -o, otherwise a prompt is shown which freezes the run
+        yield exec_1.exec(`"${unzipPath}"`, args, { cwd: dest });
+    });
+}
+/**
+ * Caches a directory and installs it into the tool cacheDir
+ *
+ * @param sourceDir    the directory to cache into tools
+ * @param tool          tool name
+ * @param version       version of the tool.  semver format
+ * @param arch          architecture of the tool.  Optional.  Defaults to machine architecture
+ */
+function cacheDir(sourceDir, tool, version, arch) {
+    return __awaiter(this, void 0, void 0, function* () {
+        version = semver.clean(version) || version;
+        arch = arch || os.arch();
+        core.debug(`Caching tool ${tool} ${version} ${arch}`);
+        core.debug(`source dir: ${sourceDir}`);
+        if (!fs.statSync(sourceDir).isDirectory()) {
+            throw new Error('sourceDir is not a directory');
+        }
+        // Create the tool dir
+        const destPath = yield _createToolPath(tool, version, arch);
+        // copy each child item. do not move. move can fail on Windows
+        // due to anti-virus software having an open handle on a file.
+        for (const itemName of fs.readdirSync(sourceDir)) {
+            const s = path.join(sourceDir, itemName);
+            yield io.cp(s, destPath, { recursive: true });
+        }
+        // write .complete
+        _completeToolPath(tool, version, arch);
+        return destPath;
+    });
+}
+exports.cacheDir = cacheDir;
+/**
+ * Caches a downloaded file (GUID) and installs it
+ * into the tool cache with a given targetName
+ *
+ * @param sourceFile    the file to cache into tools.  Typically a result of downloadTool which is a guid.
+ * @param targetFile    the name of the file name in the tools directory
+ * @param tool          tool name
+ * @param version       version of the tool.  semver format
+ * @param arch          architecture of the tool.  Optional.  Defaults to machine architecture
+ */
+function cacheFile(sourceFile, targetFile, tool, version, arch) {
+    return __awaiter(this, void 0, void 0, function* () {
+        version = semver.clean(version) || version;
+        arch = arch || os.arch();
+        core.debug(`Caching tool ${tool} ${version} ${arch}`);
+        core.debug(`source file: ${sourceFile}`);
+        if (!fs.statSync(sourceFile).isFile()) {
+            throw new Error('sourceFile is not a file');
+        }
+        // create the tool dir
+        const destFolder = yield _createToolPath(tool, version, arch);
+        // copy instead of move. move can fail on Windows due to
+        // anti-virus software having an open handle on a file.
+        const destPath = path.join(destFolder, targetFile);
+        core.debug(`destination file ${destPath}`);
+        yield io.cp(sourceFile, destPath);
+        // write .complete
+        _completeToolPath(tool, version, arch);
+        return destFolder;
+    });
+}
+exports.cacheFile = cacheFile;
+/**
+ * Finds the path to a tool version in the local installed tool cache
+ *
+ * @param toolName      name of the tool
+ * @param versionSpec   version of the tool
+ * @param arch          optional arch.  defaults to arch of computer
+ */
+function find(toolName, versionSpec, arch) {
+    if (!toolName) {
+        throw new Error('toolName parameter is required');
+    }
+    if (!versionSpec) {
+        throw new Error('versionSpec parameter is required');
+    }
+    arch = arch || os.arch();
+    // attempt to resolve an explicit version
+    if (!isExplicitVersion(versionSpec)) {
+        const localVersions = findAllVersions(toolName, arch);
+        const match = evaluateVersions(localVersions, versionSpec);
+        versionSpec = match;
+    }
+    // check for the explicit version in the cache
+    let toolPath = '';
+    if (versionSpec) {
+        versionSpec = semver.clean(versionSpec) || '';
+        const cachePath = path.join(_getCacheDirectory(), toolName, versionSpec, arch);
+        core.debug(`checking cache: ${cachePath}`);
+        if (fs.existsSync(cachePath) && fs.existsSync(`${cachePath}.complete`)) {
+            core.debug(`Found tool in cache ${toolName} ${versionSpec} ${arch}`);
+            toolPath = cachePath;
+        }
+        else {
+            core.debug('not found');
+        }
+    }
+    return toolPath;
+}
+exports.find = find;
+/**
+ * Finds the paths to all versions of a tool that are installed in the local tool cache
+ *
+ * @param toolName  name of the tool
+ * @param arch      optional arch.  defaults to arch of computer
+ */
+function findAllVersions(toolName, arch) {
+    const versions = [];
+    arch = arch || os.arch();
+    const toolPath = path.join(_getCacheDirectory(), toolName);
+    if (fs.existsSync(toolPath)) {
+        const children = fs.readdirSync(toolPath);
+        for (const child of children) {
+            if (isExplicitVersion(child)) {
+                const fullPath = path.join(toolPath, child, arch || '');
+                if (fs.existsSync(fullPath) && fs.existsSync(`${fullPath}.complete`)) {
+                    versions.push(child);
+                }
+            }
+        }
+    }
+    return versions;
+}
+exports.findAllVersions = findAllVersions;
+function getManifestFromRepo(owner, repo, auth, branch = 'master') {
+    return __awaiter(this, void 0, void 0, function* () {
+        let releases = [];
+        const treeUrl = `https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}`;
+        const http = new httpm.HttpClient('tool-cache');
+        const headers = {};
+        if (auth) {
+            core.debug('set auth');
+            headers.authorization = auth;
+        }
+        const response = yield http.getJson(treeUrl, headers);
+        if (!response.result) {
+            return releases;
+        }
+        let manifestUrl = '';
+        for (const item of response.result.tree) {
+            if (item.path === 'versions-manifest.json') {
+                manifestUrl = item.url;
+                break;
+            }
+        }
+        headers['accept'] = 'application/vnd.github.VERSION.raw';
+        let versionsRaw = yield (yield http.get(manifestUrl, headers)).readBody();
+        if (versionsRaw) {
+            // shouldn't be needed but protects against invalid json saved with BOM
+            versionsRaw = versionsRaw.replace(/^\uFEFF/, '');
+            try {
+                releases = JSON.parse(versionsRaw);
+            }
+            catch (_a) {
+                core.debug('Invalid json');
+            }
+        }
+        return releases;
+    });
+}
+exports.getManifestFromRepo = getManifestFromRepo;
+function findFromManifest(versionSpec, stable, manifest, archFilter = os.arch()) {
+    return __awaiter(this, void 0, void 0, function* () {
+        // wrap the internal impl
+        const match = yield mm._findMatch(versionSpec, stable, manifest, archFilter);
+        return match;
+    });
+}
+exports.findFromManifest = findFromManifest;
+function _createExtractFolder(dest) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (!dest) {
+            // create a temp dir
+            dest = path.join(_getTempDirectory(), v4_1.default());
+        }
+        yield io.mkdirP(dest);
+        return dest;
+    });
+}
+function _createToolPath(tool, version, arch) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const folderPath = path.join(_getCacheDirectory(), tool, semver.clean(version) || version, arch || '');
+        core.debug(`destination ${folderPath}`);
+        const markerPath = `${folderPath}.complete`;
+        yield io.rmRF(folderPath);
+        yield io.rmRF(markerPath);
+        yield io.mkdirP(folderPath);
+        return folderPath;
+    });
+}
+function _completeToolPath(tool, version, arch) {
+    const folderPath = path.join(_getCacheDirectory(), tool, semver.clean(version) || version, arch || '');
+    const markerPath = `${folderPath}.complete`;
+    fs.writeFileSync(markerPath, '');
+    core.debug('finished caching tool');
+}
+/**
+ * Check if version string is explicit
+ *
+ * @param versionSpec      version string to check
+ */
+function isExplicitVersion(versionSpec) {
+    const c = semver.clean(versionSpec) || '';
+    core.debug(`isExplicit: ${c}`);
+    const valid = semver.valid(c) != null;
+    core.debug(`explicit? ${valid}`);
+    return valid;
+}
+exports.isExplicitVersion = isExplicitVersion;
+/**
+ * Get the highest satisfiying semantic version in `versions` which satisfies `versionSpec`
+ *
+ * @param versions        array of versions to evaluate
+ * @param versionSpec     semantic version spec to satisfy
+ */
+function evaluateVersions(versions, versionSpec) {
+    let version = '';
+    core.debug(`evaluating ${versions.length} versions`);
+    versions = versions.sort((a, b) => {
+        if (semver.gt(a, b)) {
+            return 1;
+        }
+        return -1;
+    });
+    for (let i = versions.length - 1; i >= 0; i--) {
+        const potential = versions[i];
+        const satisfied = semver.satisfies(potential, versionSpec);
+        if (satisfied) {
+            version = potential;
+            break;
+        }
+    }
+    if (version) {
+        core.debug(`matched: ${version}`);
+    }
+    else {
+        core.debug('match not found');
+    }
+    return version;
+}
+exports.evaluateVersions = evaluateVersions;
+/**
+ * Gets RUNNER_TOOL_CACHE
+ */
+function _getCacheDirectory() {
+    const cacheDirectory = process.env['RUNNER_TOOL_CACHE'] || '';
+    assert_1.ok(cacheDirectory, 'Expected RUNNER_TOOL_CACHE to be defined');
+    return cacheDirectory;
+}
+/**
+ * Gets RUNNER_TEMP
+ */
+function _getTempDirectory() {
+    const tempDirectory = process.env['RUNNER_TEMP'] || '';
+    assert_1.ok(tempDirectory, 'Expected RUNNER_TEMP to be defined');
+    return tempDirectory;
+}
+/**
+ * Gets a global variable
+ */
+function _getGlobal(key, defaultValue) {
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    const value = global[key];
+    /* eslint-enable @typescript-eslint/no-explicit-any */
+    return value !== undefined ? value : defaultValue;
+}
+/**
+ * Returns an array of unique values.
+ * @param values Values to make unique.
+ */
+function _unique(values) {
+    return Array.from(new Set(values));
+}
+//# sourceMappingURL=tool-cache.js.map
+
+/***/ }),
+
+/***/ 7701:
+/***/ ((module) => {
+
+/**
+ * Convert array of 16 byte values to UUID string format of the form:
+ * XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+ */
+var byteToHex = [];
+for (var i = 0; i < 256; ++i) {
+  byteToHex[i] = (i + 0x100).toString(16).substr(1);
+}
+
+function bytesToUuid(buf, offset) {
+  var i = offset || 0;
+  var bth = byteToHex;
+  // join used to fix memory issue caused by concatenation: https://bugs.chromium.org/p/v8/issues/detail?id=3175#c4
+  return ([
+    bth[buf[i++]], bth[buf[i++]],
+    bth[buf[i++]], bth[buf[i++]], '-',
+    bth[buf[i++]], bth[buf[i++]], '-',
+    bth[buf[i++]], bth[buf[i++]], '-',
+    bth[buf[i++]], bth[buf[i++]], '-',
+    bth[buf[i++]], bth[buf[i++]],
+    bth[buf[i++]], bth[buf[i++]],
+    bth[buf[i++]], bth[buf[i++]]
+  ]).join('');
+}
+
+module.exports = bytesToUuid;
+
+
+/***/ }),
+
+/***/ 7269:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+// Unique ID creation requires a high quality random # generator.  In node.js
+// this is pretty straight-forward - we use the crypto API.
+
+var crypto = __nccwpck_require__(6113);
+
+module.exports = function nodeRNG() {
+  return crypto.randomBytes(16);
+};
+
+
+/***/ }),
+
+/***/ 7468:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+var rng = __nccwpck_require__(7269);
+var bytesToUuid = __nccwpck_require__(7701);
+
+function v4(options, buf, offset) {
+  var i = buf && offset || 0;
+
+  if (typeof(options) == 'string') {
+    buf = options === 'binary' ? new Array(16) : null;
+    options = null;
+  }
+  options = options || {};
+
+  var rnds = options.random || (options.rng || rng)();
+
+  // Per 4.4, set bits for version and `clock_seq_hi_and_reserved`
+  rnds[6] = (rnds[6] & 0x0f) | 0x40;
+  rnds[8] = (rnds[8] & 0x3f) | 0x80;
+
+  // Copy bytes to buffer, if provided
+  if (buf) {
+    for (var ii = 0; ii < 16; ++ii) {
+      buf[i + ii] = rnds[ii];
+    }
+  }
+
+  return buf || bytesToUuid(rnds);
+}
+
+module.exports = v4;
+
 
 /***/ }),
 
@@ -5559,7 +8946,7 @@ var import_endpoint = __nccwpck_require__(9440);
 var import_universal_user_agent = __nccwpck_require__(5030);
 
 // pkg/dist-src/version.js
-var VERSION = "8.3.1";
+var VERSION = "8.4.0";
 
 // pkg/dist-src/is-plain-object.js
 function isPlainObject(value) {
@@ -5584,7 +8971,7 @@ function getBufferResponse(response) {
 
 // pkg/dist-src/fetch-wrapper.js
 function fetchWrapper(requestOptions) {
-  var _a, _b, _c;
+  var _a, _b, _c, _d;
   const log = requestOptions.request && requestOptions.request.log ? requestOptions.request.log : console;
   const parseSuccessResponseBody = ((_a = requestOptions.request) == null ? void 0 : _a.parseSuccessResponseBody) !== false;
   if (isPlainObject(requestOptions.body) || Array.isArray(requestOptions.body)) {
@@ -5605,8 +8992,9 @@ function fetchWrapper(requestOptions) {
   return fetch(requestOptions.url, {
     method: requestOptions.method,
     body: requestOptions.body,
+    redirect: (_c = requestOptions.request) == null ? void 0 : _c.redirect,
     headers: requestOptions.headers,
-    signal: (_c = requestOptions.request) == null ? void 0 : _c.signal,
+    signal: (_d = requestOptions.request) == null ? void 0 : _d.signal,
     // duplex must be set if request.body is ReadableStream or Async Iterables.
     // See https://fetch.spec.whatwg.org/#dom-requestinit-duplex.
     ...requestOptions.body && { duplex: "half" }
@@ -5751,6 +9139,75 @@ var request = withDefaults(import_endpoint.endpoint, {
 });
 // Annotate the CommonJS export names for ESM import in node:
 0 && (0);
+
+
+/***/ }),
+
+/***/ 9417:
+/***/ ((module) => {
+
+
+module.exports = balanced;
+function balanced(a, b, str) {
+  if (a instanceof RegExp) a = maybeMatch(a, str);
+  if (b instanceof RegExp) b = maybeMatch(b, str);
+
+  var r = range(a, b, str);
+
+  return r && {
+    start: r[0],
+    end: r[1],
+    pre: str.slice(0, r[0]),
+    body: str.slice(r[0] + a.length, r[1]),
+    post: str.slice(r[1] + b.length)
+  };
+}
+
+function maybeMatch(reg, str) {
+  var m = str.match(reg);
+  return m ? m[0] : null;
+}
+
+balanced.range = range;
+function range(a, b, str) {
+  var begs, beg, left, right, result;
+  var ai = str.indexOf(a);
+  var bi = str.indexOf(b, ai + 1);
+  var i = ai;
+
+  if (ai >= 0 && bi > 0) {
+    if(a===b) {
+      return [ai, bi];
+    }
+    begs = [];
+    left = str.length;
+
+    while (i >= 0 && !result) {
+      if (i == ai) {
+        begs.push(i);
+        ai = str.indexOf(a, i + 1);
+      } else if (begs.length == 1) {
+        result = [ begs.pop(), bi ];
+      } else {
+        beg = begs.pop();
+        if (beg < left) {
+          left = beg;
+          right = bi;
+        }
+
+        bi = str.indexOf(b, i + 1);
+      }
+
+      i = ai < bi && ai >= 0 ? ai : bi;
+    }
+
+    if (begs.length) {
+      result = [ left, right ];
+    }
+  }
+
+  return result;
+}
 
 
 /***/ }),
@@ -5932,6 +9389,234 @@ function removeHook(state, name, method) {
 
   state.registry[name].splice(index, 1);
 }
+
+
+/***/ }),
+
+/***/ 3717:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+var concatMap = __nccwpck_require__(6891);
+var balanced = __nccwpck_require__(9417);
+
+module.exports = expandTop;
+
+var escSlash = '\0SLASH'+Math.random()+'\0';
+var escOpen = '\0OPEN'+Math.random()+'\0';
+var escClose = '\0CLOSE'+Math.random()+'\0';
+var escComma = '\0COMMA'+Math.random()+'\0';
+var escPeriod = '\0PERIOD'+Math.random()+'\0';
+
+function numeric(str) {
+  return parseInt(str, 10) == str
+    ? parseInt(str, 10)
+    : str.charCodeAt(0);
+}
+
+function escapeBraces(str) {
+  return str.split('\\\\').join(escSlash)
+            .split('\\{').join(escOpen)
+            .split('\\}').join(escClose)
+            .split('\\,').join(escComma)
+            .split('\\.').join(escPeriod);
+}
+
+function unescapeBraces(str) {
+  return str.split(escSlash).join('\\')
+            .split(escOpen).join('{')
+            .split(escClose).join('}')
+            .split(escComma).join(',')
+            .split(escPeriod).join('.');
+}
+
+
+// Basically just str.split(","), but handling cases
+// where we have nested braced sections, which should be
+// treated as individual members, like {a,{b,c},d}
+function parseCommaParts(str) {
+  if (!str)
+    return [''];
+
+  var parts = [];
+  var m = balanced('{', '}', str);
+
+  if (!m)
+    return str.split(',');
+
+  var pre = m.pre;
+  var body = m.body;
+  var post = m.post;
+  var p = pre.split(',');
+
+  p[p.length-1] += '{' + body + '}';
+  var postParts = parseCommaParts(post);
+  if (post.length) {
+    p[p.length-1] += postParts.shift();
+    p.push.apply(p, postParts);
+  }
+
+  parts.push.apply(parts, p);
+
+  return parts;
+}
+
+function expandTop(str) {
+  if (!str)
+    return [];
+
+  // I don't know why Bash 4.3 does this, but it does.
+  // Anything starting with {} will have the first two bytes preserved
+  // but *only* at the top level, so {},a}b will not expand to anything,
+  // but a{},b}c will be expanded to [a}c,abc].
+  // One could argue that this is a bug in Bash, but since the goal of
+  // this module is to match Bash's rules, we escape a leading {}
+  if (str.substr(0, 2) === '{}') {
+    str = '\\{\\}' + str.substr(2);
+  }
+
+  return expand(escapeBraces(str), true).map(unescapeBraces);
+}
+
+function identity(e) {
+  return e;
+}
+
+function embrace(str) {
+  return '{' + str + '}';
+}
+function isPadded(el) {
+  return /^-?0\d/.test(el);
+}
+
+function lte(i, y) {
+  return i <= y;
+}
+function gte(i, y) {
+  return i >= y;
+}
+
+function expand(str, isTop) {
+  var expansions = [];
+
+  var m = balanced('{', '}', str);
+  if (!m || /\$$/.test(m.pre)) return [str];
+
+  var isNumericSequence = /^-?\d+\.\.-?\d+(?:\.\.-?\d+)?$/.test(m.body);
+  var isAlphaSequence = /^[a-zA-Z]\.\.[a-zA-Z](?:\.\.-?\d+)?$/.test(m.body);
+  var isSequence = isNumericSequence || isAlphaSequence;
+  var isOptions = m.body.indexOf(',') >= 0;
+  if (!isSequence && !isOptions) {
+    // {a},b}
+    if (m.post.match(/,.*\}/)) {
+      str = m.pre + '{' + m.body + escClose + m.post;
+      return expand(str);
+    }
+    return [str];
+  }
+
+  var n;
+  if (isSequence) {
+    n = m.body.split(/\.\./);
+  } else {
+    n = parseCommaParts(m.body);
+    if (n.length === 1) {
+      // x{{a,b}}y ==> x{a}y x{b}y
+      n = expand(n[0], false).map(embrace);
+      if (n.length === 1) {
+        var post = m.post.length
+          ? expand(m.post, false)
+          : [''];
+        return post.map(function(p) {
+          return m.pre + n[0] + p;
+        });
+      }
+    }
+  }
+
+  // at this point, n is the parts, and we know it's not a comma set
+  // with a single entry.
+
+  // no need to expand pre, since it is guaranteed to be free of brace-sets
+  var pre = m.pre;
+  var post = m.post.length
+    ? expand(m.post, false)
+    : [''];
+
+  var N;
+
+  if (isSequence) {
+    var x = numeric(n[0]);
+    var y = numeric(n[1]);
+    var width = Math.max(n[0].length, n[1].length)
+    var incr = n.length == 3
+      ? Math.abs(numeric(n[2]))
+      : 1;
+    var test = lte;
+    var reverse = y < x;
+    if (reverse) {
+      incr *= -1;
+      test = gte;
+    }
+    var pad = n.some(isPadded);
+
+    N = [];
+
+    for (var i = x; test(i, y); i += incr) {
+      var c;
+      if (isAlphaSequence) {
+        c = String.fromCharCode(i);
+        if (c === '\\')
+          c = '';
+      } else {
+        c = String(i);
+        if (pad) {
+          var need = width - c.length;
+          if (need > 0) {
+            var z = new Array(need + 1).join('0');
+            if (i < 0)
+              c = '-' + z + c.slice(1);
+            else
+              c = z + c;
+          }
+        }
+      }
+      N.push(c);
+    }
+  } else {
+    N = concatMap(n, function(el) { return expand(el, false) });
+  }
+
+  for (var j = 0; j < N.length; j++) {
+    for (var k = 0; k < post.length; k++) {
+      var expansion = pre + N[j] + post[k];
+      if (!isTop || isSequence || expansion)
+        expansions.push(expansion);
+    }
+  }
+
+  return expansions;
+}
+
+
+
+/***/ }),
+
+/***/ 6891:
+/***/ ((module) => {
+
+module.exports = function (xs, fn) {
+    var res = [];
+    for (var i = 0; i < xs.length; i++) {
+        var x = fn(xs[i], i);
+        if (isArray(x)) res.push.apply(res, x);
+        else res.push(x);
+    }
+    return res;
+};
+
+var isArray = Array.isArray || function (xs) {
+    return Object.prototype.toString.call(xs) === '[object Array]';
+};
 
 
 /***/ }),
@@ -7922,6 +11607,960 @@ exports.Deprecation = Deprecation;
 
 /***/ }),
 
+/***/ 3973:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+module.exports = minimatch
+minimatch.Minimatch = Minimatch
+
+var path = (function () { try { return __nccwpck_require__(1017) } catch (e) {}}()) || {
+  sep: '/'
+}
+minimatch.sep = path.sep
+
+var GLOBSTAR = minimatch.GLOBSTAR = Minimatch.GLOBSTAR = {}
+var expand = __nccwpck_require__(3717)
+
+var plTypes = {
+  '!': { open: '(?:(?!(?:', close: '))[^/]*?)'},
+  '?': { open: '(?:', close: ')?' },
+  '+': { open: '(?:', close: ')+' },
+  '*': { open: '(?:', close: ')*' },
+  '@': { open: '(?:', close: ')' }
+}
+
+// any single thing other than /
+// don't need to escape / when using new RegExp()
+var qmark = '[^/]'
+
+// * => any number of characters
+var star = qmark + '*?'
+
+// ** when dots are allowed.  Anything goes, except .. and .
+// not (^ or / followed by one or two dots followed by $ or /),
+// followed by anything, any number of times.
+var twoStarDot = '(?:(?!(?:\\\/|^)(?:\\.{1,2})($|\\\/)).)*?'
+
+// not a ^ or / followed by a dot,
+// followed by anything, any number of times.
+var twoStarNoDot = '(?:(?!(?:\\\/|^)\\.).)*?'
+
+// characters that need to be escaped in RegExp.
+var reSpecials = charSet('().*{}+?[]^$\\!')
+
+// "abc" -> { a:true, b:true, c:true }
+function charSet (s) {
+  return s.split('').reduce(function (set, c) {
+    set[c] = true
+    return set
+  }, {})
+}
+
+// normalizes slashes.
+var slashSplit = /\/+/
+
+minimatch.filter = filter
+function filter (pattern, options) {
+  options = options || {}
+  return function (p, i, list) {
+    return minimatch(p, pattern, options)
+  }
+}
+
+function ext (a, b) {
+  b = b || {}
+  var t = {}
+  Object.keys(a).forEach(function (k) {
+    t[k] = a[k]
+  })
+  Object.keys(b).forEach(function (k) {
+    t[k] = b[k]
+  })
+  return t
+}
+
+minimatch.defaults = function (def) {
+  if (!def || typeof def !== 'object' || !Object.keys(def).length) {
+    return minimatch
+  }
+
+  var orig = minimatch
+
+  var m = function minimatch (p, pattern, options) {
+    return orig(p, pattern, ext(def, options))
+  }
+
+  m.Minimatch = function Minimatch (pattern, options) {
+    return new orig.Minimatch(pattern, ext(def, options))
+  }
+  m.Minimatch.defaults = function defaults (options) {
+    return orig.defaults(ext(def, options)).Minimatch
+  }
+
+  m.filter = function filter (pattern, options) {
+    return orig.filter(pattern, ext(def, options))
+  }
+
+  m.defaults = function defaults (options) {
+    return orig.defaults(ext(def, options))
+  }
+
+  m.makeRe = function makeRe (pattern, options) {
+    return orig.makeRe(pattern, ext(def, options))
+  }
+
+  m.braceExpand = function braceExpand (pattern, options) {
+    return orig.braceExpand(pattern, ext(def, options))
+  }
+
+  m.match = function (list, pattern, options) {
+    return orig.match(list, pattern, ext(def, options))
+  }
+
+  return m
+}
+
+Minimatch.defaults = function (def) {
+  return minimatch.defaults(def).Minimatch
+}
+
+function minimatch (p, pattern, options) {
+  assertValidPattern(pattern)
+
+  if (!options) options = {}
+
+  // shortcut: comments match nothing.
+  if (!options.nocomment && pattern.charAt(0) === '#') {
+    return false
+  }
+
+  return new Minimatch(pattern, options).match(p)
+}
+
+function Minimatch (pattern, options) {
+  if (!(this instanceof Minimatch)) {
+    return new Minimatch(pattern, options)
+  }
+
+  assertValidPattern(pattern)
+
+  if (!options) options = {}
+
+  pattern = pattern.trim()
+
+  // windows support: need to use /, not \
+  if (!options.allowWindowsEscape && path.sep !== '/') {
+    pattern = pattern.split(path.sep).join('/')
+  }
+
+  this.options = options
+  this.set = []
+  this.pattern = pattern
+  this.regexp = null
+  this.negate = false
+  this.comment = false
+  this.empty = false
+  this.partial = !!options.partial
+
+  // make the set of regexps etc.
+  this.make()
+}
+
+Minimatch.prototype.debug = function () {}
+
+Minimatch.prototype.make = make
+function make () {
+  var pattern = this.pattern
+  var options = this.options
+
+  // empty patterns and comments match nothing.
+  if (!options.nocomment && pattern.charAt(0) === '#') {
+    this.comment = true
+    return
+  }
+  if (!pattern) {
+    this.empty = true
+    return
+  }
+
+  // step 1: figure out negation, etc.
+  this.parseNegate()
+
+  // step 2: expand braces
+  var set = this.globSet = this.braceExpand()
+
+  if (options.debug) this.debug = function debug() { console.error.apply(console, arguments) }
+
+  this.debug(this.pattern, set)
+
+  // step 3: now we have a set, so turn each one into a series of path-portion
+  // matching patterns.
+  // These will be regexps, except in the case of "**", which is
+  // set to the GLOBSTAR object for globstar behavior,
+  // and will not contain any / characters
+  set = this.globParts = set.map(function (s) {
+    return s.split(slashSplit)
+  })
+
+  this.debug(this.pattern, set)
+
+  // glob --> regexps
+  set = set.map(function (s, si, set) {
+    return s.map(this.parse, this)
+  }, this)
+
+  this.debug(this.pattern, set)
+
+  // filter out everything that didn't compile properly.
+  set = set.filter(function (s) {
+    return s.indexOf(false) === -1
+  })
+
+  this.debug(this.pattern, set)
+
+  this.set = set
+}
+
+Minimatch.prototype.parseNegate = parseNegate
+function parseNegate () {
+  var pattern = this.pattern
+  var negate = false
+  var options = this.options
+  var negateOffset = 0
+
+  if (options.nonegate) return
+
+  for (var i = 0, l = pattern.length
+    ; i < l && pattern.charAt(i) === '!'
+    ; i++) {
+    negate = !negate
+    negateOffset++
+  }
+
+  if (negateOffset) this.pattern = pattern.substr(negateOffset)
+  this.negate = negate
+}
+
+// Brace expansion:
+// a{b,c}d -> abd acd
+// a{b,}c -> abc ac
+// a{0..3}d -> a0d a1d a2d a3d
+// a{b,c{d,e}f}g -> abg acdfg acefg
+// a{b,c}d{e,f}g -> abdeg acdeg abdeg abdfg
+//
+// Invalid sets are not expanded.
+// a{2..}b -> a{2..}b
+// a{b}c -> a{b}c
+minimatch.braceExpand = function (pattern, options) {
+  return braceExpand(pattern, options)
+}
+
+Minimatch.prototype.braceExpand = braceExpand
+
+function braceExpand (pattern, options) {
+  if (!options) {
+    if (this instanceof Minimatch) {
+      options = this.options
+    } else {
+      options = {}
+    }
+  }
+
+  pattern = typeof pattern === 'undefined'
+    ? this.pattern : pattern
+
+  assertValidPattern(pattern)
+
+  // Thanks to Yeting Li <https://github.com/yetingli> for
+  // improving this regexp to avoid a ReDOS vulnerability.
+  if (options.nobrace || !/\{(?:(?!\{).)*\}/.test(pattern)) {
+    // shortcut. no need to expand.
+    return [pattern]
+  }
+
+  return expand(pattern)
+}
+
+var MAX_PATTERN_LENGTH = 1024 * 64
+var assertValidPattern = function (pattern) {
+  if (typeof pattern !== 'string') {
+    throw new TypeError('invalid pattern')
+  }
+
+  if (pattern.length > MAX_PATTERN_LENGTH) {
+    throw new TypeError('pattern is too long')
+  }
+}
+
+// parse a component of the expanded set.
+// At this point, no pattern may contain "/" in it
+// so we're going to return a 2d array, where each entry is the full
+// pattern, split on '/', and then turned into a regular expression.
+// A regexp is made at the end which joins each array with an
+// escaped /, and another full one which joins each regexp with |.
+//
+// Following the lead of Bash 4.1, note that "**" only has special meaning
+// when it is the *only* thing in a path portion.  Otherwise, any series
+// of * is equivalent to a single *.  Globstar behavior is enabled by
+// default, and can be disabled by setting options.noglobstar.
+Minimatch.prototype.parse = parse
+var SUBPARSE = {}
+function parse (pattern, isSub) {
+  assertValidPattern(pattern)
+
+  var options = this.options
+
+  // shortcuts
+  if (pattern === '**') {
+    if (!options.noglobstar)
+      return GLOBSTAR
+    else
+      pattern = '*'
+  }
+  if (pattern === '') return ''
+
+  var re = ''
+  var hasMagic = !!options.nocase
+  var escaping = false
+  // ? => one single character
+  var patternListStack = []
+  var negativeLists = []
+  var stateChar
+  var inClass = false
+  var reClassStart = -1
+  var classStart = -1
+  // . and .. never match anything that doesn't start with .,
+  // even when options.dot is set.
+  var patternStart = pattern.charAt(0) === '.' ? '' // anything
+  // not (start or / followed by . or .. followed by / or end)
+  : options.dot ? '(?!(?:^|\\\/)\\.{1,2}(?:$|\\\/))'
+  : '(?!\\.)'
+  var self = this
+
+  function clearStateChar () {
+    if (stateChar) {
+      // we had some state-tracking character
+      // that wasn't consumed by this pass.
+      switch (stateChar) {
+        case '*':
+          re += star
+          hasMagic = true
+        break
+        case '?':
+          re += qmark
+          hasMagic = true
+        break
+        default:
+          re += '\\' + stateChar
+        break
+      }
+      self.debug('clearStateChar %j %j', stateChar, re)
+      stateChar = false
+    }
+  }
+
+  for (var i = 0, len = pattern.length, c
+    ; (i < len) && (c = pattern.charAt(i))
+    ; i++) {
+    this.debug('%s\t%s %s %j', pattern, i, re, c)
+
+    // skip over any that are escaped.
+    if (escaping && reSpecials[c]) {
+      re += '\\' + c
+      escaping = false
+      continue
+    }
+
+    switch (c) {
+      /* istanbul ignore next */
+      case '/': {
+        // completely not allowed, even escaped.
+        // Should already be path-split by now.
+        return false
+      }
+
+      case '\\':
+        clearStateChar()
+        escaping = true
+      continue
+
+      // the various stateChar values
+      // for the "extglob" stuff.
+      case '?':
+      case '*':
+      case '+':
+      case '@':
+      case '!':
+        this.debug('%s\t%s %s %j <-- stateChar', pattern, i, re, c)
+
+        // all of those are literals inside a class, except that
+        // the glob [!a] means [^a] in regexp
+        if (inClass) {
+          this.debug('  in class')
+          if (c === '!' && i === classStart + 1) c = '^'
+          re += c
+          continue
+        }
+
+        // if we already have a stateChar, then it means
+        // that there was something like ** or +? in there.
+        // Handle the stateChar, then proceed with this one.
+        self.debug('call clearStateChar %j', stateChar)
+        clearStateChar()
+        stateChar = c
+        // if extglob is disabled, then +(asdf|foo) isn't a thing.
+        // just clear the statechar *now*, rather than even diving into
+        // the patternList stuff.
+        if (options.noext) clearStateChar()
+      continue
+
+      case '(':
+        if (inClass) {
+          re += '('
+          continue
+        }
+
+        if (!stateChar) {
+          re += '\\('
+          continue
+        }
+
+        patternListStack.push({
+          type: stateChar,
+          start: i - 1,
+          reStart: re.length,
+          open: plTypes[stateChar].open,
+          close: plTypes[stateChar].close
+        })
+        // negation is (?:(?!js)[^/]*)
+        re += stateChar === '!' ? '(?:(?!(?:' : '(?:'
+        this.debug('plType %j %j', stateChar, re)
+        stateChar = false
+      continue
+
+      case ')':
+        if (inClass || !patternListStack.length) {
+          re += '\\)'
+          continue
+        }
+
+        clearStateChar()
+        hasMagic = true
+        var pl = patternListStack.pop()
+        // negation is (?:(?!js)[^/]*)
+        // The others are (?:<pattern>)<type>
+        re += pl.close
+        if (pl.type === '!') {
+          negativeLists.push(pl)
+        }
+        pl.reEnd = re.length
+      continue
+
+      case '|':
+        if (inClass || !patternListStack.length || escaping) {
+          re += '\\|'
+          escaping = false
+          continue
+        }
+
+        clearStateChar()
+        re += '|'
+      continue
+
+      // these are mostly the same in regexp and glob
+      case '[':
+        // swallow any state-tracking char before the [
+        clearStateChar()
+
+        if (inClass) {
+          re += '\\' + c
+          continue
+        }
+
+        inClass = true
+        classStart = i
+        reClassStart = re.length
+        re += c
+      continue
+
+      case ']':
+        //  a right bracket shall lose its special
+        //  meaning and represent itself in
+        //  a bracket expression if it occurs
+        //  first in the list.  -- POSIX.2 2.8.3.2
+        if (i === classStart + 1 || !inClass) {
+          re += '\\' + c
+          escaping = false
+          continue
+        }
+
+        // handle the case where we left a class open.
+        // "[z-a]" is valid, equivalent to "\[z-a\]"
+        // split where the last [ was, make sure we don't have
+        // an invalid re. if so, re-walk the contents of the
+        // would-be class to re-translate any characters that
+        // were passed through as-is
+        // TODO: It would probably be faster to determine this
+        // without a try/catch and a new RegExp, but it's tricky
+        // to do safely.  For now, this is safe and works.
+        var cs = pattern.substring(classStart + 1, i)
+        try {
+          RegExp('[' + cs + ']')
+        } catch (er) {
+          // not a valid class!
+          var sp = this.parse(cs, SUBPARSE)
+          re = re.substr(0, reClassStart) + '\\[' + sp[0] + '\\]'
+          hasMagic = hasMagic || sp[1]
+          inClass = false
+          continue
+        }
+
+        // finish up the class.
+        hasMagic = true
+        inClass = false
+        re += c
+      continue
+
+      default:
+        // swallow any state char that wasn't consumed
+        clearStateChar()
+
+        if (escaping) {
+          // no need
+          escaping = false
+        } else if (reSpecials[c]
+          && !(c === '^' && inClass)) {
+          re += '\\'
+        }
+
+        re += c
+
+    } // switch
+  } // for
+
+  // handle the case where we left a class open.
+  // "[abc" is valid, equivalent to "\[abc"
+  if (inClass) {
+    // split where the last [ was, and escape it
+    // this is a huge pita.  We now have to re-walk
+    // the contents of the would-be class to re-translate
+    // any characters that were passed through as-is
+    cs = pattern.substr(classStart + 1)
+    sp = this.parse(cs, SUBPARSE)
+    re = re.substr(0, reClassStart) + '\\[' + sp[0]
+    hasMagic = hasMagic || sp[1]
+  }
+
+  // handle the case where we had a +( thing at the *end*
+  // of the pattern.
+  // each pattern list stack adds 3 chars, and we need to go through
+  // and escape any | chars that were passed through as-is for the regexp.
+  // Go through and escape them, taking care not to double-escape any
+  // | chars that were already escaped.
+  for (pl = patternListStack.pop(); pl; pl = patternListStack.pop()) {
+    var tail = re.slice(pl.reStart + pl.open.length)
+    this.debug('setting tail', re, pl)
+    // maybe some even number of \, then maybe 1 \, followed by a |
+    tail = tail.replace(/((?:\\{2}){0,64})(\\?)\|/g, function (_, $1, $2) {
+      if (!$2) {
+        // the | isn't already escaped, so escape it.
+        $2 = '\\'
+      }
+
+      // need to escape all those slashes *again*, without escaping the
+      // one that we need for escaping the | character.  As it works out,
+      // escaping an even number of slashes can be done by simply repeating
+      // it exactly after itself.  That's why this trick works.
+      //
+      // I am sorry that you have to see this.
+      return $1 + $1 + $2 + '|'
+    })
+
+    this.debug('tail=%j\n   %s', tail, tail, pl, re)
+    var t = pl.type === '*' ? star
+      : pl.type === '?' ? qmark
+      : '\\' + pl.type
+
+    hasMagic = true
+    re = re.slice(0, pl.reStart) + t + '\\(' + tail
+  }
+
+  // handle trailing things that only matter at the very end.
+  clearStateChar()
+  if (escaping) {
+    // trailing \\
+    re += '\\\\'
+  }
+
+  // only need to apply the nodot start if the re starts with
+  // something that could conceivably capture a dot
+  var addPatternStart = false
+  switch (re.charAt(0)) {
+    case '[': case '.': case '(': addPatternStart = true
+  }
+
+  // Hack to work around lack of negative lookbehind in JS
+  // A pattern like: *.!(x).!(y|z) needs to ensure that a name
+  // like 'a.xyz.yz' doesn't match.  So, the first negative
+  // lookahead, has to look ALL the way ahead, to the end of
+  // the pattern.
+  for (var n = negativeLists.length - 1; n > -1; n--) {
+    var nl = negativeLists[n]
+
+    var nlBefore = re.slice(0, nl.reStart)
+    var nlFirst = re.slice(nl.reStart, nl.reEnd - 8)
+    var nlLast = re.slice(nl.reEnd - 8, nl.reEnd)
+    var nlAfter = re.slice(nl.reEnd)
+
+    nlLast += nlAfter
+
+    // Handle nested stuff like *(*.js|!(*.json)), where open parens
+    // mean that we should *not* include the ) in the bit that is considered
+    // "after" the negated section.
+    var openParensBefore = nlBefore.split('(').length - 1
+    var cleanAfter = nlAfter
+    for (i = 0; i < openParensBefore; i++) {
+      cleanAfter = cleanAfter.replace(/\)[+*?]?/, '')
+    }
+    nlAfter = cleanAfter
+
+    var dollar = ''
+    if (nlAfter === '' && isSub !== SUBPARSE) {
+      dollar = '$'
+    }
+    var newRe = nlBefore + nlFirst + nlAfter + dollar + nlLast
+    re = newRe
+  }
+
+  // if the re is not "" at this point, then we need to make sure
+  // it doesn't match against an empty path part.
+  // Otherwise a/* will match a/, which it should not.
+  if (re !== '' && hasMagic) {
+    re = '(?=.)' + re
+  }
+
+  if (addPatternStart) {
+    re = patternStart + re
+  }
+
+  // parsing just a piece of a larger pattern.
+  if (isSub === SUBPARSE) {
+    return [re, hasMagic]
+  }
+
+  // skip the regexp for non-magical patterns
+  // unescape anything in it, though, so that it'll be
+  // an exact match against a file etc.
+  if (!hasMagic) {
+    return globUnescape(pattern)
+  }
+
+  var flags = options.nocase ? 'i' : ''
+  try {
+    var regExp = new RegExp('^' + re + '$', flags)
+  } catch (er) /* istanbul ignore next - should be impossible */ {
+    // If it was an invalid regular expression, then it can't match
+    // anything.  This trick looks for a character after the end of
+    // the string, which is of course impossible, except in multi-line
+    // mode, but it's not a /m regex.
+    return new RegExp('$.')
+  }
+
+  regExp._glob = pattern
+  regExp._src = re
+
+  return regExp
+}
+
+minimatch.makeRe = function (pattern, options) {
+  return new Minimatch(pattern, options || {}).makeRe()
+}
+
+Minimatch.prototype.makeRe = makeRe
+function makeRe () {
+  if (this.regexp || this.regexp === false) return this.regexp
+
+  // at this point, this.set is a 2d array of partial
+  // pattern strings, or "**".
+  //
+  // It's better to use .match().  This function shouldn't
+  // be used, really, but it's pretty convenient sometimes,
+  // when you just want to work with a regex.
+  var set = this.set
+
+  if (!set.length) {
+    this.regexp = false
+    return this.regexp
+  }
+  var options = this.options
+
+  var twoStar = options.noglobstar ? star
+    : options.dot ? twoStarDot
+    : twoStarNoDot
+  var flags = options.nocase ? 'i' : ''
+
+  var re = set.map(function (pattern) {
+    return pattern.map(function (p) {
+      return (p === GLOBSTAR) ? twoStar
+      : (typeof p === 'string') ? regExpEscape(p)
+      : p._src
+    }).join('\\\/')
+  }).join('|')
+
+  // must match entire pattern
+  // ending in a * or ** will make it less strict.
+  re = '^(?:' + re + ')$'
+
+  // can match anything, as long as it's not this.
+  if (this.negate) re = '^(?!' + re + ').*$'
+
+  try {
+    this.regexp = new RegExp(re, flags)
+  } catch (ex) /* istanbul ignore next - should be impossible */ {
+    this.regexp = false
+  }
+  return this.regexp
+}
+
+minimatch.match = function (list, pattern, options) {
+  options = options || {}
+  var mm = new Minimatch(pattern, options)
+  list = list.filter(function (f) {
+    return mm.match(f)
+  })
+  if (mm.options.nonull && !list.length) {
+    list.push(pattern)
+  }
+  return list
+}
+
+Minimatch.prototype.match = function match (f, partial) {
+  if (typeof partial === 'undefined') partial = this.partial
+  this.debug('match', f, this.pattern)
+  // short-circuit in the case of busted things.
+  // comments, etc.
+  if (this.comment) return false
+  if (this.empty) return f === ''
+
+  if (f === '/' && partial) return true
+
+  var options = this.options
+
+  // windows: need to use /, not \
+  if (path.sep !== '/') {
+    f = f.split(path.sep).join('/')
+  }
+
+  // treat the test path as a set of pathparts.
+  f = f.split(slashSplit)
+  this.debug(this.pattern, 'split', f)
+
+  // just ONE of the pattern sets in this.set needs to match
+  // in order for it to be valid.  If negating, then just one
+  // match means that we have failed.
+  // Either way, return on the first hit.
+
+  var set = this.set
+  this.debug(this.pattern, 'set', set)
+
+  // Find the basename of the path by looking for the last non-empty segment
+  var filename
+  var i
+  for (i = f.length - 1; i >= 0; i--) {
+    filename = f[i]
+    if (filename) break
+  }
+
+  for (i = 0; i < set.length; i++) {
+    var pattern = set[i]
+    var file = f
+    if (options.matchBase && pattern.length === 1) {
+      file = [filename]
+    }
+    var hit = this.matchOne(file, pattern, partial)
+    if (hit) {
+      if (options.flipNegate) return true
+      return !this.negate
+    }
+  }
+
+  // didn't get any hits.  this is success if it's a negative
+  // pattern, failure otherwise.
+  if (options.flipNegate) return false
+  return this.negate
+}
+
+// set partial to true to test if, for example,
+// "/a/b" matches the start of "/*/b/*/d"
+// Partial means, if you run out of file before you run
+// out of pattern, then that's fine, as long as all
+// the parts match.
+Minimatch.prototype.matchOne = function (file, pattern, partial) {
+  var options = this.options
+
+  this.debug('matchOne',
+    { 'this': this, file: file, pattern: pattern })
+
+  this.debug('matchOne', file.length, pattern.length)
+
+  for (var fi = 0,
+      pi = 0,
+      fl = file.length,
+      pl = pattern.length
+      ; (fi < fl) && (pi < pl)
+      ; fi++, pi++) {
+    this.debug('matchOne loop')
+    var p = pattern[pi]
+    var f = file[fi]
+
+    this.debug(pattern, p, f)
+
+    // should be impossible.
+    // some invalid regexp stuff in the set.
+    /* istanbul ignore if */
+    if (p === false) return false
+
+    if (p === GLOBSTAR) {
+      this.debug('GLOBSTAR', [pattern, p, f])
+
+      // "**"
+      // a/**/b/**/c would match the following:
+      // a/b/x/y/z/c
+      // a/x/y/z/b/c
+      // a/b/x/b/x/c
+      // a/b/c
+      // To do this, take the rest of the pattern after
+      // the **, and see if it would match the file remainder.
+      // If so, return success.
+      // If not, the ** "swallows" a segment, and try again.
+      // This is recursively awful.
+      //
+      // a/**/b/**/c matching a/b/x/y/z/c
+      // - a matches a
+      // - doublestar
+      //   - matchOne(b/x/y/z/c, b/**/c)
+      //     - b matches b
+      //     - doublestar
+      //       - matchOne(x/y/z/c, c) -> no
+      //       - matchOne(y/z/c, c) -> no
+      //       - matchOne(z/c, c) -> no
+      //       - matchOne(c, c) yes, hit
+      var fr = fi
+      var pr = pi + 1
+      if (pr === pl) {
+        this.debug('** at the end')
+        // a ** at the end will just swallow the rest.
+        // We have found a match.
+        // however, it will not swallow /.x, unless
+        // options.dot is set.
+        // . and .. are *never* matched by **, for explosively
+        // exponential reasons.
+        for (; fi < fl; fi++) {
+          if (file[fi] === '.' || file[fi] === '..' ||
+            (!options.dot && file[fi].charAt(0) === '.')) return false
+        }
+        return true
+      }
+
+      // ok, let's see if we can swallow whatever we can.
+      while (fr < fl) {
+        var swallowee = file[fr]
+
+        this.debug('\nglobstar while', file, fr, pattern, pr, swallowee)
+
+        // XXX remove this slice.  Just pass the start index.
+        if (this.matchOne(file.slice(fr), pattern.slice(pr), partial)) {
+          this.debug('globstar found match!', fr, fl, swallowee)
+          // found a match.
+          return true
+        } else {
+          // can't swallow "." or ".." ever.
+          // can only swallow ".foo" when explicitly asked.
+          if (swallowee === '.' || swallowee === '..' ||
+            (!options.dot && swallowee.charAt(0) === '.')) {
+            this.debug('dot detected!', file, fr, pattern, pr)
+            break
+          }
+
+          // ** swallows a segment, and continue.
+          this.debug('globstar swallow a segment, and continue')
+          fr++
+        }
+      }
+
+      // no match was found.
+      // However, in partial mode, we can't say this is necessarily over.
+      // If there's more *pattern* left, then
+      /* istanbul ignore if */
+      if (partial) {
+        // ran out of file
+        this.debug('\n>>> no match, partial?', file, fr, pattern, pr)
+        if (fr === fl) return true
+      }
+      return false
+    }
+
+    // something other than **
+    // non-magic patterns just have to match exactly
+    // patterns with magic have been turned into regexps.
+    var hit
+    if (typeof p === 'string') {
+      hit = f === p
+      this.debug('string match', p, f, hit)
+    } else {
+      hit = f.match(p)
+      this.debug('pattern match', p, f, hit)
+    }
+
+    if (!hit) return false
+  }
+
+  // Note: ending in / means that we'll get a final ""
+  // at the end of the pattern.  This can only match a
+  // corresponding "" at the end of the file.
+  // If the file ends in /, then it can only match a
+  // a pattern that ends in /, unless the pattern just
+  // doesn't have any more for it. But, a/b/ should *not*
+  // match "a/b/*", even though "" matches against the
+  // [^/]*? pattern, except in partial mode, where it might
+  // simply not be reached yet.
+  // However, a/b/ should still satisfy a/*
+
+  // now either we fell off the end of the pattern, or we're done.
+  if (fi === fl && pi === pl) {
+    // ran out of pattern and filename at the same time.
+    // an exact hit!
+    return true
+  } else if (fi === fl) {
+    // ran out of file, but still had pattern left.
+    // this is ok if we're doing the match as part of
+    // a glob fs traversal.
+    return partial
+  } else /* istanbul ignore else */ if (pi === pl) {
+    // ran out of pattern, still have file left.
+    // this is only acceptable if we're on the very last
+    // empty segment of a file with a trailing slash.
+    // a/* should match a/b/
+    return (fi === fl - 1) && (file[fi] === '')
+  }
+
+  // should be unreachable.
+  /* istanbul ignore next */
+  throw new Error('wtf?')
+}
+
+// replace stuff like \* with *
+function globUnescape (s) {
+  return s.replace(/\\(.)/g, '$1')
+}
+
+function regExpEscape (s) {
+  return s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')
+}
+
+
+/***/ }),
+
 /***/ 1223:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -7966,6 +12605,1656 @@ function onceStrict (fn) {
   f.onceError = name + " shouldn't be called more than once"
   f.called = false
   return f
+}
+
+
+/***/ }),
+
+/***/ 5911:
+/***/ ((module, exports) => {
+
+exports = module.exports = SemVer
+
+var debug
+/* istanbul ignore next */
+if (typeof process === 'object' &&
+    process.env &&
+    process.env.NODE_DEBUG &&
+    /\bsemver\b/i.test(process.env.NODE_DEBUG)) {
+  debug = function () {
+    var args = Array.prototype.slice.call(arguments, 0)
+    args.unshift('SEMVER')
+    console.log.apply(console, args)
+  }
+} else {
+  debug = function () {}
+}
+
+// Note: this is the semver.org version of the spec that it implements
+// Not necessarily the package version of this code.
+exports.SEMVER_SPEC_VERSION = '2.0.0'
+
+var MAX_LENGTH = 256
+var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER ||
+  /* istanbul ignore next */ 9007199254740991
+
+// Max safe segment length for coercion.
+var MAX_SAFE_COMPONENT_LENGTH = 16
+
+var MAX_SAFE_BUILD_LENGTH = MAX_LENGTH - 6
+
+// The actual regexps go on exports.re
+var re = exports.re = []
+var safeRe = exports.safeRe = []
+var src = exports.src = []
+var t = exports.tokens = {}
+var R = 0
+
+function tok (n) {
+  t[n] = R++
+}
+
+var LETTERDASHNUMBER = '[a-zA-Z0-9-]'
+
+// Replace some greedy regex tokens to prevent regex dos issues. These regex are
+// used internally via the safeRe object since all inputs in this library get
+// normalized first to trim and collapse all extra whitespace. The original
+// regexes are exported for userland consumption and lower level usage. A
+// future breaking change could export the safer regex only with a note that
+// all input should have extra whitespace removed.
+var safeRegexReplacements = [
+  ['\\s', 1],
+  ['\\d', MAX_LENGTH],
+  [LETTERDASHNUMBER, MAX_SAFE_BUILD_LENGTH],
+]
+
+function makeSafeRe (value) {
+  for (var i = 0; i < safeRegexReplacements.length; i++) {
+    var token = safeRegexReplacements[i][0]
+    var max = safeRegexReplacements[i][1]
+    value = value
+      .split(token + '*').join(token + '{0,' + max + '}')
+      .split(token + '+').join(token + '{1,' + max + '}')
+  }
+  return value
+}
+
+// The following Regular Expressions can be used for tokenizing,
+// validating, and parsing SemVer version strings.
+
+// ## Numeric Identifier
+// A single `0`, or a non-zero digit followed by zero or more digits.
+
+tok('NUMERICIDENTIFIER')
+src[t.NUMERICIDENTIFIER] = '0|[1-9]\\d*'
+tok('NUMERICIDENTIFIERLOOSE')
+src[t.NUMERICIDENTIFIERLOOSE] = '\\d+'
+
+// ## Non-numeric Identifier
+// Zero or more digits, followed by a letter or hyphen, and then zero or
+// more letters, digits, or hyphens.
+
+tok('NONNUMERICIDENTIFIER')
+src[t.NONNUMERICIDENTIFIER] = '\\d*[a-zA-Z-]' + LETTERDASHNUMBER + '*'
+
+// ## Main Version
+// Three dot-separated numeric identifiers.
+
+tok('MAINVERSION')
+src[t.MAINVERSION] = '(' + src[t.NUMERICIDENTIFIER] + ')\\.' +
+                   '(' + src[t.NUMERICIDENTIFIER] + ')\\.' +
+                   '(' + src[t.NUMERICIDENTIFIER] + ')'
+
+tok('MAINVERSIONLOOSE')
+src[t.MAINVERSIONLOOSE] = '(' + src[t.NUMERICIDENTIFIERLOOSE] + ')\\.' +
+                        '(' + src[t.NUMERICIDENTIFIERLOOSE] + ')\\.' +
+                        '(' + src[t.NUMERICIDENTIFIERLOOSE] + ')'
+
+// ## Pre-release Version Identifier
+// A numeric identifier, or a non-numeric identifier.
+
+tok('PRERELEASEIDENTIFIER')
+src[t.PRERELEASEIDENTIFIER] = '(?:' + src[t.NUMERICIDENTIFIER] +
+                            '|' + src[t.NONNUMERICIDENTIFIER] + ')'
+
+tok('PRERELEASEIDENTIFIERLOOSE')
+src[t.PRERELEASEIDENTIFIERLOOSE] = '(?:' + src[t.NUMERICIDENTIFIERLOOSE] +
+                                 '|' + src[t.NONNUMERICIDENTIFIER] + ')'
+
+// ## Pre-release Version
+// Hyphen, followed by one or more dot-separated pre-release version
+// identifiers.
+
+tok('PRERELEASE')
+src[t.PRERELEASE] = '(?:-(' + src[t.PRERELEASEIDENTIFIER] +
+                  '(?:\\.' + src[t.PRERELEASEIDENTIFIER] + ')*))'
+
+tok('PRERELEASELOOSE')
+src[t.PRERELEASELOOSE] = '(?:-?(' + src[t.PRERELEASEIDENTIFIERLOOSE] +
+                       '(?:\\.' + src[t.PRERELEASEIDENTIFIERLOOSE] + ')*))'
+
+// ## Build Metadata Identifier
+// Any combination of digits, letters, or hyphens.
+
+tok('BUILDIDENTIFIER')
+src[t.BUILDIDENTIFIER] = LETTERDASHNUMBER + '+'
+
+// ## Build Metadata
+// Plus sign, followed by one or more period-separated build metadata
+// identifiers.
+
+tok('BUILD')
+src[t.BUILD] = '(?:\\+(' + src[t.BUILDIDENTIFIER] +
+             '(?:\\.' + src[t.BUILDIDENTIFIER] + ')*))'
+
+// ## Full Version String
+// A main version, followed optionally by a pre-release version and
+// build metadata.
+
+// Note that the only major, minor, patch, and pre-release sections of
+// the version string are capturing groups.  The build metadata is not a
+// capturing group, because it should not ever be used in version
+// comparison.
+
+tok('FULL')
+tok('FULLPLAIN')
+src[t.FULLPLAIN] = 'v?' + src[t.MAINVERSION] +
+                  src[t.PRERELEASE] + '?' +
+                  src[t.BUILD] + '?'
+
+src[t.FULL] = '^' + src[t.FULLPLAIN] + '$'
+
+// like full, but allows v1.2.3 and =1.2.3, which people do sometimes.
+// also, 1.0.0alpha1 (prerelease without the hyphen) which is pretty
+// common in the npm registry.
+tok('LOOSEPLAIN')
+src[t.LOOSEPLAIN] = '[v=\\s]*' + src[t.MAINVERSIONLOOSE] +
+                  src[t.PRERELEASELOOSE] + '?' +
+                  src[t.BUILD] + '?'
+
+tok('LOOSE')
+src[t.LOOSE] = '^' + src[t.LOOSEPLAIN] + '$'
+
+tok('GTLT')
+src[t.GTLT] = '((?:<|>)?=?)'
+
+// Something like "2.*" or "1.2.x".
+// Note that "x.x" is a valid xRange identifer, meaning "any version"
+// Only the first item is strictly required.
+tok('XRANGEIDENTIFIERLOOSE')
+src[t.XRANGEIDENTIFIERLOOSE] = src[t.NUMERICIDENTIFIERLOOSE] + '|x|X|\\*'
+tok('XRANGEIDENTIFIER')
+src[t.XRANGEIDENTIFIER] = src[t.NUMERICIDENTIFIER] + '|x|X|\\*'
+
+tok('XRANGEPLAIN')
+src[t.XRANGEPLAIN] = '[v=\\s]*(' + src[t.XRANGEIDENTIFIER] + ')' +
+                   '(?:\\.(' + src[t.XRANGEIDENTIFIER] + ')' +
+                   '(?:\\.(' + src[t.XRANGEIDENTIFIER] + ')' +
+                   '(?:' + src[t.PRERELEASE] + ')?' +
+                   src[t.BUILD] + '?' +
+                   ')?)?'
+
+tok('XRANGEPLAINLOOSE')
+src[t.XRANGEPLAINLOOSE] = '[v=\\s]*(' + src[t.XRANGEIDENTIFIERLOOSE] + ')' +
+                        '(?:\\.(' + src[t.XRANGEIDENTIFIERLOOSE] + ')' +
+                        '(?:\\.(' + src[t.XRANGEIDENTIFIERLOOSE] + ')' +
+                        '(?:' + src[t.PRERELEASELOOSE] + ')?' +
+                        src[t.BUILD] + '?' +
+                        ')?)?'
+
+tok('XRANGE')
+src[t.XRANGE] = '^' + src[t.GTLT] + '\\s*' + src[t.XRANGEPLAIN] + '$'
+tok('XRANGELOOSE')
+src[t.XRANGELOOSE] = '^' + src[t.GTLT] + '\\s*' + src[t.XRANGEPLAINLOOSE] + '$'
+
+// Coercion.
+// Extract anything that could conceivably be a part of a valid semver
+tok('COERCE')
+src[t.COERCE] = '(^|[^\\d])' +
+              '(\\d{1,' + MAX_SAFE_COMPONENT_LENGTH + '})' +
+              '(?:\\.(\\d{1,' + MAX_SAFE_COMPONENT_LENGTH + '}))?' +
+              '(?:\\.(\\d{1,' + MAX_SAFE_COMPONENT_LENGTH + '}))?' +
+              '(?:$|[^\\d])'
+tok('COERCERTL')
+re[t.COERCERTL] = new RegExp(src[t.COERCE], 'g')
+safeRe[t.COERCERTL] = new RegExp(makeSafeRe(src[t.COERCE]), 'g')
+
+// Tilde ranges.
+// Meaning is "reasonably at or greater than"
+tok('LONETILDE')
+src[t.LONETILDE] = '(?:~>?)'
+
+tok('TILDETRIM')
+src[t.TILDETRIM] = '(\\s*)' + src[t.LONETILDE] + '\\s+'
+re[t.TILDETRIM] = new RegExp(src[t.TILDETRIM], 'g')
+safeRe[t.TILDETRIM] = new RegExp(makeSafeRe(src[t.TILDETRIM]), 'g')
+var tildeTrimReplace = '$1~'
+
+tok('TILDE')
+src[t.TILDE] = '^' + src[t.LONETILDE] + src[t.XRANGEPLAIN] + '$'
+tok('TILDELOOSE')
+src[t.TILDELOOSE] = '^' + src[t.LONETILDE] + src[t.XRANGEPLAINLOOSE] + '$'
+
+// Caret ranges.
+// Meaning is "at least and backwards compatible with"
+tok('LONECARET')
+src[t.LONECARET] = '(?:\\^)'
+
+tok('CARETTRIM')
+src[t.CARETTRIM] = '(\\s*)' + src[t.LONECARET] + '\\s+'
+re[t.CARETTRIM] = new RegExp(src[t.CARETTRIM], 'g')
+safeRe[t.CARETTRIM] = new RegExp(makeSafeRe(src[t.CARETTRIM]), 'g')
+var caretTrimReplace = '$1^'
+
+tok('CARET')
+src[t.CARET] = '^' + src[t.LONECARET] + src[t.XRANGEPLAIN] + '$'
+tok('CARETLOOSE')
+src[t.CARETLOOSE] = '^' + src[t.LONECARET] + src[t.XRANGEPLAINLOOSE] + '$'
+
+// A simple gt/lt/eq thing, or just "" to indicate "any version"
+tok('COMPARATORLOOSE')
+src[t.COMPARATORLOOSE] = '^' + src[t.GTLT] + '\\s*(' + src[t.LOOSEPLAIN] + ')$|^$'
+tok('COMPARATOR')
+src[t.COMPARATOR] = '^' + src[t.GTLT] + '\\s*(' + src[t.FULLPLAIN] + ')$|^$'
+
+// An expression to strip any whitespace between the gtlt and the thing
+// it modifies, so that `> 1.2.3` ==> `>1.2.3`
+tok('COMPARATORTRIM')
+src[t.COMPARATORTRIM] = '(\\s*)' + src[t.GTLT] +
+                      '\\s*(' + src[t.LOOSEPLAIN] + '|' + src[t.XRANGEPLAIN] + ')'
+
+// this one has to use the /g flag
+re[t.COMPARATORTRIM] = new RegExp(src[t.COMPARATORTRIM], 'g')
+safeRe[t.COMPARATORTRIM] = new RegExp(makeSafeRe(src[t.COMPARATORTRIM]), 'g')
+var comparatorTrimReplace = '$1$2$3'
+
+// Something like `1.2.3 - 1.2.4`
+// Note that these all use the loose form, because they'll be
+// checked against either the strict or loose comparator form
+// later.
+tok('HYPHENRANGE')
+src[t.HYPHENRANGE] = '^\\s*(' + src[t.XRANGEPLAIN] + ')' +
+                   '\\s+-\\s+' +
+                   '(' + src[t.XRANGEPLAIN] + ')' +
+                   '\\s*$'
+
+tok('HYPHENRANGELOOSE')
+src[t.HYPHENRANGELOOSE] = '^\\s*(' + src[t.XRANGEPLAINLOOSE] + ')' +
+                        '\\s+-\\s+' +
+                        '(' + src[t.XRANGEPLAINLOOSE] + ')' +
+                        '\\s*$'
+
+// Star ranges basically just allow anything at all.
+tok('STAR')
+src[t.STAR] = '(<|>)?=?\\s*\\*'
+
+// Compile to actual regexp objects.
+// All are flag-free, unless they were created above with a flag.
+for (var i = 0; i < R; i++) {
+  debug(i, src[i])
+  if (!re[i]) {
+    re[i] = new RegExp(src[i])
+
+    // Replace all greedy whitespace to prevent regex dos issues. These regex are
+    // used internally via the safeRe object since all inputs in this library get
+    // normalized first to trim and collapse all extra whitespace. The original
+    // regexes are exported for userland consumption and lower level usage. A
+    // future breaking change could export the safer regex only with a note that
+    // all input should have extra whitespace removed.
+    safeRe[i] = new RegExp(makeSafeRe(src[i]))
+  }
+}
+
+exports.parse = parse
+function parse (version, options) {
+  if (!options || typeof options !== 'object') {
+    options = {
+      loose: !!options,
+      includePrerelease: false
+    }
+  }
+
+  if (version instanceof SemVer) {
+    return version
+  }
+
+  if (typeof version !== 'string') {
+    return null
+  }
+
+  if (version.length > MAX_LENGTH) {
+    return null
+  }
+
+  var r = options.loose ? safeRe[t.LOOSE] : safeRe[t.FULL]
+  if (!r.test(version)) {
+    return null
+  }
+
+  try {
+    return new SemVer(version, options)
+  } catch (er) {
+    return null
+  }
+}
+
+exports.valid = valid
+function valid (version, options) {
+  var v = parse(version, options)
+  return v ? v.version : null
+}
+
+exports.clean = clean
+function clean (version, options) {
+  var s = parse(version.trim().replace(/^[=v]+/, ''), options)
+  return s ? s.version : null
+}
+
+exports.SemVer = SemVer
+
+function SemVer (version, options) {
+  if (!options || typeof options !== 'object') {
+    options = {
+      loose: !!options,
+      includePrerelease: false
+    }
+  }
+  if (version instanceof SemVer) {
+    if (version.loose === options.loose) {
+      return version
+    } else {
+      version = version.version
+    }
+  } else if (typeof version !== 'string') {
+    throw new TypeError('Invalid Version: ' + version)
+  }
+
+  if (version.length > MAX_LENGTH) {
+    throw new TypeError('version is longer than ' + MAX_LENGTH + ' characters')
+  }
+
+  if (!(this instanceof SemVer)) {
+    return new SemVer(version, options)
+  }
+
+  debug('SemVer', version, options)
+  this.options = options
+  this.loose = !!options.loose
+
+  var m = version.trim().match(options.loose ? safeRe[t.LOOSE] : safeRe[t.FULL])
+
+  if (!m) {
+    throw new TypeError('Invalid Version: ' + version)
+  }
+
+  this.raw = version
+
+  // these are actually numbers
+  this.major = +m[1]
+  this.minor = +m[2]
+  this.patch = +m[3]
+
+  if (this.major > MAX_SAFE_INTEGER || this.major < 0) {
+    throw new TypeError('Invalid major version')
+  }
+
+  if (this.minor > MAX_SAFE_INTEGER || this.minor < 0) {
+    throw new TypeError('Invalid minor version')
+  }
+
+  if (this.patch > MAX_SAFE_INTEGER || this.patch < 0) {
+    throw new TypeError('Invalid patch version')
+  }
+
+  // numberify any prerelease numeric ids
+  if (!m[4]) {
+    this.prerelease = []
+  } else {
+    this.prerelease = m[4].split('.').map(function (id) {
+      if (/^[0-9]+$/.test(id)) {
+        var num = +id
+        if (num >= 0 && num < MAX_SAFE_INTEGER) {
+          return num
+        }
+      }
+      return id
+    })
+  }
+
+  this.build = m[5] ? m[5].split('.') : []
+  this.format()
+}
+
+SemVer.prototype.format = function () {
+  this.version = this.major + '.' + this.minor + '.' + this.patch
+  if (this.prerelease.length) {
+    this.version += '-' + this.prerelease.join('.')
+  }
+  return this.version
+}
+
+SemVer.prototype.toString = function () {
+  return this.version
+}
+
+SemVer.prototype.compare = function (other) {
+  debug('SemVer.compare', this.version, this.options, other)
+  if (!(other instanceof SemVer)) {
+    other = new SemVer(other, this.options)
+  }
+
+  return this.compareMain(other) || this.comparePre(other)
+}
+
+SemVer.prototype.compareMain = function (other) {
+  if (!(other instanceof SemVer)) {
+    other = new SemVer(other, this.options)
+  }
+
+  return compareIdentifiers(this.major, other.major) ||
+         compareIdentifiers(this.minor, other.minor) ||
+         compareIdentifiers(this.patch, other.patch)
+}
+
+SemVer.prototype.comparePre = function (other) {
+  if (!(other instanceof SemVer)) {
+    other = new SemVer(other, this.options)
+  }
+
+  // NOT having a prerelease is > having one
+  if (this.prerelease.length && !other.prerelease.length) {
+    return -1
+  } else if (!this.prerelease.length && other.prerelease.length) {
+    return 1
+  } else if (!this.prerelease.length && !other.prerelease.length) {
+    return 0
+  }
+
+  var i = 0
+  do {
+    var a = this.prerelease[i]
+    var b = other.prerelease[i]
+    debug('prerelease compare', i, a, b)
+    if (a === undefined && b === undefined) {
+      return 0
+    } else if (b === undefined) {
+      return 1
+    } else if (a === undefined) {
+      return -1
+    } else if (a === b) {
+      continue
+    } else {
+      return compareIdentifiers(a, b)
+    }
+  } while (++i)
+}
+
+SemVer.prototype.compareBuild = function (other) {
+  if (!(other instanceof SemVer)) {
+    other = new SemVer(other, this.options)
+  }
+
+  var i = 0
+  do {
+    var a = this.build[i]
+    var b = other.build[i]
+    debug('prerelease compare', i, a, b)
+    if (a === undefined && b === undefined) {
+      return 0
+    } else if (b === undefined) {
+      return 1
+    } else if (a === undefined) {
+      return -1
+    } else if (a === b) {
+      continue
+    } else {
+      return compareIdentifiers(a, b)
+    }
+  } while (++i)
+}
+
+// preminor will bump the version up to the next minor release, and immediately
+// down to pre-release. premajor and prepatch work the same way.
+SemVer.prototype.inc = function (release, identifier) {
+  switch (release) {
+    case 'premajor':
+      this.prerelease.length = 0
+      this.patch = 0
+      this.minor = 0
+      this.major++
+      this.inc('pre', identifier)
+      break
+    case 'preminor':
+      this.prerelease.length = 0
+      this.patch = 0
+      this.minor++
+      this.inc('pre', identifier)
+      break
+    case 'prepatch':
+      // If this is already a prerelease, it will bump to the next version
+      // drop any prereleases that might already exist, since they are not
+      // relevant at this point.
+      this.prerelease.length = 0
+      this.inc('patch', identifier)
+      this.inc('pre', identifier)
+      break
+    // If the input is a non-prerelease version, this acts the same as
+    // prepatch.
+    case 'prerelease':
+      if (this.prerelease.length === 0) {
+        this.inc('patch', identifier)
+      }
+      this.inc('pre', identifier)
+      break
+
+    case 'major':
+      // If this is a pre-major version, bump up to the same major version.
+      // Otherwise increment major.
+      // 1.0.0-5 bumps to 1.0.0
+      // 1.1.0 bumps to 2.0.0
+      if (this.minor !== 0 ||
+          this.patch !== 0 ||
+          this.prerelease.length === 0) {
+        this.major++
+      }
+      this.minor = 0
+      this.patch = 0
+      this.prerelease = []
+      break
+    case 'minor':
+      // If this is a pre-minor version, bump up to the same minor version.
+      // Otherwise increment minor.
+      // 1.2.0-5 bumps to 1.2.0
+      // 1.2.1 bumps to 1.3.0
+      if (this.patch !== 0 || this.prerelease.length === 0) {
+        this.minor++
+      }
+      this.patch = 0
+      this.prerelease = []
+      break
+    case 'patch':
+      // If this is not a pre-release version, it will increment the patch.
+      // If it is a pre-release it will bump up to the same patch version.
+      // 1.2.0-5 patches to 1.2.0
+      // 1.2.0 patches to 1.2.1
+      if (this.prerelease.length === 0) {
+        this.patch++
+      }
+      this.prerelease = []
+      break
+    // This probably shouldn't be used publicly.
+    // 1.0.0 "pre" would become 1.0.0-0 which is the wrong direction.
+    case 'pre':
+      if (this.prerelease.length === 0) {
+        this.prerelease = [0]
+      } else {
+        var i = this.prerelease.length
+        while (--i >= 0) {
+          if (typeof this.prerelease[i] === 'number') {
+            this.prerelease[i]++
+            i = -2
+          }
+        }
+        if (i === -1) {
+          // didn't increment anything
+          this.prerelease.push(0)
+        }
+      }
+      if (identifier) {
+        // 1.2.0-beta.1 bumps to 1.2.0-beta.2,
+        // 1.2.0-beta.fooblz or 1.2.0-beta bumps to 1.2.0-beta.0
+        if (this.prerelease[0] === identifier) {
+          if (isNaN(this.prerelease[1])) {
+            this.prerelease = [identifier, 0]
+          }
+        } else {
+          this.prerelease = [identifier, 0]
+        }
+      }
+      break
+
+    default:
+      throw new Error('invalid increment argument: ' + release)
+  }
+  this.format()
+  this.raw = this.version
+  return this
+}
+
+exports.inc = inc
+function inc (version, release, loose, identifier) {
+  if (typeof (loose) === 'string') {
+    identifier = loose
+    loose = undefined
+  }
+
+  try {
+    return new SemVer(version, loose).inc(release, identifier).version
+  } catch (er) {
+    return null
+  }
+}
+
+exports.diff = diff
+function diff (version1, version2) {
+  if (eq(version1, version2)) {
+    return null
+  } else {
+    var v1 = parse(version1)
+    var v2 = parse(version2)
+    var prefix = ''
+    if (v1.prerelease.length || v2.prerelease.length) {
+      prefix = 'pre'
+      var defaultResult = 'prerelease'
+    }
+    for (var key in v1) {
+      if (key === 'major' || key === 'minor' || key === 'patch') {
+        if (v1[key] !== v2[key]) {
+          return prefix + key
+        }
+      }
+    }
+    return defaultResult // may be undefined
+  }
+}
+
+exports.compareIdentifiers = compareIdentifiers
+
+var numeric = /^[0-9]+$/
+function compareIdentifiers (a, b) {
+  var anum = numeric.test(a)
+  var bnum = numeric.test(b)
+
+  if (anum && bnum) {
+    a = +a
+    b = +b
+  }
+
+  return a === b ? 0
+    : (anum && !bnum) ? -1
+    : (bnum && !anum) ? 1
+    : a < b ? -1
+    : 1
+}
+
+exports.rcompareIdentifiers = rcompareIdentifiers
+function rcompareIdentifiers (a, b) {
+  return compareIdentifiers(b, a)
+}
+
+exports.major = major
+function major (a, loose) {
+  return new SemVer(a, loose).major
+}
+
+exports.minor = minor
+function minor (a, loose) {
+  return new SemVer(a, loose).minor
+}
+
+exports.patch = patch
+function patch (a, loose) {
+  return new SemVer(a, loose).patch
+}
+
+exports.compare = compare
+function compare (a, b, loose) {
+  return new SemVer(a, loose).compare(new SemVer(b, loose))
+}
+
+exports.compareLoose = compareLoose
+function compareLoose (a, b) {
+  return compare(a, b, true)
+}
+
+exports.compareBuild = compareBuild
+function compareBuild (a, b, loose) {
+  var versionA = new SemVer(a, loose)
+  var versionB = new SemVer(b, loose)
+  return versionA.compare(versionB) || versionA.compareBuild(versionB)
+}
+
+exports.rcompare = rcompare
+function rcompare (a, b, loose) {
+  return compare(b, a, loose)
+}
+
+exports.sort = sort
+function sort (list, loose) {
+  return list.sort(function (a, b) {
+    return exports.compareBuild(a, b, loose)
+  })
+}
+
+exports.rsort = rsort
+function rsort (list, loose) {
+  return list.sort(function (a, b) {
+    return exports.compareBuild(b, a, loose)
+  })
+}
+
+exports.gt = gt
+function gt (a, b, loose) {
+  return compare(a, b, loose) > 0
+}
+
+exports.lt = lt
+function lt (a, b, loose) {
+  return compare(a, b, loose) < 0
+}
+
+exports.eq = eq
+function eq (a, b, loose) {
+  return compare(a, b, loose) === 0
+}
+
+exports.neq = neq
+function neq (a, b, loose) {
+  return compare(a, b, loose) !== 0
+}
+
+exports.gte = gte
+function gte (a, b, loose) {
+  return compare(a, b, loose) >= 0
+}
+
+exports.lte = lte
+function lte (a, b, loose) {
+  return compare(a, b, loose) <= 0
+}
+
+exports.cmp = cmp
+function cmp (a, op, b, loose) {
+  switch (op) {
+    case '===':
+      if (typeof a === 'object')
+        a = a.version
+      if (typeof b === 'object')
+        b = b.version
+      return a === b
+
+    case '!==':
+      if (typeof a === 'object')
+        a = a.version
+      if (typeof b === 'object')
+        b = b.version
+      return a !== b
+
+    case '':
+    case '=':
+    case '==':
+      return eq(a, b, loose)
+
+    case '!=':
+      return neq(a, b, loose)
+
+    case '>':
+      return gt(a, b, loose)
+
+    case '>=':
+      return gte(a, b, loose)
+
+    case '<':
+      return lt(a, b, loose)
+
+    case '<=':
+      return lte(a, b, loose)
+
+    default:
+      throw new TypeError('Invalid operator: ' + op)
+  }
+}
+
+exports.Comparator = Comparator
+function Comparator (comp, options) {
+  if (!options || typeof options !== 'object') {
+    options = {
+      loose: !!options,
+      includePrerelease: false
+    }
+  }
+
+  if (comp instanceof Comparator) {
+    if (comp.loose === !!options.loose) {
+      return comp
+    } else {
+      comp = comp.value
+    }
+  }
+
+  if (!(this instanceof Comparator)) {
+    return new Comparator(comp, options)
+  }
+
+  comp = comp.trim().split(/\s+/).join(' ')
+  debug('comparator', comp, options)
+  this.options = options
+  this.loose = !!options.loose
+  this.parse(comp)
+
+  if (this.semver === ANY) {
+    this.value = ''
+  } else {
+    this.value = this.operator + this.semver.version
+  }
+
+  debug('comp', this)
+}
+
+var ANY = {}
+Comparator.prototype.parse = function (comp) {
+  var r = this.options.loose ? safeRe[t.COMPARATORLOOSE] : safeRe[t.COMPARATOR]
+  var m = comp.match(r)
+
+  if (!m) {
+    throw new TypeError('Invalid comparator: ' + comp)
+  }
+
+  this.operator = m[1] !== undefined ? m[1] : ''
+  if (this.operator === '=') {
+    this.operator = ''
+  }
+
+  // if it literally is just '>' or '' then allow anything.
+  if (!m[2]) {
+    this.semver = ANY
+  } else {
+    this.semver = new SemVer(m[2], this.options.loose)
+  }
+}
+
+Comparator.prototype.toString = function () {
+  return this.value
+}
+
+Comparator.prototype.test = function (version) {
+  debug('Comparator.test', version, this.options.loose)
+
+  if (this.semver === ANY || version === ANY) {
+    return true
+  }
+
+  if (typeof version === 'string') {
+    try {
+      version = new SemVer(version, this.options)
+    } catch (er) {
+      return false
+    }
+  }
+
+  return cmp(version, this.operator, this.semver, this.options)
+}
+
+Comparator.prototype.intersects = function (comp, options) {
+  if (!(comp instanceof Comparator)) {
+    throw new TypeError('a Comparator is required')
+  }
+
+  if (!options || typeof options !== 'object') {
+    options = {
+      loose: !!options,
+      includePrerelease: false
+    }
+  }
+
+  var rangeTmp
+
+  if (this.operator === '') {
+    if (this.value === '') {
+      return true
+    }
+    rangeTmp = new Range(comp.value, options)
+    return satisfies(this.value, rangeTmp, options)
+  } else if (comp.operator === '') {
+    if (comp.value === '') {
+      return true
+    }
+    rangeTmp = new Range(this.value, options)
+    return satisfies(comp.semver, rangeTmp, options)
+  }
+
+  var sameDirectionIncreasing =
+    (this.operator === '>=' || this.operator === '>') &&
+    (comp.operator === '>=' || comp.operator === '>')
+  var sameDirectionDecreasing =
+    (this.operator === '<=' || this.operator === '<') &&
+    (comp.operator === '<=' || comp.operator === '<')
+  var sameSemVer = this.semver.version === comp.semver.version
+  var differentDirectionsInclusive =
+    (this.operator === '>=' || this.operator === '<=') &&
+    (comp.operator === '>=' || comp.operator === '<=')
+  var oppositeDirectionsLessThan =
+    cmp(this.semver, '<', comp.semver, options) &&
+    ((this.operator === '>=' || this.operator === '>') &&
+    (comp.operator === '<=' || comp.operator === '<'))
+  var oppositeDirectionsGreaterThan =
+    cmp(this.semver, '>', comp.semver, options) &&
+    ((this.operator === '<=' || this.operator === '<') &&
+    (comp.operator === '>=' || comp.operator === '>'))
+
+  return sameDirectionIncreasing || sameDirectionDecreasing ||
+    (sameSemVer && differentDirectionsInclusive) ||
+    oppositeDirectionsLessThan || oppositeDirectionsGreaterThan
+}
+
+exports.Range = Range
+function Range (range, options) {
+  if (!options || typeof options !== 'object') {
+    options = {
+      loose: !!options,
+      includePrerelease: false
+    }
+  }
+
+  if (range instanceof Range) {
+    if (range.loose === !!options.loose &&
+        range.includePrerelease === !!options.includePrerelease) {
+      return range
+    } else {
+      return new Range(range.raw, options)
+    }
+  }
+
+  if (range instanceof Comparator) {
+    return new Range(range.value, options)
+  }
+
+  if (!(this instanceof Range)) {
+    return new Range(range, options)
+  }
+
+  this.options = options
+  this.loose = !!options.loose
+  this.includePrerelease = !!options.includePrerelease
+
+  // First reduce all whitespace as much as possible so we do not have to rely
+  // on potentially slow regexes like \s*. This is then stored and used for
+  // future error messages as well.
+  this.raw = range
+    .trim()
+    .split(/\s+/)
+    .join(' ')
+
+  // First, split based on boolean or ||
+  this.set = this.raw.split('||').map(function (range) {
+    return this.parseRange(range.trim())
+  }, this).filter(function (c) {
+    // throw out any that are not relevant for whatever reason
+    return c.length
+  })
+
+  if (!this.set.length) {
+    throw new TypeError('Invalid SemVer Range: ' + this.raw)
+  }
+
+  this.format()
+}
+
+Range.prototype.format = function () {
+  this.range = this.set.map(function (comps) {
+    return comps.join(' ').trim()
+  }).join('||').trim()
+  return this.range
+}
+
+Range.prototype.toString = function () {
+  return this.range
+}
+
+Range.prototype.parseRange = function (range) {
+  var loose = this.options.loose
+  // `1.2.3 - 1.2.4` => `>=1.2.3 <=1.2.4`
+  var hr = loose ? safeRe[t.HYPHENRANGELOOSE] : safeRe[t.HYPHENRANGE]
+  range = range.replace(hr, hyphenReplace)
+  debug('hyphen replace', range)
+  // `> 1.2.3 < 1.2.5` => `>1.2.3 <1.2.5`
+  range = range.replace(safeRe[t.COMPARATORTRIM], comparatorTrimReplace)
+  debug('comparator trim', range, safeRe[t.COMPARATORTRIM])
+
+  // `~ 1.2.3` => `~1.2.3`
+  range = range.replace(safeRe[t.TILDETRIM], tildeTrimReplace)
+
+  // `^ 1.2.3` => `^1.2.3`
+  range = range.replace(safeRe[t.CARETTRIM], caretTrimReplace)
+
+  // normalize spaces
+  range = range.split(/\s+/).join(' ')
+
+  // At this point, the range is completely trimmed and
+  // ready to be split into comparators.
+
+  var compRe = loose ? safeRe[t.COMPARATORLOOSE] : safeRe[t.COMPARATOR]
+  var set = range.split(' ').map(function (comp) {
+    return parseComparator(comp, this.options)
+  }, this).join(' ').split(/\s+/)
+  if (this.options.loose) {
+    // in loose mode, throw out any that are not valid comparators
+    set = set.filter(function (comp) {
+      return !!comp.match(compRe)
+    })
+  }
+  set = set.map(function (comp) {
+    return new Comparator(comp, this.options)
+  }, this)
+
+  return set
+}
+
+Range.prototype.intersects = function (range, options) {
+  if (!(range instanceof Range)) {
+    throw new TypeError('a Range is required')
+  }
+
+  return this.set.some(function (thisComparators) {
+    return (
+      isSatisfiable(thisComparators, options) &&
+      range.set.some(function (rangeComparators) {
+        return (
+          isSatisfiable(rangeComparators, options) &&
+          thisComparators.every(function (thisComparator) {
+            return rangeComparators.every(function (rangeComparator) {
+              return thisComparator.intersects(rangeComparator, options)
+            })
+          })
+        )
+      })
+    )
+  })
+}
+
+// take a set of comparators and determine whether there
+// exists a version which can satisfy it
+function isSatisfiable (comparators, options) {
+  var result = true
+  var remainingComparators = comparators.slice()
+  var testComparator = remainingComparators.pop()
+
+  while (result && remainingComparators.length) {
+    result = remainingComparators.every(function (otherComparator) {
+      return testComparator.intersects(otherComparator, options)
+    })
+
+    testComparator = remainingComparators.pop()
+  }
+
+  return result
+}
+
+// Mostly just for testing and legacy API reasons
+exports.toComparators = toComparators
+function toComparators (range, options) {
+  return new Range(range, options).set.map(function (comp) {
+    return comp.map(function (c) {
+      return c.value
+    }).join(' ').trim().split(' ')
+  })
+}
+
+// comprised of xranges, tildes, stars, and gtlt's at this point.
+// already replaced the hyphen ranges
+// turn into a set of JUST comparators.
+function parseComparator (comp, options) {
+  debug('comp', comp, options)
+  comp = replaceCarets(comp, options)
+  debug('caret', comp)
+  comp = replaceTildes(comp, options)
+  debug('tildes', comp)
+  comp = replaceXRanges(comp, options)
+  debug('xrange', comp)
+  comp = replaceStars(comp, options)
+  debug('stars', comp)
+  return comp
+}
+
+function isX (id) {
+  return !id || id.toLowerCase() === 'x' || id === '*'
+}
+
+// ~, ~> --> * (any, kinda silly)
+// ~2, ~2.x, ~2.x.x, ~>2, ~>2.x ~>2.x.x --> >=2.0.0 <3.0.0
+// ~2.0, ~2.0.x, ~>2.0, ~>2.0.x --> >=2.0.0 <2.1.0
+// ~1.2, ~1.2.x, ~>1.2, ~>1.2.x --> >=1.2.0 <1.3.0
+// ~1.2.3, ~>1.2.3 --> >=1.2.3 <1.3.0
+// ~1.2.0, ~>1.2.0 --> >=1.2.0 <1.3.0
+function replaceTildes (comp, options) {
+  return comp.trim().split(/\s+/).map(function (comp) {
+    return replaceTilde(comp, options)
+  }).join(' ')
+}
+
+function replaceTilde (comp, options) {
+  var r = options.loose ? safeRe[t.TILDELOOSE] : safeRe[t.TILDE]
+  return comp.replace(r, function (_, M, m, p, pr) {
+    debug('tilde', comp, _, M, m, p, pr)
+    var ret
+
+    if (isX(M)) {
+      ret = ''
+    } else if (isX(m)) {
+      ret = '>=' + M + '.0.0 <' + (+M + 1) + '.0.0'
+    } else if (isX(p)) {
+      // ~1.2 == >=1.2.0 <1.3.0
+      ret = '>=' + M + '.' + m + '.0 <' + M + '.' + (+m + 1) + '.0'
+    } else if (pr) {
+      debug('replaceTilde pr', pr)
+      ret = '>=' + M + '.' + m + '.' + p + '-' + pr +
+            ' <' + M + '.' + (+m + 1) + '.0'
+    } else {
+      // ~1.2.3 == >=1.2.3 <1.3.0
+      ret = '>=' + M + '.' + m + '.' + p +
+            ' <' + M + '.' + (+m + 1) + '.0'
+    }
+
+    debug('tilde return', ret)
+    return ret
+  })
+}
+
+// ^ --> * (any, kinda silly)
+// ^2, ^2.x, ^2.x.x --> >=2.0.0 <3.0.0
+// ^2.0, ^2.0.x --> >=2.0.0 <3.0.0
+// ^1.2, ^1.2.x --> >=1.2.0 <2.0.0
+// ^1.2.3 --> >=1.2.3 <2.0.0
+// ^1.2.0 --> >=1.2.0 <2.0.0
+function replaceCarets (comp, options) {
+  return comp.trim().split(/\s+/).map(function (comp) {
+    return replaceCaret(comp, options)
+  }).join(' ')
+}
+
+function replaceCaret (comp, options) {
+  debug('caret', comp, options)
+  var r = options.loose ? safeRe[t.CARETLOOSE] : safeRe[t.CARET]
+  return comp.replace(r, function (_, M, m, p, pr) {
+    debug('caret', comp, _, M, m, p, pr)
+    var ret
+
+    if (isX(M)) {
+      ret = ''
+    } else if (isX(m)) {
+      ret = '>=' + M + '.0.0 <' + (+M + 1) + '.0.0'
+    } else if (isX(p)) {
+      if (M === '0') {
+        ret = '>=' + M + '.' + m + '.0 <' + M + '.' + (+m + 1) + '.0'
+      } else {
+        ret = '>=' + M + '.' + m + '.0 <' + (+M + 1) + '.0.0'
+      }
+    } else if (pr) {
+      debug('replaceCaret pr', pr)
+      if (M === '0') {
+        if (m === '0') {
+          ret = '>=' + M + '.' + m + '.' + p + '-' + pr +
+                ' <' + M + '.' + m + '.' + (+p + 1)
+        } else {
+          ret = '>=' + M + '.' + m + '.' + p + '-' + pr +
+                ' <' + M + '.' + (+m + 1) + '.0'
+        }
+      } else {
+        ret = '>=' + M + '.' + m + '.' + p + '-' + pr +
+              ' <' + (+M + 1) + '.0.0'
+      }
+    } else {
+      debug('no pr')
+      if (M === '0') {
+        if (m === '0') {
+          ret = '>=' + M + '.' + m + '.' + p +
+                ' <' + M + '.' + m + '.' + (+p + 1)
+        } else {
+          ret = '>=' + M + '.' + m + '.' + p +
+                ' <' + M + '.' + (+m + 1) + '.0'
+        }
+      } else {
+        ret = '>=' + M + '.' + m + '.' + p +
+              ' <' + (+M + 1) + '.0.0'
+      }
+    }
+
+    debug('caret return', ret)
+    return ret
+  })
+}
+
+function replaceXRanges (comp, options) {
+  debug('replaceXRanges', comp, options)
+  return comp.split(/\s+/).map(function (comp) {
+    return replaceXRange(comp, options)
+  }).join(' ')
+}
+
+function replaceXRange (comp, options) {
+  comp = comp.trim()
+  var r = options.loose ? safeRe[t.XRANGELOOSE] : safeRe[t.XRANGE]
+  return comp.replace(r, function (ret, gtlt, M, m, p, pr) {
+    debug('xRange', comp, ret, gtlt, M, m, p, pr)
+    var xM = isX(M)
+    var xm = xM || isX(m)
+    var xp = xm || isX(p)
+    var anyX = xp
+
+    if (gtlt === '=' && anyX) {
+      gtlt = ''
+    }
+
+    // if we're including prereleases in the match, then we need
+    // to fix this to -0, the lowest possible prerelease value
+    pr = options.includePrerelease ? '-0' : ''
+
+    if (xM) {
+      if (gtlt === '>' || gtlt === '<') {
+        // nothing is allowed
+        ret = '<0.0.0-0'
+      } else {
+        // nothing is forbidden
+        ret = '*'
+      }
+    } else if (gtlt && anyX) {
+      // we know patch is an x, because we have any x at all.
+      // replace X with 0
+      if (xm) {
+        m = 0
+      }
+      p = 0
+
+      if (gtlt === '>') {
+        // >1 => >=2.0.0
+        // >1.2 => >=1.3.0
+        // >1.2.3 => >= 1.2.4
+        gtlt = '>='
+        if (xm) {
+          M = +M + 1
+          m = 0
+          p = 0
+        } else {
+          m = +m + 1
+          p = 0
+        }
+      } else if (gtlt === '<=') {
+        // <=0.7.x is actually <0.8.0, since any 0.7.x should
+        // pass.  Similarly, <=7.x is actually <8.0.0, etc.
+        gtlt = '<'
+        if (xm) {
+          M = +M + 1
+        } else {
+          m = +m + 1
+        }
+      }
+
+      ret = gtlt + M + '.' + m + '.' + p + pr
+    } else if (xm) {
+      ret = '>=' + M + '.0.0' + pr + ' <' + (+M + 1) + '.0.0' + pr
+    } else if (xp) {
+      ret = '>=' + M + '.' + m + '.0' + pr +
+        ' <' + M + '.' + (+m + 1) + '.0' + pr
+    }
+
+    debug('xRange return', ret)
+
+    return ret
+  })
+}
+
+// Because * is AND-ed with everything else in the comparator,
+// and '' means "any version", just remove the *s entirely.
+function replaceStars (comp, options) {
+  debug('replaceStars', comp, options)
+  // Looseness is ignored here.  star is always as loose as it gets!
+  return comp.trim().replace(safeRe[t.STAR], '')
+}
+
+// This function is passed to string.replace(re[t.HYPHENRANGE])
+// M, m, patch, prerelease, build
+// 1.2 - 3.4.5 => >=1.2.0 <=3.4.5
+// 1.2.3 - 3.4 => >=1.2.0 <3.5.0 Any 3.4.x will do
+// 1.2 - 3.4 => >=1.2.0 <3.5.0
+function hyphenReplace ($0,
+  from, fM, fm, fp, fpr, fb,
+  to, tM, tm, tp, tpr, tb) {
+  if (isX(fM)) {
+    from = ''
+  } else if (isX(fm)) {
+    from = '>=' + fM + '.0.0'
+  } else if (isX(fp)) {
+    from = '>=' + fM + '.' + fm + '.0'
+  } else {
+    from = '>=' + from
+  }
+
+  if (isX(tM)) {
+    to = ''
+  } else if (isX(tm)) {
+    to = '<' + (+tM + 1) + '.0.0'
+  } else if (isX(tp)) {
+    to = '<' + tM + '.' + (+tm + 1) + '.0'
+  } else if (tpr) {
+    to = '<=' + tM + '.' + tm + '.' + tp + '-' + tpr
+  } else {
+    to = '<=' + to
+  }
+
+  return (from + ' ' + to).trim()
+}
+
+// if ANY of the sets match ALL of its comparators, then pass
+Range.prototype.test = function (version) {
+  if (!version) {
+    return false
+  }
+
+  if (typeof version === 'string') {
+    try {
+      version = new SemVer(version, this.options)
+    } catch (er) {
+      return false
+    }
+  }
+
+  for (var i = 0; i < this.set.length; i++) {
+    if (testSet(this.set[i], version, this.options)) {
+      return true
+    }
+  }
+  return false
+}
+
+function testSet (set, version, options) {
+  for (var i = 0; i < set.length; i++) {
+    if (!set[i].test(version)) {
+      return false
+    }
+  }
+
+  if (version.prerelease.length && !options.includePrerelease) {
+    // Find the set of versions that are allowed to have prereleases
+    // For example, ^1.2.3-pr.1 desugars to >=1.2.3-pr.1 <2.0.0
+    // That should allow `1.2.3-pr.2` to pass.
+    // However, `1.2.4-alpha.notready` should NOT be allowed,
+    // even though it's within the range set by the comparators.
+    for (i = 0; i < set.length; i++) {
+      debug(set[i].semver)
+      if (set[i].semver === ANY) {
+        continue
+      }
+
+      if (set[i].semver.prerelease.length > 0) {
+        var allowed = set[i].semver
+        if (allowed.major === version.major &&
+            allowed.minor === version.minor &&
+            allowed.patch === version.patch) {
+          return true
+        }
+      }
+    }
+
+    // Version has a -pre, but it's not one of the ones we like.
+    return false
+  }
+
+  return true
+}
+
+exports.satisfies = satisfies
+function satisfies (version, range, options) {
+  try {
+    range = new Range(range, options)
+  } catch (er) {
+    return false
+  }
+  return range.test(version)
+}
+
+exports.maxSatisfying = maxSatisfying
+function maxSatisfying (versions, range, options) {
+  var max = null
+  var maxSV = null
+  try {
+    var rangeObj = new Range(range, options)
+  } catch (er) {
+    return null
+  }
+  versions.forEach(function (v) {
+    if (rangeObj.test(v)) {
+      // satisfies(v, range, options)
+      if (!max || maxSV.compare(v) === -1) {
+        // compare(max, v, true)
+        max = v
+        maxSV = new SemVer(max, options)
+      }
+    }
+  })
+  return max
+}
+
+exports.minSatisfying = minSatisfying
+function minSatisfying (versions, range, options) {
+  var min = null
+  var minSV = null
+  try {
+    var rangeObj = new Range(range, options)
+  } catch (er) {
+    return null
+  }
+  versions.forEach(function (v) {
+    if (rangeObj.test(v)) {
+      // satisfies(v, range, options)
+      if (!min || minSV.compare(v) === 1) {
+        // compare(min, v, true)
+        min = v
+        minSV = new SemVer(min, options)
+      }
+    }
+  })
+  return min
+}
+
+exports.minVersion = minVersion
+function minVersion (range, loose) {
+  range = new Range(range, loose)
+
+  var minver = new SemVer('0.0.0')
+  if (range.test(minver)) {
+    return minver
+  }
+
+  minver = new SemVer('0.0.0-0')
+  if (range.test(minver)) {
+    return minver
+  }
+
+  minver = null
+  for (var i = 0; i < range.set.length; ++i) {
+    var comparators = range.set[i]
+
+    comparators.forEach(function (comparator) {
+      // Clone to avoid manipulating the comparator's semver object.
+      var compver = new SemVer(comparator.semver.version)
+      switch (comparator.operator) {
+        case '>':
+          if (compver.prerelease.length === 0) {
+            compver.patch++
+          } else {
+            compver.prerelease.push(0)
+          }
+          compver.raw = compver.format()
+          /* fallthrough */
+        case '':
+        case '>=':
+          if (!minver || gt(minver, compver)) {
+            minver = compver
+          }
+          break
+        case '<':
+        case '<=':
+          /* Ignore maximum versions */
+          break
+        /* istanbul ignore next */
+        default:
+          throw new Error('Unexpected operation: ' + comparator.operator)
+      }
+    })
+  }
+
+  if (minver && range.test(minver)) {
+    return minver
+  }
+
+  return null
+}
+
+exports.validRange = validRange
+function validRange (range, options) {
+  try {
+    // Return '*' instead of '' so that truthiness works.
+    // This will throw if it's invalid anyway
+    return new Range(range, options).range || '*'
+  } catch (er) {
+    return null
+  }
+}
+
+// Determine if version is less than all the versions possible in the range
+exports.ltr = ltr
+function ltr (version, range, options) {
+  return outside(version, range, '<', options)
+}
+
+// Determine if version is greater than all the versions possible in the range.
+exports.gtr = gtr
+function gtr (version, range, options) {
+  return outside(version, range, '>', options)
+}
+
+exports.outside = outside
+function outside (version, range, hilo, options) {
+  version = new SemVer(version, options)
+  range = new Range(range, options)
+
+  var gtfn, ltefn, ltfn, comp, ecomp
+  switch (hilo) {
+    case '>':
+      gtfn = gt
+      ltefn = lte
+      ltfn = lt
+      comp = '>'
+      ecomp = '>='
+      break
+    case '<':
+      gtfn = lt
+      ltefn = gte
+      ltfn = gt
+      comp = '<'
+      ecomp = '<='
+      break
+    default:
+      throw new TypeError('Must provide a hilo val of "<" or ">"')
+  }
+
+  // If it satisifes the range it is not outside
+  if (satisfies(version, range, options)) {
+    return false
+  }
+
+  // From now on, variable terms are as if we're in "gtr" mode.
+  // but note that everything is flipped for the "ltr" function.
+
+  for (var i = 0; i < range.set.length; ++i) {
+    var comparators = range.set[i]
+
+    var high = null
+    var low = null
+
+    comparators.forEach(function (comparator) {
+      if (comparator.semver === ANY) {
+        comparator = new Comparator('>=0.0.0')
+      }
+      high = high || comparator
+      low = low || comparator
+      if (gtfn(comparator.semver, high.semver, options)) {
+        high = comparator
+      } else if (ltfn(comparator.semver, low.semver, options)) {
+        low = comparator
+      }
+    })
+
+    // If the edge version comparator has a operator then our version
+    // isn't outside it
+    if (high.operator === comp || high.operator === ecomp) {
+      return false
+    }
+
+    // If the lowest version comparator has an operator and our version
+    // is less than it then it isn't higher than the range
+    if ((!low.operator || low.operator === comp) &&
+        ltefn(version, low.semver)) {
+      return false
+    } else if (low.operator === ecomp && ltfn(version, low.semver)) {
+      return false
+    }
+  }
+  return true
+}
+
+exports.prerelease = prerelease
+function prerelease (version, options) {
+  var parsed = parse(version, options)
+  return (parsed && parsed.prerelease.length) ? parsed.prerelease : null
+}
+
+exports.intersects = intersects
+function intersects (r1, r2, options) {
+  r1 = new Range(r1, options)
+  r2 = new Range(r2, options)
+  return r1.intersects(r2)
+}
+
+exports.coerce = coerce
+function coerce (version, options) {
+  if (version instanceof SemVer) {
+    return version
+  }
+
+  if (typeof version === 'number') {
+    version = String(version)
+  }
+
+  if (typeof version !== 'string') {
+    return null
+  }
+
+  options = options || {}
+
+  var match = null
+  if (!options.rtl) {
+    match = version.match(safeRe[t.COERCE])
+  } else {
+    // Find the right-most coercible string that does not share
+    // a terminus with a more left-ward coercible string.
+    // Eg, '1.2.3.4' wants to coerce '2.3.4', not '3.4' or '4'
+    //
+    // Walk through the string checking with a /g regexp
+    // Manually set the index so as to pick up overlapping matches.
+    // Stop when we get a match that ends at the string end, since no
+    // coercible string can be more right-ward without the same terminus.
+    var next
+    while ((next = safeRe[t.COERCERTL].exec(version)) &&
+      (!match || match.index + match[0].length !== version.length)
+    ) {
+      if (!match ||
+          next.index + next[0].length !== match.index + match[0].length) {
+        match = next
+      }
+      safeRe[t.COERCERTL].lastIndex = next.index + next[1].length + next[2].length
+    }
+    // leave it in a clean state
+    safeRe[t.COERCERTL].lastIndex = -1
+  }
+
+  if (match === null) {
+    return null
+  }
+
+  return parse(match[2] +
+    '.' + (match[3] || '0') +
+    '.' + (match[4] || '0'), options)
 }
 
 
@@ -31055,6 +37344,13 @@ module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("buffer");
 
 /***/ }),
 
+/***/ 2081:
+/***/ ((module) => {
+
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("child_process");
+
+/***/ }),
+
 /***/ 6206:
 /***/ ((module) => {
 
@@ -31185,6 +37481,13 @@ module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("stream/web")
 /***/ ((module) => {
 
 module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("string_decoder");
+
+/***/ }),
+
+/***/ 9512:
+/***/ ((module) => {
+
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("timers");
 
 /***/ }),
 
@@ -58175,87 +64478,94 @@ class DaedalusLexer extends Lexer {
     static T__5 = 6;
     static T__6 = 7;
     static T__7 = 8;
-    static T__8 = 9;
-    static T__9 = 10;
-    static T__10 = 11;
-    static T__11 = 12;
-    static T__12 = 13;
-    static T__13 = 14;
-    static T__14 = 15;
-    static T__15 = 16;
-    static T__16 = 17;
-    static T__17 = 18;
-    static T__18 = 19;
-    static T__19 = 20;
-    static T__20 = 21;
-    static T__21 = 22;
-    static T__22 = 23;
-    static T__23 = 24;
-    static T__24 = 25;
-    static T__25 = 26;
-    static T__26 = 27;
-    static T__27 = 28;
-    static T__28 = 29;
-    static T__29 = 30;
-    static T__30 = 31;
-    static T__31 = 32;
-    static T__32 = 33;
-    static Const = 34;
-    static Var = 35;
-    static If = 36;
-    static Int = 37;
-    static Else = 38;
-    static Func = 39;
-    static String = 40;
-    static Class = 41;
-    static Void = 42;
-    static Return = 43;
-    static Float = 44;
-    static Prototype = 45;
-    static Instance = 46;
-    static Null = 47;
-    static NoFunc = 48;
-    static Identifier = 49;
-    static IntegerLiteral = 50;
-    static FloatLiteral = 51;
-    static StringLiteral = 52;
-    static Whitespace = 53;
-    static Newline = 54;
-    static BlockComment = 55;
-    static LineComment = 56;
-    static UnexpectedCharacter = 57;
+    static IntegerLiteral = 9;
+    static FloatLiteral = 10;
+    static StringLiteral = 11;
+    static Const = 12;
+    static Var = 13;
+    static If = 14;
+    static Int = 15;
+    static Else = 16;
+    static Func = 17;
+    static StringKeyword = 18;
+    static Class = 19;
+    static Void = 20;
+    static Return = 21;
+    static Float = 22;
+    static Prototype = 23;
+    static Instance = 24;
+    static Null = 25;
+    static LeftParen = 26;
+    static RightParen = 27;
+    static LeftBracket = 28;
+    static RightBracket = 29;
+    static LeftBrace = 30;
+    static RightBrace = 31;
+    static BitAnd = 32;
+    static And = 33;
+    static BitOr = 34;
+    static Or = 35;
+    static Plus = 36;
+    static Minus = 37;
+    static Div = 38;
+    static Star = 39;
+    static Tilde = 40;
+    static Not = 41;
+    static Assign = 42;
+    static Less = 43;
+    static Greater = 44;
+    static PlusAssign = 45;
+    static MinusAssign = 46;
+    static StarAssign = 47;
+    static DivAssign = 48;
+    static AndAssign = 49;
+    static OrAssign = 50;
+    static Dot = 51;
+    static Semi = 52;
+    static Identifier = 53;
+    static Whitespace = 54;
+    static Newline = 55;
+    static BlockComment = 56;
+    static LineComment = 57;
     static channelNames = [
         "DEFAULT_TOKEN_CHANNEL", "HIDDEN"
     ];
     static literalNames = [
-        null, "';'", "','", "'{'", "'}'", "'('", "')'", "'['", "']'", "'='",
-        "'.'", "'+='", "'-='", "'*='", "'/='", "'+'", "'-'", "'<<'", "'>>'",
-        "'<'", "'>'", "'<='", "'>='", "'=='", "'!='", "'!'", "'~'", "'*'",
-        "'/'", "'%'", "'&'", "'|'", "'&&'", "'||'"
+        null, "','", "'<<'", "'>>'", "'<='", "'>='", "'=='", "'!='", "'%'",
+        null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, "'('", "')'", "'['", "']'",
+        "'{'", "'}'", "'&'", "'&&'", "'|'", "'||'", "'+'", "'-'", "'/'",
+        "'*'", "'~'", "'!'", "'='", "'<'", "'>'", "'+='", "'-='", "'*='",
+        "'/='", "'&='", "'|='", "'.'", "';'"
     ];
     static symbolicNames = [
-        null, null, null, null, null, null, null, null, null, null, null,
-        null, null, null, null, null, null, null, null, null, null, null,
-        null, null, null, null, null, null, null, null, null, null, null,
-        null, "Const", "Var", "If", "Int", "Else", "Func", "String", "Class",
-        "Void", "Return", "Float", "Prototype", "Instance", "Null", "NoFunc",
-        "Identifier", "IntegerLiteral", "FloatLiteral", "StringLiteral",
-        "Whitespace", "Newline", "BlockComment", "LineComment", "UnexpectedCharacter"
+        null, null, null, null, null, null, null, null, null, "IntegerLiteral",
+        "FloatLiteral", "StringLiteral", "Const", "Var", "If", "Int", "Else",
+        "Func", "StringKeyword", "Class", "Void", "Return", "Float", "Prototype",
+        "Instance", "Null", "LeftParen", "RightParen", "LeftBracket", "RightBracket",
+        "LeftBrace", "RightBrace", "BitAnd", "And", "BitOr", "Or", "Plus",
+        "Minus", "Div", "Star", "Tilde", "Not", "Assign", "Less", "Greater",
+        "PlusAssign", "MinusAssign", "StarAssign", "DivAssign", "AndAssign",
+        "OrAssign", "Dot", "Semi", "Identifier", "Whitespace", "Newline",
+        "BlockComment", "LineComment"
     ];
     static modeNames = [
         "DEFAULT_MODE",
     ];
     static ruleNames = [
         "T__0", "T__1", "T__2", "T__3", "T__4", "T__5", "T__6", "T__7",
-        "T__8", "T__9", "T__10", "T__11", "T__12", "T__13", "T__14", "T__15",
-        "T__16", "T__17", "T__18", "T__19", "T__20", "T__21", "T__22", "T__23",
-        "T__24", "T__25", "T__26", "T__27", "T__28", "T__29", "T__30", "T__31",
-        "T__32", "Const", "Var", "If", "Int", "Else", "Func", "String",
-        "Class", "Void", "Return", "Float", "Prototype", "Instance", "Null",
-        "NoFunc", "Identifier", "IntegerLiteral", "FloatLiteral", "StringLiteral",
-        "Whitespace", "Newline", "BlockComment", "LineComment", "UnexpectedCharacter",
-        "IdStart", "IdContinue", "SpecialCharacter", "GermanCharacter",
-        "Digit", "PointFloat", "ExponentFloat", "Exponent",
+        "IntegerLiteral", "FloatLiteral", "StringLiteral", "Const", "Var",
+        "If", "Int", "Else", "Func", "StringKeyword", "Class", "Void", "Return",
+        "Float", "Prototype", "Instance", "Null", "LeftParen", "RightParen",
+        "LeftBracket", "RightBracket", "LeftBrace", "RightBrace", "BitAnd",
+        "And", "BitOr", "Or", "Plus", "Minus", "Div", "Star", "Tilde", "Not",
+        "Assign", "Less", "Greater", "PlusAssign", "MinusAssign", "StarAssign",
+        "DivAssign", "AndAssign", "OrAssign", "Dot", "Semi", "Identifier",
+        "Whitespace", "Newline", "BlockComment", "LineComment", "NonDigit",
+        "IdContinue", "IdSpecial", "GermanCharacter", "Digit", "PointFloat",
+        "ExponentFloat", "Exponent", "A", "B", "C", "D", "E", "F", "G",
+        "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T",
+        "U", "V", "W", "X", "Y", "Z",
     ];
     constructor(input) {
         super(input);
@@ -58278,190 +64588,186 @@ class DaedalusLexer extends Lexer {
         39, 7, 39, 2, 40, 7, 40, 2, 41, 7, 41, 2, 42, 7, 42, 2, 43, 7, 43, 2, 44, 7, 44, 2, 45, 7,
         45, 2, 46, 7, 46, 2, 47, 7, 47, 2, 48, 7, 48, 2, 49, 7, 49, 2, 50, 7, 50, 2, 51, 7, 51, 2,
         52, 7, 52, 2, 53, 7, 53, 2, 54, 7, 54, 2, 55, 7, 55, 2, 56, 7, 56, 2, 57, 7, 57, 2, 58, 7,
-        58, 2, 59, 7, 59, 2, 60, 7, 60, 2, 61, 7, 61, 2, 62, 7, 62, 2, 63, 7, 63, 2, 64, 7, 64, 1,
-        0, 1, 0, 1, 1, 1, 1, 1, 2, 1, 2, 1, 3, 1, 3, 1, 4, 1, 4, 1, 5, 1, 5, 1, 6, 1, 6, 1, 7, 1, 7, 1,
-        8, 1, 8, 1, 9, 1, 9, 1, 10, 1, 10, 1, 10, 1, 11, 1, 11, 1, 11, 1, 12, 1, 12, 1, 12, 1, 13,
-        1, 13, 1, 13, 1, 14, 1, 14, 1, 15, 1, 15, 1, 16, 1, 16, 1, 16, 1, 17, 1, 17, 1, 17, 1, 18,
-        1, 18, 1, 19, 1, 19, 1, 20, 1, 20, 1, 20, 1, 21, 1, 21, 1, 21, 1, 22, 1, 22, 1, 22, 1, 23,
-        1, 23, 1, 23, 1, 24, 1, 24, 1, 25, 1, 25, 1, 26, 1, 26, 1, 27, 1, 27, 1, 28, 1, 28, 1, 29,
-        1, 29, 1, 30, 1, 30, 1, 31, 1, 31, 1, 31, 1, 32, 1, 32, 1, 32, 1, 33, 1, 33, 1, 33, 1, 33,
-        1, 33, 1, 33, 1, 33, 1, 33, 1, 33, 1, 33, 3, 33, 220, 8, 33, 1, 34, 1, 34, 1, 34, 1, 34,
-        1, 34, 1, 34, 3, 34, 228, 8, 34, 1, 35, 1, 35, 1, 35, 1, 35, 3, 35, 234, 8, 35, 1, 36, 1,
-        36, 1, 36, 1, 36, 1, 36, 1, 36, 3, 36, 242, 8, 36, 1, 37, 1, 37, 1, 37, 1, 37, 1, 37, 1,
-        37, 1, 37, 1, 37, 3, 37, 252, 8, 37, 1, 38, 1, 38, 1, 38, 1, 38, 1, 38, 1, 38, 1, 38, 1,
-        38, 3, 38, 262, 8, 38, 1, 39, 1, 39, 1, 39, 1, 39, 1, 39, 1, 39, 1, 39, 1, 39, 1, 39, 1,
-        39, 1, 39, 1, 39, 3, 39, 276, 8, 39, 1, 40, 1, 40, 1, 40, 1, 40, 1, 40, 1, 40, 1, 40, 1,
-        40, 1, 40, 1, 40, 3, 40, 288, 8, 40, 1, 41, 1, 41, 1, 41, 1, 41, 1, 41, 1, 41, 1, 41, 1,
-        41, 3, 41, 298, 8, 41, 1, 42, 1, 42, 1, 42, 1, 42, 1, 42, 1, 42, 1, 42, 1, 42, 1, 42, 1,
-        42, 1, 42, 1, 42, 3, 42, 312, 8, 42, 1, 43, 1, 43, 1, 43, 1, 43, 1, 43, 1, 43, 1, 43, 1,
-        43, 1, 43, 1, 43, 3, 43, 324, 8, 43, 1, 44, 1, 44, 1, 44, 1, 44, 1, 44, 1, 44, 1, 44, 1,
-        44, 1, 44, 1, 44, 1, 44, 1, 44, 1, 44, 1, 44, 1, 44, 1, 44, 1, 44, 1, 44, 3, 44, 344, 8,
-        44, 1, 45, 1, 45, 1, 45, 1, 45, 1, 45, 1, 45, 1, 45, 1, 45, 1, 45, 1, 45, 1, 45, 1, 45, 1,
-        45, 1, 45, 1, 45, 1, 45, 3, 45, 362, 8, 45, 1, 46, 1, 46, 1, 46, 1, 46, 1, 46, 1, 46, 1,
-        46, 1, 46, 1, 46, 1, 46, 1, 46, 1, 46, 3, 46, 376, 8, 46, 1, 47, 1, 47, 1, 47, 1, 47, 1,
-        47, 1, 47, 1, 47, 1, 47, 1, 47, 1, 47, 1, 47, 1, 47, 1, 47, 1, 47, 1, 47, 1, 47, 1, 47, 1,
-        47, 3, 47, 396, 8, 47, 1, 48, 1, 48, 5, 48, 400, 8, 48, 10, 48, 12, 48, 403, 9, 48, 1,
-        49, 4, 49, 406, 8, 49, 11, 49, 12, 49, 407, 1, 50, 1, 50, 3, 50, 412, 8, 50, 1, 51, 1,
-        51, 1, 51, 1, 51, 1, 51, 3, 51, 419, 8, 51, 5, 51, 421, 8, 51, 10, 51, 12, 51, 424, 9,
-        51, 1, 51, 1, 51, 1, 52, 4, 52, 429, 8, 52, 11, 52, 12, 52, 430, 1, 52, 1, 52, 1, 53, 1,
-        53, 3, 53, 437, 8, 53, 1, 53, 3, 53, 440, 8, 53, 1, 53, 1, 53, 1, 54, 1, 54, 1, 54, 1, 54,
-        5, 54, 448, 8, 54, 10, 54, 12, 54, 451, 9, 54, 1, 54, 1, 54, 1, 54, 1, 54, 1, 54, 1, 55,
-        1, 55, 1, 55, 1, 55, 5, 55, 462, 8, 55, 10, 55, 12, 55, 465, 9, 55, 1, 55, 1, 55, 1, 56,
-        1, 56, 1, 57, 1, 57, 3, 57, 473, 8, 57, 1, 58, 1, 58, 1, 58, 3, 58, 478, 8, 58, 1, 59, 1,
-        59, 1, 60, 1, 60, 1, 61, 1, 61, 1, 62, 5, 62, 487, 8, 62, 10, 62, 12, 62, 490, 9, 62, 1,
-        62, 1, 62, 4, 62, 494, 8, 62, 11, 62, 12, 62, 495, 1, 62, 4, 62, 499, 8, 62, 11, 62, 12,
-        62, 500, 1, 62, 1, 62, 3, 62, 505, 8, 62, 1, 63, 4, 63, 508, 8, 63, 11, 63, 12, 63, 509,
-        1, 63, 3, 63, 513, 8, 63, 1, 63, 1, 63, 1, 64, 1, 64, 3, 64, 519, 8, 64, 1, 64, 4, 64, 522,
-        8, 64, 11, 64, 12, 64, 523, 1, 449, 0, 65, 1, 1, 3, 2, 5, 3, 7, 4, 9, 5, 11, 6, 13, 7, 15,
-        8, 17, 9, 19, 10, 21, 11, 23, 12, 25, 13, 27, 14, 29, 15, 31, 16, 33, 17, 35, 18, 37,
-        19, 39, 20, 41, 21, 43, 22, 45, 23, 47, 24, 49, 25, 51, 26, 53, 27, 55, 28, 57, 29, 59,
-        30, 61, 31, 63, 32, 65, 33, 67, 34, 69, 35, 71, 36, 73, 37, 75, 38, 77, 39, 79, 40, 81,
-        41, 83, 42, 85, 43, 87, 44, 89, 45, 91, 46, 93, 47, 95, 48, 97, 49, 99, 50, 101, 51,
-        103, 52, 105, 53, 107, 54, 109, 55, 111, 56, 113, 57, 115, 0, 117, 0, 119, 0, 121,
-        0, 123, 0, 125, 0, 127, 0, 129, 0, 1, 0, 9, 4, 0, 10, 10, 13, 13, 34, 34, 92, 92, 2, 0,
+        58, 2, 59, 7, 59, 2, 60, 7, 60, 2, 61, 7, 61, 2, 62, 7, 62, 2, 63, 7, 63, 2, 64, 7, 64, 2,
+        65, 7, 65, 2, 66, 7, 66, 2, 67, 7, 67, 2, 68, 7, 68, 2, 69, 7, 69, 2, 70, 7, 70, 2, 71, 7,
+        71, 2, 72, 7, 72, 2, 73, 7, 73, 2, 74, 7, 74, 2, 75, 7, 75, 2, 76, 7, 76, 2, 77, 7, 77, 2,
+        78, 7, 78, 2, 79, 7, 79, 2, 80, 7, 80, 2, 81, 7, 81, 2, 82, 7, 82, 2, 83, 7, 83, 2, 84, 7,
+        84, 2, 85, 7, 85, 2, 86, 7, 86, 2, 87, 7, 87, 2, 88, 7, 88, 2, 89, 7, 89, 2, 90, 7, 90, 1,
+        0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 2, 1, 2, 1, 2, 1, 3, 1, 3, 1, 3, 1, 4, 1, 4, 1, 4, 1, 5, 1, 5, 1,
+        5, 1, 6, 1, 6, 1, 6, 1, 7, 1, 7, 1, 8, 4, 8, 207, 8, 8, 11, 8, 12, 8, 208, 1, 9, 1, 9, 3, 9,
+        213, 8, 9, 1, 10, 1, 10, 5, 10, 217, 8, 10, 10, 10, 12, 10, 220, 9, 10, 1, 10, 1, 10, 1,
+        11, 1, 11, 1, 11, 1, 11, 1, 11, 1, 11, 1, 12, 1, 12, 1, 12, 1, 12, 1, 13, 1, 13, 1, 13, 1,
+        14, 1, 14, 1, 14, 1, 14, 1, 15, 1, 15, 1, 15, 1, 15, 1, 15, 1, 16, 1, 16, 1, 16, 1, 16, 1,
+        16, 1, 17, 1, 17, 1, 17, 1, 17, 1, 17, 1, 17, 1, 17, 1, 18, 1, 18, 1, 18, 1, 18, 1, 18, 1,
+        18, 1, 19, 1, 19, 1, 19, 1, 19, 1, 19, 1, 20, 1, 20, 1, 20, 1, 20, 1, 20, 1, 20, 1, 20, 1,
+        21, 1, 21, 1, 21, 1, 21, 1, 21, 1, 21, 1, 22, 1, 22, 1, 22, 1, 22, 1, 22, 1, 22, 1, 22, 1,
+        22, 1, 22, 1, 22, 1, 23, 1, 23, 1, 23, 1, 23, 1, 23, 1, 23, 1, 23, 1, 23, 1, 23, 1, 24, 1,
+        24, 1, 24, 1, 24, 1, 24, 1, 25, 1, 25, 1, 26, 1, 26, 1, 27, 1, 27, 1, 28, 1, 28, 1, 29, 1,
+        29, 1, 30, 1, 30, 1, 31, 1, 31, 1, 32, 1, 32, 1, 32, 1, 33, 1, 33, 1, 34, 1, 34, 1, 34, 1,
+        35, 1, 35, 1, 36, 1, 36, 1, 37, 1, 37, 1, 38, 1, 38, 1, 39, 1, 39, 1, 40, 1, 40, 1, 41, 1,
+        41, 1, 42, 1, 42, 1, 43, 1, 43, 1, 44, 1, 44, 1, 44, 1, 45, 1, 45, 1, 45, 1, 46, 1, 46, 1,
+        46, 1, 47, 1, 47, 1, 47, 1, 48, 1, 48, 1, 48, 1, 49, 1, 49, 1, 49, 1, 50, 1, 50, 1, 51, 1,
+        51, 1, 52, 1, 52, 3, 52, 370, 8, 52, 1, 52, 5, 52, 373, 8, 52, 10, 52, 12, 52, 376, 9,
+        52, 1, 53, 4, 53, 379, 8, 53, 11, 53, 12, 53, 380, 1, 53, 1, 53, 1, 54, 1, 54, 3, 54, 387,
+        8, 54, 1, 54, 3, 54, 390, 8, 54, 1, 54, 1, 54, 1, 55, 1, 55, 1, 55, 1, 55, 5, 55, 398, 8,
+        55, 10, 55, 12, 55, 401, 9, 55, 1, 55, 1, 55, 1, 55, 1, 55, 1, 55, 1, 56, 1, 56, 1, 56,
+        1, 56, 5, 56, 412, 8, 56, 10, 56, 12, 56, 415, 9, 56, 1, 56, 1, 56, 1, 57, 1, 57, 3, 57,
+        421, 8, 57, 1, 58, 1, 58, 1, 58, 3, 58, 426, 8, 58, 1, 59, 1, 59, 1, 60, 1, 60, 1, 61, 1,
+        61, 1, 62, 5, 62, 435, 8, 62, 10, 62, 12, 62, 438, 9, 62, 1, 62, 1, 62, 4, 62, 442, 8,
+        62, 11, 62, 12, 62, 443, 1, 62, 4, 62, 447, 8, 62, 11, 62, 12, 62, 448, 1, 62, 1, 62,
+        3, 62, 453, 8, 62, 1, 63, 4, 63, 456, 8, 63, 11, 63, 12, 63, 457, 1, 63, 3, 63, 461, 8,
+        63, 1, 63, 1, 63, 1, 64, 1, 64, 3, 64, 467, 8, 64, 1, 64, 4, 64, 470, 8, 64, 11, 64, 12,
+        64, 471, 1, 65, 1, 65, 1, 66, 1, 66, 1, 67, 1, 67, 1, 68, 1, 68, 1, 69, 1, 69, 1, 70, 1,
+        70, 1, 71, 1, 71, 1, 72, 1, 72, 1, 73, 1, 73, 1, 74, 1, 74, 1, 75, 1, 75, 1, 76, 1, 76, 1,
+        77, 1, 77, 1, 78, 1, 78, 1, 79, 1, 79, 1, 80, 1, 80, 1, 81, 1, 81, 1, 82, 1, 82, 1, 83, 1,
+        83, 1, 84, 1, 84, 1, 85, 1, 85, 1, 86, 1, 86, 1, 87, 1, 87, 1, 88, 1, 88, 1, 89, 1, 89, 1,
+        90, 1, 90, 1, 399, 0, 91, 1, 1, 3, 2, 5, 3, 7, 4, 9, 5, 11, 6, 13, 7, 15, 8, 17, 9, 19, 10,
+        21, 11, 23, 12, 25, 13, 27, 14, 29, 15, 31, 16, 33, 17, 35, 18, 37, 19, 39, 20, 41, 21,
+        43, 22, 45, 23, 47, 24, 49, 25, 51, 26, 53, 27, 55, 28, 57, 29, 59, 30, 61, 31, 63, 32,
+        65, 33, 67, 34, 69, 35, 71, 36, 73, 37, 75, 38, 77, 39, 79, 40, 81, 41, 83, 42, 85, 43,
+        87, 44, 89, 45, 91, 46, 93, 47, 95, 48, 97, 49, 99, 50, 101, 51, 103, 52, 105, 53, 107,
+        54, 109, 55, 111, 56, 113, 57, 115, 0, 117, 0, 119, 0, 121, 0, 123, 0, 125, 0, 127,
+        0, 129, 0, 131, 0, 133, 0, 135, 0, 137, 0, 139, 0, 141, 0, 143, 0, 145, 0, 147, 0, 149,
+        0, 151, 0, 153, 0, 155, 0, 157, 0, 159, 0, 161, 0, 163, 0, 165, 0, 167, 0, 169, 0, 171,
+        0, 173, 0, 175, 0, 177, 0, 179, 0, 181, 0, 1, 0, 34, 3, 0, 10, 10, 13, 13, 34, 34, 2, 0,
         9, 9, 32, 32, 2, 0, 10, 10, 13, 13, 3, 0, 65, 90, 95, 95, 97, 122, 2, 0, 64, 64, 94, 94,
-        4, 0, 223, 223, 228, 228, 246, 246, 252, 252, 1, 0, 48, 57, 2, 0, 69, 69, 101, 101,
-        2, 0, 43, 43, 45, 45, 555, 0, 1, 1, 0, 0, 0, 0, 3, 1, 0, 0, 0, 0, 5, 1, 0, 0, 0, 0, 7, 1, 0,
-        0, 0, 0, 9, 1, 0, 0, 0, 0, 11, 1, 0, 0, 0, 0, 13, 1, 0, 0, 0, 0, 15, 1, 0, 0, 0, 0, 17, 1, 0,
-        0, 0, 0, 19, 1, 0, 0, 0, 0, 21, 1, 0, 0, 0, 0, 23, 1, 0, 0, 0, 0, 25, 1, 0, 0, 0, 0, 27, 1, 0,
-        0, 0, 0, 29, 1, 0, 0, 0, 0, 31, 1, 0, 0, 0, 0, 33, 1, 0, 0, 0, 0, 35, 1, 0, 0, 0, 0, 37, 1, 0,
-        0, 0, 0, 39, 1, 0, 0, 0, 0, 41, 1, 0, 0, 0, 0, 43, 1, 0, 0, 0, 0, 45, 1, 0, 0, 0, 0, 47, 1, 0,
-        0, 0, 0, 49, 1, 0, 0, 0, 0, 51, 1, 0, 0, 0, 0, 53, 1, 0, 0, 0, 0, 55, 1, 0, 0, 0, 0, 57, 1, 0,
-        0, 0, 0, 59, 1, 0, 0, 0, 0, 61, 1, 0, 0, 0, 0, 63, 1, 0, 0, 0, 0, 65, 1, 0, 0, 0, 0, 67, 1, 0,
-        0, 0, 0, 69, 1, 0, 0, 0, 0, 71, 1, 0, 0, 0, 0, 73, 1, 0, 0, 0, 0, 75, 1, 0, 0, 0, 0, 77, 1, 0,
-        0, 0, 0, 79, 1, 0, 0, 0, 0, 81, 1, 0, 0, 0, 0, 83, 1, 0, 0, 0, 0, 85, 1, 0, 0, 0, 0, 87, 1, 0,
-        0, 0, 0, 89, 1, 0, 0, 0, 0, 91, 1, 0, 0, 0, 0, 93, 1, 0, 0, 0, 0, 95, 1, 0, 0, 0, 0, 97, 1, 0,
-        0, 0, 0, 99, 1, 0, 0, 0, 0, 101, 1, 0, 0, 0, 0, 103, 1, 0, 0, 0, 0, 105, 1, 0, 0, 0, 0, 107,
-        1, 0, 0, 0, 0, 109, 1, 0, 0, 0, 0, 111, 1, 0, 0, 0, 0, 113, 1, 0, 0, 0, 1, 131, 1, 0, 0, 0,
-        3, 133, 1, 0, 0, 0, 5, 135, 1, 0, 0, 0, 7, 137, 1, 0, 0, 0, 9, 139, 1, 0, 0, 0, 11, 141, 1,
-        0, 0, 0, 13, 143, 1, 0, 0, 0, 15, 145, 1, 0, 0, 0, 17, 147, 1, 0, 0, 0, 19, 149, 1, 0, 0,
-        0, 21, 151, 1, 0, 0, 0, 23, 154, 1, 0, 0, 0, 25, 157, 1, 0, 0, 0, 27, 160, 1, 0, 0, 0, 29,
-        163, 1, 0, 0, 0, 31, 165, 1, 0, 0, 0, 33, 167, 1, 0, 0, 0, 35, 170, 1, 0, 0, 0, 37, 173,
-        1, 0, 0, 0, 39, 175, 1, 0, 0, 0, 41, 177, 1, 0, 0, 0, 43, 180, 1, 0, 0, 0, 45, 183, 1, 0,
-        0, 0, 47, 186, 1, 0, 0, 0, 49, 189, 1, 0, 0, 0, 51, 191, 1, 0, 0, 0, 53, 193, 1, 0, 0, 0,
-        55, 195, 1, 0, 0, 0, 57, 197, 1, 0, 0, 0, 59, 199, 1, 0, 0, 0, 61, 201, 1, 0, 0, 0, 63, 203,
-        1, 0, 0, 0, 65, 206, 1, 0, 0, 0, 67, 219, 1, 0, 0, 0, 69, 227, 1, 0, 0, 0, 71, 233, 1, 0,
-        0, 0, 73, 241, 1, 0, 0, 0, 75, 251, 1, 0, 0, 0, 77, 261, 1, 0, 0, 0, 79, 275, 1, 0, 0, 0,
-        81, 287, 1, 0, 0, 0, 83, 297, 1, 0, 0, 0, 85, 311, 1, 0, 0, 0, 87, 323, 1, 0, 0, 0, 89, 343,
-        1, 0, 0, 0, 91, 361, 1, 0, 0, 0, 93, 375, 1, 0, 0, 0, 95, 395, 1, 0, 0, 0, 97, 397, 1, 0,
-        0, 0, 99, 405, 1, 0, 0, 0, 101, 411, 1, 0, 0, 0, 103, 413, 1, 0, 0, 0, 105, 428, 1, 0, 0,
-        0, 107, 439, 1, 0, 0, 0, 109, 443, 1, 0, 0, 0, 111, 457, 1, 0, 0, 0, 113, 468, 1, 0, 0,
-        0, 115, 472, 1, 0, 0, 0, 117, 477, 1, 0, 0, 0, 119, 479, 1, 0, 0, 0, 121, 481, 1, 0, 0,
-        0, 123, 483, 1, 0, 0, 0, 125, 504, 1, 0, 0, 0, 127, 512, 1, 0, 0, 0, 129, 516, 1, 0, 0,
-        0, 131, 132, 5, 59, 0, 0, 132, 2, 1, 0, 0, 0, 133, 134, 5, 44, 0, 0, 134, 4, 1, 0, 0, 0,
-        135, 136, 5, 123, 0, 0, 136, 6, 1, 0, 0, 0, 137, 138, 5, 125, 0, 0, 138, 8, 1, 0, 0, 0,
-        139, 140, 5, 40, 0, 0, 140, 10, 1, 0, 0, 0, 141, 142, 5, 41, 0, 0, 142, 12, 1, 0, 0, 0,
-        143, 144, 5, 91, 0, 0, 144, 14, 1, 0, 0, 0, 145, 146, 5, 93, 0, 0, 146, 16, 1, 0, 0, 0,
-        147, 148, 5, 61, 0, 0, 148, 18, 1, 0, 0, 0, 149, 150, 5, 46, 0, 0, 150, 20, 1, 0, 0, 0,
-        151, 152, 5, 43, 0, 0, 152, 153, 5, 61, 0, 0, 153, 22, 1, 0, 0, 0, 154, 155, 5, 45, 0,
-        0, 155, 156, 5, 61, 0, 0, 156, 24, 1, 0, 0, 0, 157, 158, 5, 42, 0, 0, 158, 159, 5, 61,
-        0, 0, 159, 26, 1, 0, 0, 0, 160, 161, 5, 47, 0, 0, 161, 162, 5, 61, 0, 0, 162, 28, 1, 0,
-        0, 0, 163, 164, 5, 43, 0, 0, 164, 30, 1, 0, 0, 0, 165, 166, 5, 45, 0, 0, 166, 32, 1, 0,
-        0, 0, 167, 168, 5, 60, 0, 0, 168, 169, 5, 60, 0, 0, 169, 34, 1, 0, 0, 0, 170, 171, 5, 62,
-        0, 0, 171, 172, 5, 62, 0, 0, 172, 36, 1, 0, 0, 0, 173, 174, 5, 60, 0, 0, 174, 38, 1, 0,
-        0, 0, 175, 176, 5, 62, 0, 0, 176, 40, 1, 0, 0, 0, 177, 178, 5, 60, 0, 0, 178, 179, 5, 61,
-        0, 0, 179, 42, 1, 0, 0, 0, 180, 181, 5, 62, 0, 0, 181, 182, 5, 61, 0, 0, 182, 44, 1, 0,
-        0, 0, 183, 184, 5, 61, 0, 0, 184, 185, 5, 61, 0, 0, 185, 46, 1, 0, 0, 0, 186, 187, 5, 33,
-        0, 0, 187, 188, 5, 61, 0, 0, 188, 48, 1, 0, 0, 0, 189, 190, 5, 33, 0, 0, 190, 50, 1, 0,
-        0, 0, 191, 192, 5, 126, 0, 0, 192, 52, 1, 0, 0, 0, 193, 194, 5, 42, 0, 0, 194, 54, 1, 0,
-        0, 0, 195, 196, 5, 47, 0, 0, 196, 56, 1, 0, 0, 0, 197, 198, 5, 37, 0, 0, 198, 58, 1, 0,
-        0, 0, 199, 200, 5, 38, 0, 0, 200, 60, 1, 0, 0, 0, 201, 202, 5, 124, 0, 0, 202, 62, 1, 0,
-        0, 0, 203, 204, 5, 38, 0, 0, 204, 205, 5, 38, 0, 0, 205, 64, 1, 0, 0, 0, 206, 207, 5, 124,
-        0, 0, 207, 208, 5, 124, 0, 0, 208, 66, 1, 0, 0, 0, 209, 210, 5, 99, 0, 0, 210, 211, 5,
-        111, 0, 0, 211, 212, 5, 110, 0, 0, 212, 213, 5, 115, 0, 0, 213, 220, 5, 116, 0, 0, 214,
-        215, 5, 67, 0, 0, 215, 216, 5, 79, 0, 0, 216, 217, 5, 78, 0, 0, 217, 218, 5, 83, 0, 0,
-        218, 220, 5, 84, 0, 0, 219, 209, 1, 0, 0, 0, 219, 214, 1, 0, 0, 0, 220, 68, 1, 0, 0, 0,
-        221, 222, 5, 118, 0, 0, 222, 223, 5, 97, 0, 0, 223, 228, 5, 114, 0, 0, 224, 225, 5, 86,
-        0, 0, 225, 226, 5, 65, 0, 0, 226, 228, 5, 82, 0, 0, 227, 221, 1, 0, 0, 0, 227, 224, 1,
-        0, 0, 0, 228, 70, 1, 0, 0, 0, 229, 230, 5, 105, 0, 0, 230, 234, 5, 102, 0, 0, 231, 232,
-        5, 73, 0, 0, 232, 234, 5, 70, 0, 0, 233, 229, 1, 0, 0, 0, 233, 231, 1, 0, 0, 0, 234, 72,
-        1, 0, 0, 0, 235, 236, 5, 105, 0, 0, 236, 237, 5, 110, 0, 0, 237, 242, 5, 116, 0, 0, 238,
-        239, 5, 73, 0, 0, 239, 240, 5, 78, 0, 0, 240, 242, 5, 84, 0, 0, 241, 235, 1, 0, 0, 0, 241,
-        238, 1, 0, 0, 0, 242, 74, 1, 0, 0, 0, 243, 244, 5, 101, 0, 0, 244, 245, 5, 108, 0, 0, 245,
-        246, 5, 115, 0, 0, 246, 252, 5, 101, 0, 0, 247, 248, 5, 69, 0, 0, 248, 249, 5, 76, 0,
-        0, 249, 250, 5, 83, 0, 0, 250, 252, 5, 69, 0, 0, 251, 243, 1, 0, 0, 0, 251, 247, 1, 0,
-        0, 0, 252, 76, 1, 0, 0, 0, 253, 254, 5, 102, 0, 0, 254, 255, 5, 117, 0, 0, 255, 256, 5,
-        110, 0, 0, 256, 262, 5, 99, 0, 0, 257, 258, 5, 70, 0, 0, 258, 259, 5, 85, 0, 0, 259, 260,
-        5, 78, 0, 0, 260, 262, 5, 67, 0, 0, 261, 253, 1, 0, 0, 0, 261, 257, 1, 0, 0, 0, 262, 78,
-        1, 0, 0, 0, 263, 264, 5, 115, 0, 0, 264, 265, 5, 116, 0, 0, 265, 266, 5, 114, 0, 0, 266,
-        267, 5, 105, 0, 0, 267, 268, 5, 110, 0, 0, 268, 276, 5, 103, 0, 0, 269, 270, 5, 83, 0,
-        0, 270, 271, 5, 84, 0, 0, 271, 272, 5, 82, 0, 0, 272, 273, 5, 73, 0, 0, 273, 274, 5, 78,
-        0, 0, 274, 276, 5, 71, 0, 0, 275, 263, 1, 0, 0, 0, 275, 269, 1, 0, 0, 0, 276, 80, 1, 0,
-        0, 0, 277, 278, 5, 99, 0, 0, 278, 279, 5, 108, 0, 0, 279, 280, 5, 97, 0, 0, 280, 281,
-        5, 115, 0, 0, 281, 288, 5, 115, 0, 0, 282, 283, 5, 67, 0, 0, 283, 284, 5, 76, 0, 0, 284,
-        285, 5, 65, 0, 0, 285, 286, 5, 83, 0, 0, 286, 288, 5, 83, 0, 0, 287, 277, 1, 0, 0, 0, 287,
-        282, 1, 0, 0, 0, 288, 82, 1, 0, 0, 0, 289, 290, 5, 118, 0, 0, 290, 291, 5, 111, 0, 0, 291,
-        292, 5, 105, 0, 0, 292, 298, 5, 100, 0, 0, 293, 294, 5, 86, 0, 0, 294, 295, 5, 79, 0,
-        0, 295, 296, 5, 73, 0, 0, 296, 298, 5, 68, 0, 0, 297, 289, 1, 0, 0, 0, 297, 293, 1, 0,
-        0, 0, 298, 84, 1, 0, 0, 0, 299, 300, 5, 114, 0, 0, 300, 301, 5, 101, 0, 0, 301, 302, 5,
-        116, 0, 0, 302, 303, 5, 117, 0, 0, 303, 304, 5, 114, 0, 0, 304, 312, 5, 110, 0, 0, 305,
-        306, 5, 82, 0, 0, 306, 307, 5, 69, 0, 0, 307, 308, 5, 84, 0, 0, 308, 309, 5, 85, 0, 0,
-        309, 310, 5, 82, 0, 0, 310, 312, 5, 78, 0, 0, 311, 299, 1, 0, 0, 0, 311, 305, 1, 0, 0,
-        0, 312, 86, 1, 0, 0, 0, 313, 314, 5, 102, 0, 0, 314, 315, 5, 108, 0, 0, 315, 316, 5, 111,
-        0, 0, 316, 317, 5, 97, 0, 0, 317, 324, 5, 116, 0, 0, 318, 319, 5, 70, 0, 0, 319, 320,
-        5, 76, 0, 0, 320, 321, 5, 79, 0, 0, 321, 322, 5, 65, 0, 0, 322, 324, 5, 84, 0, 0, 323,
-        313, 1, 0, 0, 0, 323, 318, 1, 0, 0, 0, 324, 88, 1, 0, 0, 0, 325, 326, 5, 112, 0, 0, 326,
-        327, 5, 114, 0, 0, 327, 328, 5, 111, 0, 0, 328, 329, 5, 116, 0, 0, 329, 330, 5, 111,
-        0, 0, 330, 331, 5, 116, 0, 0, 331, 332, 5, 121, 0, 0, 332, 333, 5, 112, 0, 0, 333, 344,
-        5, 101, 0, 0, 334, 335, 5, 80, 0, 0, 335, 336, 5, 82, 0, 0, 336, 337, 5, 79, 0, 0, 337,
-        338, 5, 84, 0, 0, 338, 339, 5, 79, 0, 0, 339, 340, 5, 84, 0, 0, 340, 341, 5, 89, 0, 0,
-        341, 342, 5, 80, 0, 0, 342, 344, 5, 69, 0, 0, 343, 325, 1, 0, 0, 0, 343, 334, 1, 0, 0,
-        0, 344, 90, 1, 0, 0, 0, 345, 346, 5, 105, 0, 0, 346, 347, 5, 110, 0, 0, 347, 348, 5, 115,
-        0, 0, 348, 349, 5, 116, 0, 0, 349, 350, 5, 97, 0, 0, 350, 351, 5, 110, 0, 0, 351, 352,
-        5, 99, 0, 0, 352, 362, 5, 101, 0, 0, 353, 354, 5, 73, 0, 0, 354, 355, 5, 78, 0, 0, 355,
-        356, 5, 83, 0, 0, 356, 357, 5, 84, 0, 0, 357, 358, 5, 65, 0, 0, 358, 359, 5, 78, 0, 0,
-        359, 360, 5, 67, 0, 0, 360, 362, 5, 69, 0, 0, 361, 345, 1, 0, 0, 0, 361, 353, 1, 0, 0,
-        0, 362, 92, 1, 0, 0, 0, 363, 364, 5, 110, 0, 0, 364, 365, 5, 117, 0, 0, 365, 366, 5, 108,
-        0, 0, 366, 376, 5, 108, 0, 0, 367, 368, 5, 78, 0, 0, 368, 369, 5, 117, 0, 0, 369, 370,
-        5, 108, 0, 0, 370, 376, 5, 108, 0, 0, 371, 372, 5, 78, 0, 0, 372, 373, 5, 85, 0, 0, 373,
-        374, 5, 76, 0, 0, 374, 376, 5, 76, 0, 0, 375, 363, 1, 0, 0, 0, 375, 367, 1, 0, 0, 0, 375,
-        371, 1, 0, 0, 0, 376, 94, 1, 0, 0, 0, 377, 378, 5, 110, 0, 0, 378, 379, 5, 111, 0, 0, 379,
-        380, 5, 102, 0, 0, 380, 381, 5, 117, 0, 0, 381, 382, 5, 110, 0, 0, 382, 396, 5, 99, 0,
-        0, 383, 384, 5, 78, 0, 0, 384, 385, 5, 111, 0, 0, 385, 386, 5, 70, 0, 0, 386, 387, 5,
-        117, 0, 0, 387, 388, 5, 110, 0, 0, 388, 396, 5, 99, 0, 0, 389, 390, 5, 78, 0, 0, 390,
-        391, 5, 79, 0, 0, 391, 392, 5, 70, 0, 0, 392, 393, 5, 85, 0, 0, 393, 394, 5, 78, 0, 0,
-        394, 396, 5, 67, 0, 0, 395, 377, 1, 0, 0, 0, 395, 383, 1, 0, 0, 0, 395, 389, 1, 0, 0, 0,
-        396, 96, 1, 0, 0, 0, 397, 401, 3, 115, 57, 0, 398, 400, 3, 117, 58, 0, 399, 398, 1, 0,
-        0, 0, 400, 403, 1, 0, 0, 0, 401, 399, 1, 0, 0, 0, 401, 402, 1, 0, 0, 0, 402, 98, 1, 0, 0,
-        0, 403, 401, 1, 0, 0, 0, 404, 406, 3, 123, 61, 0, 405, 404, 1, 0, 0, 0, 406, 407, 1, 0,
-        0, 0, 407, 405, 1, 0, 0, 0, 407, 408, 1, 0, 0, 0, 408, 100, 1, 0, 0, 0, 409, 412, 3, 125,
-        62, 0, 410, 412, 3, 127, 63, 0, 411, 409, 1, 0, 0, 0, 411, 410, 1, 0, 0, 0, 412, 102,
-        1, 0, 0, 0, 413, 422, 5, 34, 0, 0, 414, 421, 8, 0, 0, 0, 415, 418, 5, 92, 0, 0, 416, 419,
-        9, 0, 0, 0, 417, 419, 5, 0, 0, 1, 418, 416, 1, 0, 0, 0, 418, 417, 1, 0, 0, 0, 419, 421,
-        1, 0, 0, 0, 420, 414, 1, 0, 0, 0, 420, 415, 1, 0, 0, 0, 421, 424, 1, 0, 0, 0, 422, 420,
-        1, 0, 0, 0, 422, 423, 1, 0, 0, 0, 423, 425, 1, 0, 0, 0, 424, 422, 1, 0, 0, 0, 425, 426,
-        5, 34, 0, 0, 426, 104, 1, 0, 0, 0, 427, 429, 7, 1, 0, 0, 428, 427, 1, 0, 0, 0, 429, 430,
-        1, 0, 0, 0, 430, 428, 1, 0, 0, 0, 430, 431, 1, 0, 0, 0, 431, 432, 1, 0, 0, 0, 432, 433,
-        6, 52, 0, 0, 433, 106, 1, 0, 0, 0, 434, 436, 5, 13, 0, 0, 435, 437, 5, 10, 0, 0, 436, 435,
-        1, 0, 0, 0, 436, 437, 1, 0, 0, 0, 437, 440, 1, 0, 0, 0, 438, 440, 5, 10, 0, 0, 439, 434,
-        1, 0, 0, 0, 439, 438, 1, 0, 0, 0, 440, 441, 1, 0, 0, 0, 441, 442, 6, 53, 0, 0, 442, 108,
-        1, 0, 0, 0, 443, 444, 5, 47, 0, 0, 444, 445, 5, 42, 0, 0, 445, 449, 1, 0, 0, 0, 446, 448,
-        9, 0, 0, 0, 447, 446, 1, 0, 0, 0, 448, 451, 1, 0, 0, 0, 449, 450, 1, 0, 0, 0, 449, 447,
-        1, 0, 0, 0, 450, 452, 1, 0, 0, 0, 451, 449, 1, 0, 0, 0, 452, 453, 5, 42, 0, 0, 453, 454,
-        5, 47, 0, 0, 454, 455, 1, 0, 0, 0, 455, 456, 6, 54, 0, 0, 456, 110, 1, 0, 0, 0, 457, 458,
-        5, 47, 0, 0, 458, 459, 5, 47, 0, 0, 459, 463, 1, 0, 0, 0, 460, 462, 8, 2, 0, 0, 461, 460,
-        1, 0, 0, 0, 462, 465, 1, 0, 0, 0, 463, 461, 1, 0, 0, 0, 463, 464, 1, 0, 0, 0, 464, 466,
-        1, 0, 0, 0, 465, 463, 1, 0, 0, 0, 466, 467, 6, 55, 0, 0, 467, 112, 1, 0, 0, 0, 468, 469,
-        9, 0, 0, 0, 469, 114, 1, 0, 0, 0, 470, 473, 3, 121, 60, 0, 471, 473, 7, 3, 0, 0, 472, 470,
-        1, 0, 0, 0, 472, 471, 1, 0, 0, 0, 473, 116, 1, 0, 0, 0, 474, 478, 3, 115, 57, 0, 475, 478,
-        3, 123, 61, 0, 476, 478, 3, 119, 59, 0, 477, 474, 1, 0, 0, 0, 477, 475, 1, 0, 0, 0, 477,
-        476, 1, 0, 0, 0, 478, 118, 1, 0, 0, 0, 479, 480, 7, 4, 0, 0, 480, 120, 1, 0, 0, 0, 481,
-        482, 7, 5, 0, 0, 482, 122, 1, 0, 0, 0, 483, 484, 7, 6, 0, 0, 484, 124, 1, 0, 0, 0, 485,
-        487, 3, 123, 61, 0, 486, 485, 1, 0, 0, 0, 487, 490, 1, 0, 0, 0, 488, 486, 1, 0, 0, 0, 488,
-        489, 1, 0, 0, 0, 489, 491, 1, 0, 0, 0, 490, 488, 1, 0, 0, 0, 491, 493, 5, 46, 0, 0, 492,
-        494, 3, 123, 61, 0, 493, 492, 1, 0, 0, 0, 494, 495, 1, 0, 0, 0, 495, 493, 1, 0, 0, 0, 495,
-        496, 1, 0, 0, 0, 496, 505, 1, 0, 0, 0, 497, 499, 3, 123, 61, 0, 498, 497, 1, 0, 0, 0, 499,
-        500, 1, 0, 0, 0, 500, 498, 1, 0, 0, 0, 500, 501, 1, 0, 0, 0, 501, 502, 1, 0, 0, 0, 502,
-        503, 5, 46, 0, 0, 503, 505, 1, 0, 0, 0, 504, 488, 1, 0, 0, 0, 504, 498, 1, 0, 0, 0, 505,
-        126, 1, 0, 0, 0, 506, 508, 3, 123, 61, 0, 507, 506, 1, 0, 0, 0, 508, 509, 1, 0, 0, 0, 509,
-        507, 1, 0, 0, 0, 509, 510, 1, 0, 0, 0, 510, 513, 1, 0, 0, 0, 511, 513, 3, 125, 62, 0, 512,
-        507, 1, 0, 0, 0, 512, 511, 1, 0, 0, 0, 513, 514, 1, 0, 0, 0, 514, 515, 3, 129, 64, 0, 515,
-        128, 1, 0, 0, 0, 516, 518, 7, 7, 0, 0, 517, 519, 7, 8, 0, 0, 518, 517, 1, 0, 0, 0, 518,
-        519, 1, 0, 0, 0, 519, 521, 1, 0, 0, 0, 520, 522, 3, 123, 61, 0, 521, 520, 1, 0, 0, 0, 522,
-        523, 1, 0, 0, 0, 523, 521, 1, 0, 0, 0, 523, 524, 1, 0, 0, 0, 524, 130, 1, 0, 0, 0, 37, 0,
-        219, 227, 233, 241, 251, 261, 275, 287, 297, 311, 323, 343, 361, 375, 395, 401,
-        407, 411, 418, 420, 422, 430, 436, 439, 449, 463, 472, 477, 488, 495, 500, 504,
-        509, 512, 518, 523, 1, 6, 0, 0
+        7, 0, 196, 196, 214, 214, 220, 220, 223, 223, 228, 228, 246, 246, 252, 252, 1, 0,
+        48, 57, 2, 0, 69, 69, 101, 101, 2, 0, 43, 43, 45, 45, 2, 0, 65, 65, 97, 97, 2, 0, 66, 66,
+        98, 98, 2, 0, 67, 67, 99, 99, 2, 0, 68, 68, 100, 100, 2, 0, 70, 70, 102, 102, 2, 0, 71,
+        71, 103, 103, 2, 0, 72, 72, 104, 104, 2, 0, 73, 73, 105, 105, 2, 0, 74, 74, 106, 106,
+        2, 0, 75, 75, 107, 107, 2, 0, 76, 76, 108, 108, 2, 0, 77, 77, 109, 109, 2, 0, 78, 78,
+        110, 110, 2, 0, 79, 79, 111, 111, 2, 0, 80, 80, 112, 112, 2, 0, 81, 81, 113, 113, 2,
+        0, 82, 82, 114, 114, 2, 0, 83, 83, 115, 115, 2, 0, 84, 84, 116, 116, 2, 0, 85, 85, 117,
+        117, 2, 0, 86, 86, 118, 118, 2, 0, 87, 87, 119, 119, 2, 0, 88, 88, 120, 120, 2, 0, 89,
+        89, 121, 121, 2, 0, 90, 90, 122, 122, 511, 0, 1, 1, 0, 0, 0, 0, 3, 1, 0, 0, 0, 0, 5, 1, 0,
+        0, 0, 0, 7, 1, 0, 0, 0, 0, 9, 1, 0, 0, 0, 0, 11, 1, 0, 0, 0, 0, 13, 1, 0, 0, 0, 0, 15, 1, 0, 0,
+        0, 0, 17, 1, 0, 0, 0, 0, 19, 1, 0, 0, 0, 0, 21, 1, 0, 0, 0, 0, 23, 1, 0, 0, 0, 0, 25, 1, 0, 0,
+        0, 0, 27, 1, 0, 0, 0, 0, 29, 1, 0, 0, 0, 0, 31, 1, 0, 0, 0, 0, 33, 1, 0, 0, 0, 0, 35, 1, 0, 0,
+        0, 0, 37, 1, 0, 0, 0, 0, 39, 1, 0, 0, 0, 0, 41, 1, 0, 0, 0, 0, 43, 1, 0, 0, 0, 0, 45, 1, 0, 0,
+        0, 0, 47, 1, 0, 0, 0, 0, 49, 1, 0, 0, 0, 0, 51, 1, 0, 0, 0, 0, 53, 1, 0, 0, 0, 0, 55, 1, 0, 0,
+        0, 0, 57, 1, 0, 0, 0, 0, 59, 1, 0, 0, 0, 0, 61, 1, 0, 0, 0, 0, 63, 1, 0, 0, 0, 0, 65, 1, 0, 0,
+        0, 0, 67, 1, 0, 0, 0, 0, 69, 1, 0, 0, 0, 0, 71, 1, 0, 0, 0, 0, 73, 1, 0, 0, 0, 0, 75, 1, 0, 0,
+        0, 0, 77, 1, 0, 0, 0, 0, 79, 1, 0, 0, 0, 0, 81, 1, 0, 0, 0, 0, 83, 1, 0, 0, 0, 0, 85, 1, 0, 0,
+        0, 0, 87, 1, 0, 0, 0, 0, 89, 1, 0, 0, 0, 0, 91, 1, 0, 0, 0, 0, 93, 1, 0, 0, 0, 0, 95, 1, 0, 0,
+        0, 0, 97, 1, 0, 0, 0, 0, 99, 1, 0, 0, 0, 0, 101, 1, 0, 0, 0, 0, 103, 1, 0, 0, 0, 0, 105, 1,
+        0, 0, 0, 0, 107, 1, 0, 0, 0, 0, 109, 1, 0, 0, 0, 0, 111, 1, 0, 0, 0, 0, 113, 1, 0, 0, 0, 1,
+        183, 1, 0, 0, 0, 3, 185, 1, 0, 0, 0, 5, 188, 1, 0, 0, 0, 7, 191, 1, 0, 0, 0, 9, 194, 1, 0,
+        0, 0, 11, 197, 1, 0, 0, 0, 13, 200, 1, 0, 0, 0, 15, 203, 1, 0, 0, 0, 17, 206, 1, 0, 0, 0,
+        19, 212, 1, 0, 0, 0, 21, 214, 1, 0, 0, 0, 23, 223, 1, 0, 0, 0, 25, 229, 1, 0, 0, 0, 27, 233,
+        1, 0, 0, 0, 29, 236, 1, 0, 0, 0, 31, 240, 1, 0, 0, 0, 33, 245, 1, 0, 0, 0, 35, 250, 1, 0,
+        0, 0, 37, 257, 1, 0, 0, 0, 39, 263, 1, 0, 0, 0, 41, 268, 1, 0, 0, 0, 43, 275, 1, 0, 0, 0,
+        45, 281, 1, 0, 0, 0, 47, 291, 1, 0, 0, 0, 49, 300, 1, 0, 0, 0, 51, 305, 1, 0, 0, 0, 53, 307,
+        1, 0, 0, 0, 55, 309, 1, 0, 0, 0, 57, 311, 1, 0, 0, 0, 59, 313, 1, 0, 0, 0, 61, 315, 1, 0,
+        0, 0, 63, 317, 1, 0, 0, 0, 65, 319, 1, 0, 0, 0, 67, 322, 1, 0, 0, 0, 69, 324, 1, 0, 0, 0,
+        71, 327, 1, 0, 0, 0, 73, 329, 1, 0, 0, 0, 75, 331, 1, 0, 0, 0, 77, 333, 1, 0, 0, 0, 79, 335,
+        1, 0, 0, 0, 81, 337, 1, 0, 0, 0, 83, 339, 1, 0, 0, 0, 85, 341, 1, 0, 0, 0, 87, 343, 1, 0,
+        0, 0, 89, 345, 1, 0, 0, 0, 91, 348, 1, 0, 0, 0, 93, 351, 1, 0, 0, 0, 95, 354, 1, 0, 0, 0,
+        97, 357, 1, 0, 0, 0, 99, 360, 1, 0, 0, 0, 101, 363, 1, 0, 0, 0, 103, 365, 1, 0, 0, 0, 105,
+        369, 1, 0, 0, 0, 107, 378, 1, 0, 0, 0, 109, 389, 1, 0, 0, 0, 111, 393, 1, 0, 0, 0, 113,
+        407, 1, 0, 0, 0, 115, 420, 1, 0, 0, 0, 117, 425, 1, 0, 0, 0, 119, 427, 1, 0, 0, 0, 121,
+        429, 1, 0, 0, 0, 123, 431, 1, 0, 0, 0, 125, 452, 1, 0, 0, 0, 127, 460, 1, 0, 0, 0, 129,
+        464, 1, 0, 0, 0, 131, 473, 1, 0, 0, 0, 133, 475, 1, 0, 0, 0, 135, 477, 1, 0, 0, 0, 137,
+        479, 1, 0, 0, 0, 139, 481, 1, 0, 0, 0, 141, 483, 1, 0, 0, 0, 143, 485, 1, 0, 0, 0, 145,
+        487, 1, 0, 0, 0, 147, 489, 1, 0, 0, 0, 149, 491, 1, 0, 0, 0, 151, 493, 1, 0, 0, 0, 153,
+        495, 1, 0, 0, 0, 155, 497, 1, 0, 0, 0, 157, 499, 1, 0, 0, 0, 159, 501, 1, 0, 0, 0, 161,
+        503, 1, 0, 0, 0, 163, 505, 1, 0, 0, 0, 165, 507, 1, 0, 0, 0, 167, 509, 1, 0, 0, 0, 169,
+        511, 1, 0, 0, 0, 171, 513, 1, 0, 0, 0, 173, 515, 1, 0, 0, 0, 175, 517, 1, 0, 0, 0, 177,
+        519, 1, 0, 0, 0, 179, 521, 1, 0, 0, 0, 181, 523, 1, 0, 0, 0, 183, 184, 5, 44, 0, 0, 184,
+        2, 1, 0, 0, 0, 185, 186, 5, 60, 0, 0, 186, 187, 5, 60, 0, 0, 187, 4, 1, 0, 0, 0, 188, 189,
+        5, 62, 0, 0, 189, 190, 5, 62, 0, 0, 190, 6, 1, 0, 0, 0, 191, 192, 5, 60, 0, 0, 192, 193,
+        5, 61, 0, 0, 193, 8, 1, 0, 0, 0, 194, 195, 5, 62, 0, 0, 195, 196, 5, 61, 0, 0, 196, 10,
+        1, 0, 0, 0, 197, 198, 5, 61, 0, 0, 198, 199, 5, 61, 0, 0, 199, 12, 1, 0, 0, 0, 200, 201,
+        5, 33, 0, 0, 201, 202, 5, 61, 0, 0, 202, 14, 1, 0, 0, 0, 203, 204, 5, 37, 0, 0, 204, 16,
+        1, 0, 0, 0, 205, 207, 3, 123, 61, 0, 206, 205, 1, 0, 0, 0, 207, 208, 1, 0, 0, 0, 208, 206,
+        1, 0, 0, 0, 208, 209, 1, 0, 0, 0, 209, 18, 1, 0, 0, 0, 210, 213, 3, 125, 62, 0, 211, 213,
+        3, 127, 63, 0, 212, 210, 1, 0, 0, 0, 212, 211, 1, 0, 0, 0, 213, 20, 1, 0, 0, 0, 214, 218,
+        5, 34, 0, 0, 215, 217, 8, 0, 0, 0, 216, 215, 1, 0, 0, 0, 217, 220, 1, 0, 0, 0, 218, 216,
+        1, 0, 0, 0, 218, 219, 1, 0, 0, 0, 219, 221, 1, 0, 0, 0, 220, 218, 1, 0, 0, 0, 221, 222,
+        5, 34, 0, 0, 222, 22, 1, 0, 0, 0, 223, 224, 3, 135, 67, 0, 224, 225, 3, 159, 79, 0, 225,
+        226, 3, 157, 78, 0, 226, 227, 3, 167, 83, 0, 227, 228, 3, 169, 84, 0, 228, 24, 1, 0,
+        0, 0, 229, 230, 3, 173, 86, 0, 230, 231, 3, 131, 65, 0, 231, 232, 3, 165, 82, 0, 232,
+        26, 1, 0, 0, 0, 233, 234, 3, 147, 73, 0, 234, 235, 3, 141, 70, 0, 235, 28, 1, 0, 0, 0,
+        236, 237, 3, 147, 73, 0, 237, 238, 3, 157, 78, 0, 238, 239, 3, 169, 84, 0, 239, 30,
+        1, 0, 0, 0, 240, 241, 3, 139, 69, 0, 241, 242, 3, 153, 76, 0, 242, 243, 3, 167, 83, 0,
+        243, 244, 3, 139, 69, 0, 244, 32, 1, 0, 0, 0, 245, 246, 3, 141, 70, 0, 246, 247, 3, 171,
+        85, 0, 247, 248, 3, 157, 78, 0, 248, 249, 3, 135, 67, 0, 249, 34, 1, 0, 0, 0, 250, 251,
+        3, 167, 83, 0, 251, 252, 3, 169, 84, 0, 252, 253, 3, 165, 82, 0, 253, 254, 3, 147, 73,
+        0, 254, 255, 3, 157, 78, 0, 255, 256, 3, 143, 71, 0, 256, 36, 1, 0, 0, 0, 257, 258, 3,
+        135, 67, 0, 258, 259, 3, 153, 76, 0, 259, 260, 3, 131, 65, 0, 260, 261, 3, 167, 83,
+        0, 261, 262, 3, 167, 83, 0, 262, 38, 1, 0, 0, 0, 263, 264, 3, 173, 86, 0, 264, 265, 3,
+        159, 79, 0, 265, 266, 3, 147, 73, 0, 266, 267, 3, 137, 68, 0, 267, 40, 1, 0, 0, 0, 268,
+        269, 3, 165, 82, 0, 269, 270, 3, 139, 69, 0, 270, 271, 3, 169, 84, 0, 271, 272, 3, 171,
+        85, 0, 272, 273, 3, 165, 82, 0, 273, 274, 3, 157, 78, 0, 274, 42, 1, 0, 0, 0, 275, 276,
+        3, 141, 70, 0, 276, 277, 3, 153, 76, 0, 277, 278, 3, 159, 79, 0, 278, 279, 3, 131, 65,
+        0, 279, 280, 3, 169, 84, 0, 280, 44, 1, 0, 0, 0, 281, 282, 3, 161, 80, 0, 282, 283, 3,
+        165, 82, 0, 283, 284, 3, 159, 79, 0, 284, 285, 3, 169, 84, 0, 285, 286, 3, 159, 79,
+        0, 286, 287, 3, 169, 84, 0, 287, 288, 3, 179, 89, 0, 288, 289, 3, 161, 80, 0, 289, 290,
+        3, 139, 69, 0, 290, 46, 1, 0, 0, 0, 291, 292, 3, 147, 73, 0, 292, 293, 3, 157, 78, 0,
+        293, 294, 3, 167, 83, 0, 294, 295, 3, 169, 84, 0, 295, 296, 3, 131, 65, 0, 296, 297,
+        3, 157, 78, 0, 297, 298, 3, 135, 67, 0, 298, 299, 3, 139, 69, 0, 299, 48, 1, 0, 0, 0,
+        300, 301, 3, 157, 78, 0, 301, 302, 3, 171, 85, 0, 302, 303, 3, 153, 76, 0, 303, 304,
+        3, 153, 76, 0, 304, 50, 1, 0, 0, 0, 305, 306, 5, 40, 0, 0, 306, 52, 1, 0, 0, 0, 307, 308,
+        5, 41, 0, 0, 308, 54, 1, 0, 0, 0, 309, 310, 5, 91, 0, 0, 310, 56, 1, 0, 0, 0, 311, 312,
+        5, 93, 0, 0, 312, 58, 1, 0, 0, 0, 313, 314, 5, 123, 0, 0, 314, 60, 1, 0, 0, 0, 315, 316,
+        5, 125, 0, 0, 316, 62, 1, 0, 0, 0, 317, 318, 5, 38, 0, 0, 318, 64, 1, 0, 0, 0, 319, 320,
+        5, 38, 0, 0, 320, 321, 5, 38, 0, 0, 321, 66, 1, 0, 0, 0, 322, 323, 5, 124, 0, 0, 323, 68,
+        1, 0, 0, 0, 324, 325, 5, 124, 0, 0, 325, 326, 5, 124, 0, 0, 326, 70, 1, 0, 0, 0, 327, 328,
+        5, 43, 0, 0, 328, 72, 1, 0, 0, 0, 329, 330, 5, 45, 0, 0, 330, 74, 1, 0, 0, 0, 331, 332,
+        5, 47, 0, 0, 332, 76, 1, 0, 0, 0, 333, 334, 5, 42, 0, 0, 334, 78, 1, 0, 0, 0, 335, 336,
+        5, 126, 0, 0, 336, 80, 1, 0, 0, 0, 337, 338, 5, 33, 0, 0, 338, 82, 1, 0, 0, 0, 339, 340,
+        5, 61, 0, 0, 340, 84, 1, 0, 0, 0, 341, 342, 5, 60, 0, 0, 342, 86, 1, 0, 0, 0, 343, 344,
+        5, 62, 0, 0, 344, 88, 1, 0, 0, 0, 345, 346, 5, 43, 0, 0, 346, 347, 5, 61, 0, 0, 347, 90,
+        1, 0, 0, 0, 348, 349, 5, 45, 0, 0, 349, 350, 5, 61, 0, 0, 350, 92, 1, 0, 0, 0, 351, 352,
+        5, 42, 0, 0, 352, 353, 5, 61, 0, 0, 353, 94, 1, 0, 0, 0, 354, 355, 5, 47, 0, 0, 355, 356,
+        5, 61, 0, 0, 356, 96, 1, 0, 0, 0, 357, 358, 5, 38, 0, 0, 358, 359, 5, 61, 0, 0, 359, 98,
+        1, 0, 0, 0, 360, 361, 5, 124, 0, 0, 361, 362, 5, 61, 0, 0, 362, 100, 1, 0, 0, 0, 363, 364,
+        5, 46, 0, 0, 364, 102, 1, 0, 0, 0, 365, 366, 5, 59, 0, 0, 366, 104, 1, 0, 0, 0, 367, 370,
+        3, 115, 57, 0, 368, 370, 3, 123, 61, 0, 369, 367, 1, 0, 0, 0, 369, 368, 1, 0, 0, 0, 370,
+        374, 1, 0, 0, 0, 371, 373, 3, 117, 58, 0, 372, 371, 1, 0, 0, 0, 373, 376, 1, 0, 0, 0, 374,
+        372, 1, 0, 0, 0, 374, 375, 1, 0, 0, 0, 375, 106, 1, 0, 0, 0, 376, 374, 1, 0, 0, 0, 377,
+        379, 7, 1, 0, 0, 378, 377, 1, 0, 0, 0, 379, 380, 1, 0, 0, 0, 380, 378, 1, 0, 0, 0, 380,
+        381, 1, 0, 0, 0, 381, 382, 1, 0, 0, 0, 382, 383, 6, 53, 0, 0, 383, 108, 1, 0, 0, 0, 384,
+        386, 5, 13, 0, 0, 385, 387, 5, 10, 0, 0, 386, 385, 1, 0, 0, 0, 386, 387, 1, 0, 0, 0, 387,
+        390, 1, 0, 0, 0, 388, 390, 5, 10, 0, 0, 389, 384, 1, 0, 0, 0, 389, 388, 1, 0, 0, 0, 390,
+        391, 1, 0, 0, 0, 391, 392, 6, 54, 0, 0, 392, 110, 1, 0, 0, 0, 393, 394, 5, 47, 0, 0, 394,
+        395, 5, 42, 0, 0, 395, 399, 1, 0, 0, 0, 396, 398, 9, 0, 0, 0, 397, 396, 1, 0, 0, 0, 398,
+        401, 1, 0, 0, 0, 399, 400, 1, 0, 0, 0, 399, 397, 1, 0, 0, 0, 400, 402, 1, 0, 0, 0, 401,
+        399, 1, 0, 0, 0, 402, 403, 5, 42, 0, 0, 403, 404, 5, 47, 0, 0, 404, 405, 1, 0, 0, 0, 405,
+        406, 6, 55, 0, 0, 406, 112, 1, 0, 0, 0, 407, 408, 5, 47, 0, 0, 408, 409, 5, 47, 0, 0, 409,
+        413, 1, 0, 0, 0, 410, 412, 8, 2, 0, 0, 411, 410, 1, 0, 0, 0, 412, 415, 1, 0, 0, 0, 413,
+        411, 1, 0, 0, 0, 413, 414, 1, 0, 0, 0, 414, 416, 1, 0, 0, 0, 415, 413, 1, 0, 0, 0, 416,
+        417, 6, 56, 0, 0, 417, 114, 1, 0, 0, 0, 418, 421, 3, 121, 60, 0, 419, 421, 7, 3, 0, 0,
+        420, 418, 1, 0, 0, 0, 420, 419, 1, 0, 0, 0, 421, 116, 1, 0, 0, 0, 422, 426, 3, 115, 57,
+        0, 423, 426, 3, 119, 59, 0, 424, 426, 3, 123, 61, 0, 425, 422, 1, 0, 0, 0, 425, 423,
+        1, 0, 0, 0, 425, 424, 1, 0, 0, 0, 426, 118, 1, 0, 0, 0, 427, 428, 7, 4, 0, 0, 428, 120,
+        1, 0, 0, 0, 429, 430, 7, 5, 0, 0, 430, 122, 1, 0, 0, 0, 431, 432, 7, 6, 0, 0, 432, 124,
+        1, 0, 0, 0, 433, 435, 3, 123, 61, 0, 434, 433, 1, 0, 0, 0, 435, 438, 1, 0, 0, 0, 436, 434,
+        1, 0, 0, 0, 436, 437, 1, 0, 0, 0, 437, 439, 1, 0, 0, 0, 438, 436, 1, 0, 0, 0, 439, 441,
+        5, 46, 0, 0, 440, 442, 3, 123, 61, 0, 441, 440, 1, 0, 0, 0, 442, 443, 1, 0, 0, 0, 443,
+        441, 1, 0, 0, 0, 443, 444, 1, 0, 0, 0, 444, 453, 1, 0, 0, 0, 445, 447, 3, 123, 61, 0, 446,
+        445, 1, 0, 0, 0, 447, 448, 1, 0, 0, 0, 448, 446, 1, 0, 0, 0, 448, 449, 1, 0, 0, 0, 449,
+        450, 1, 0, 0, 0, 450, 451, 5, 46, 0, 0, 451, 453, 1, 0, 0, 0, 452, 436, 1, 0, 0, 0, 452,
+        446, 1, 0, 0, 0, 453, 126, 1, 0, 0, 0, 454, 456, 3, 123, 61, 0, 455, 454, 1, 0, 0, 0, 456,
+        457, 1, 0, 0, 0, 457, 455, 1, 0, 0, 0, 457, 458, 1, 0, 0, 0, 458, 461, 1, 0, 0, 0, 459,
+        461, 3, 125, 62, 0, 460, 455, 1, 0, 0, 0, 460, 459, 1, 0, 0, 0, 461, 462, 1, 0, 0, 0, 462,
+        463, 3, 129, 64, 0, 463, 128, 1, 0, 0, 0, 464, 466, 7, 7, 0, 0, 465, 467, 7, 8, 0, 0, 466,
+        465, 1, 0, 0, 0, 466, 467, 1, 0, 0, 0, 467, 469, 1, 0, 0, 0, 468, 470, 3, 123, 61, 0, 469,
+        468, 1, 0, 0, 0, 470, 471, 1, 0, 0, 0, 471, 469, 1, 0, 0, 0, 471, 472, 1, 0, 0, 0, 472,
+        130, 1, 0, 0, 0, 473, 474, 7, 9, 0, 0, 474, 132, 1, 0, 0, 0, 475, 476, 7, 10, 0, 0, 476,
+        134, 1, 0, 0, 0, 477, 478, 7, 11, 0, 0, 478, 136, 1, 0, 0, 0, 479, 480, 7, 12, 0, 0, 480,
+        138, 1, 0, 0, 0, 481, 482, 7, 7, 0, 0, 482, 140, 1, 0, 0, 0, 483, 484, 7, 13, 0, 0, 484,
+        142, 1, 0, 0, 0, 485, 486, 7, 14, 0, 0, 486, 144, 1, 0, 0, 0, 487, 488, 7, 15, 0, 0, 488,
+        146, 1, 0, 0, 0, 489, 490, 7, 16, 0, 0, 490, 148, 1, 0, 0, 0, 491, 492, 7, 17, 0, 0, 492,
+        150, 1, 0, 0, 0, 493, 494, 7, 18, 0, 0, 494, 152, 1, 0, 0, 0, 495, 496, 7, 19, 0, 0, 496,
+        154, 1, 0, 0, 0, 497, 498, 7, 20, 0, 0, 498, 156, 1, 0, 0, 0, 499, 500, 7, 21, 0, 0, 500,
+        158, 1, 0, 0, 0, 501, 502, 7, 22, 0, 0, 502, 160, 1, 0, 0, 0, 503, 504, 7, 23, 0, 0, 504,
+        162, 1, 0, 0, 0, 505, 506, 7, 24, 0, 0, 506, 164, 1, 0, 0, 0, 507, 508, 7, 25, 0, 0, 508,
+        166, 1, 0, 0, 0, 509, 510, 7, 26, 0, 0, 510, 168, 1, 0, 0, 0, 511, 512, 7, 27, 0, 0, 512,
+        170, 1, 0, 0, 0, 513, 514, 7, 28, 0, 0, 514, 172, 1, 0, 0, 0, 515, 516, 7, 29, 0, 0, 516,
+        174, 1, 0, 0, 0, 517, 518, 7, 30, 0, 0, 518, 176, 1, 0, 0, 0, 519, 520, 7, 31, 0, 0, 520,
+        178, 1, 0, 0, 0, 521, 522, 7, 32, 0, 0, 522, 180, 1, 0, 0, 0, 523, 524, 7, 33, 0, 0, 524,
+        182, 1, 0, 0, 0, 21, 0, 208, 212, 218, 369, 374, 380, 386, 389, 399, 413, 420, 425,
+        436, 443, 448, 452, 457, 460, 466, 471, 1, 6, 0, 0
     ];
     static __ATN;
     static get _ATN() {
@@ -58489,55 +64795,55 @@ class DaedalusParser extends Parser {
     static T__5 = 6;
     static T__6 = 7;
     static T__7 = 8;
-    static T__8 = 9;
-    static T__9 = 10;
-    static T__10 = 11;
-    static T__11 = 12;
-    static T__12 = 13;
-    static T__13 = 14;
-    static T__14 = 15;
-    static T__15 = 16;
-    static T__16 = 17;
-    static T__17 = 18;
-    static T__18 = 19;
-    static T__19 = 20;
-    static T__20 = 21;
-    static T__21 = 22;
-    static T__22 = 23;
-    static T__23 = 24;
-    static T__24 = 25;
-    static T__25 = 26;
-    static T__26 = 27;
-    static T__27 = 28;
-    static T__28 = 29;
-    static T__29 = 30;
-    static T__30 = 31;
-    static T__31 = 32;
-    static T__32 = 33;
-    static Const = 34;
-    static Var = 35;
-    static If = 36;
-    static Int = 37;
-    static Else = 38;
-    static Func = 39;
-    static String = 40;
-    static Class = 41;
-    static Void = 42;
-    static Return = 43;
-    static Float = 44;
-    static Prototype = 45;
-    static Instance = 46;
-    static Null = 47;
-    static NoFunc = 48;
-    static Identifier = 49;
-    static IntegerLiteral = 50;
-    static FloatLiteral = 51;
-    static StringLiteral = 52;
-    static Whitespace = 53;
-    static Newline = 54;
-    static BlockComment = 55;
-    static LineComment = 56;
-    static UnexpectedCharacter = 57;
+    static IntegerLiteral = 9;
+    static FloatLiteral = 10;
+    static StringLiteral = 11;
+    static Const = 12;
+    static Var = 13;
+    static If = 14;
+    static Int = 15;
+    static Else = 16;
+    static Func = 17;
+    static StringKeyword = 18;
+    static Class = 19;
+    static Void = 20;
+    static Return = 21;
+    static Float = 22;
+    static Prototype = 23;
+    static Instance = 24;
+    static Null = 25;
+    static LeftParen = 26;
+    static RightParen = 27;
+    static LeftBracket = 28;
+    static RightBracket = 29;
+    static LeftBrace = 30;
+    static RightBrace = 31;
+    static BitAnd = 32;
+    static And = 33;
+    static BitOr = 34;
+    static Or = 35;
+    static Plus = 36;
+    static Minus = 37;
+    static Div = 38;
+    static Star = 39;
+    static Tilde = 40;
+    static Not = 41;
+    static Assign = 42;
+    static Less = 43;
+    static Greater = 44;
+    static PlusAssign = 45;
+    static MinusAssign = 46;
+    static StarAssign = 47;
+    static DivAssign = 48;
+    static AndAssign = 49;
+    static OrAssign = 50;
+    static Dot = 51;
+    static Semi = 52;
+    static Identifier = 53;
+    static Whitespace = 54;
+    static Newline = 55;
+    static BlockComment = 56;
+    static LineComment = 57;
     static RULE_daedalusFile = 0;
     static RULE_blockDef = 1;
     static RULE_inlineDef = 2;
@@ -58547,71 +64853,83 @@ class DaedalusParser extends Parser {
     static RULE_prototypeDef = 6;
     static RULE_instanceDef = 7;
     static RULE_instanceDecl = 8;
-    static RULE_varDecl = 9;
-    static RULE_constArrayDef = 10;
-    static RULE_constArrayAssignment = 11;
-    static RULE_constValueDef = 12;
-    static RULE_constValueAssignment = 13;
-    static RULE_varArrayDecl = 14;
-    static RULE_varValueDecl = 15;
-    static RULE_parameterList = 16;
-    static RULE_parameterDecl = 17;
-    static RULE_statementBlock = 18;
-    static RULE_statement = 19;
-    static RULE_functionCall = 20;
-    static RULE_assignment = 21;
-    static RULE_elseBlock = 22;
-    static RULE_elseIfBlock = 23;
-    static RULE_ifBlock = 24;
-    static RULE_ifBlockStatement = 25;
-    static RULE_returnStatement = 26;
-    static RULE_expression = 27;
-    static RULE_arrayIndex = 28;
-    static RULE_arraySize = 29;
-    static RULE_value = 30;
-    static RULE_referenceAtom = 31;
-    static RULE_reference = 32;
-    static RULE_dataType = 33;
-    static RULE_nameNode = 34;
-    static RULE_parentReference = 35;
-    static RULE_assignmentOperator = 36;
-    static RULE_addOperator = 37;
-    static RULE_bitMoveOperator = 38;
-    static RULE_compOperator = 39;
-    static RULE_eqOperator = 40;
-    static RULE_unaryOperator = 41;
-    static RULE_multOperator = 42;
-    static RULE_binAndOperator = 43;
-    static RULE_binOrOperator = 44;
-    static RULE_logAndOperator = 45;
-    static RULE_logOrOperator = 46;
+    static RULE_mainBlock = 9;
+    static RULE_contentBlock = 10;
+    static RULE_varDecl = 11;
+    static RULE_constArrayDef = 12;
+    static RULE_constArrayAssignment = 13;
+    static RULE_constValueDef = 14;
+    static RULE_constValueAssignment = 15;
+    static RULE_varArrayDecl = 16;
+    static RULE_varValueDecl = 17;
+    static RULE_parameterList = 18;
+    static RULE_parameterDecl = 19;
+    static RULE_statementBlock = 20;
+    static RULE_statement = 21;
+    static RULE_funcCall = 22;
+    static RULE_assignment = 23;
+    static RULE_ifCondition = 24;
+    static RULE_elseBlock = 25;
+    static RULE_elseIfBlock = 26;
+    static RULE_ifBlock = 27;
+    static RULE_ifBlockStatement = 28;
+    static RULE_returnStatement = 29;
+    static RULE_funcArgExpression = 30;
+    static RULE_expressionBlock = 31;
+    static RULE_expression = 32;
+    static RULE_arrayIndex = 33;
+    static RULE_arraySize = 34;
+    static RULE_value = 35;
+    static RULE_referenceAtom = 36;
+    static RULE_reference = 37;
+    static RULE_typeReference = 38;
+    static RULE_anyIdentifier = 39;
+    static RULE_nameNode = 40;
+    static RULE_parentReference = 41;
+    static RULE_assignmentOperator = 42;
+    static RULE_unaryOperator = 43;
+    static RULE_addOperator = 44;
+    static RULE_bitMoveOperator = 45;
+    static RULE_compOperator = 46;
+    static RULE_eqOperator = 47;
+    static RULE_multOperator = 48;
+    static RULE_binAndOperator = 49;
+    static RULE_binOrOperator = 50;
+    static RULE_logAndOperator = 51;
+    static RULE_logOrOperator = 52;
     static literalNames = [
-        null, "';'", "','", "'{'", "'}'", "'('", "')'", "'['", "']'", "'='",
-        "'.'", "'+='", "'-='", "'*='", "'/='", "'+'", "'-'", "'<<'", "'>>'",
-        "'<'", "'>'", "'<='", "'>='", "'=='", "'!='", "'!'", "'~'", "'*'",
-        "'/'", "'%'", "'&'", "'|'", "'&&'", "'||'"
+        null, "','", "'<<'", "'>>'", "'<='", "'>='", "'=='", "'!='", "'%'",
+        null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, "'('", "')'", "'['", "']'",
+        "'{'", "'}'", "'&'", "'&&'", "'|'", "'||'", "'+'", "'-'", "'/'",
+        "'*'", "'~'", "'!'", "'='", "'<'", "'>'", "'+='", "'-='", "'*='",
+        "'/='", "'&='", "'|='", "'.'", "';'"
     ];
     static symbolicNames = [
-        null, null, null, null, null, null, null, null, null, null, null,
-        null, null, null, null, null, null, null, null, null, null, null,
-        null, null, null, null, null, null, null, null, null, null, null,
-        null, "Const", "Var", "If", "Int", "Else", "Func", "String", "Class",
-        "Void", "Return", "Float", "Prototype", "Instance", "Null", "NoFunc",
-        "Identifier", "IntegerLiteral", "FloatLiteral", "StringLiteral",
-        "Whitespace", "Newline", "BlockComment", "LineComment", "UnexpectedCharacter"
+        null, null, null, null, null, null, null, null, null, "IntegerLiteral",
+        "FloatLiteral", "StringLiteral", "Const", "Var", "If", "Int", "Else",
+        "Func", "StringKeyword", "Class", "Void", "Return", "Float", "Prototype",
+        "Instance", "Null", "LeftParen", "RightParen", "LeftBracket", "RightBracket",
+        "LeftBrace", "RightBrace", "BitAnd", "And", "BitOr", "Or", "Plus",
+        "Minus", "Div", "Star", "Tilde", "Not", "Assign", "Less", "Greater",
+        "PlusAssign", "MinusAssign", "StarAssign", "DivAssign", "AndAssign",
+        "OrAssign", "Dot", "Semi", "Identifier", "Whitespace", "Newline",
+        "BlockComment", "LineComment"
     ];
     static ruleNames = [
         "daedalusFile", "blockDef", "inlineDef", "functionDef", "constDef",
-        "classDef", "prototypeDef", "instanceDef", "instanceDecl", "varDecl",
-        "constArrayDef", "constArrayAssignment", "constValueDef", "constValueAssignment",
-        "varArrayDecl", "varValueDecl", "parameterList", "parameterDecl",
-        "statementBlock", "statement", "functionCall", "assignment", "elseBlock",
-        "elseIfBlock", "ifBlock", "ifBlockStatement", "returnStatement",
-        "expression", "arrayIndex", "arraySize", "value", "referenceAtom",
-        "reference", "dataType", "nameNode", "parentReference", "assignmentOperator",
+        "classDef", "prototypeDef", "instanceDef", "instanceDecl", "mainBlock",
+        "contentBlock", "varDecl", "constArrayDef", "constArrayAssignment",
+        "constValueDef", "constValueAssignment", "varArrayDecl", "varValueDecl",
+        "parameterList", "parameterDecl", "statementBlock", "statement",
+        "funcCall", "assignment", "ifCondition", "elseBlock", "elseIfBlock",
+        "ifBlock", "ifBlockStatement", "returnStatement", "funcArgExpression",
+        "expressionBlock", "expression", "arrayIndex", "arraySize", "value",
+        "referenceAtom", "reference", "typeReference", "anyIdentifier",
+        "nameNode", "parentReference", "assignmentOperator", "unaryOperator",
         "addOperator", "bitMoveOperator", "compOperator", "eqOperator",
-        "unaryOperator", "multOperator", "binAndOperator", "binOrOperator",
-        "logAndOperator", "logOrOperator",
+        "multOperator", "binAndOperator", "binOrOperator", "logAndOperator",
+        "logOrOperator",
     ];
     get grammarFileName() { return "Daedalus.g4"; }
     get literalNames() { return DaedalusParser.literalNames; }
@@ -58628,39 +64946,20 @@ class DaedalusParser extends Parser {
     daedalusFile() {
         let localContext = new DaedalusFileContext(this.context, this.state);
         this.enterRule(localContext, 0, DaedalusParser.RULE_daedalusFile);
+        let _la;
         try {
-            let alternative;
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 98;
+                this.state = 107;
                 this.errorHandler.sync(this);
-                alternative = this.interpreter.adaptivePredict(this.tokenStream, 1, this.context);
-                while (alternative !== 1 && alternative !== ATN.INVALID_ALT_NUMBER) {
-                    if (alternative === 1 + 1) {
-                        {
-                            this.state = 96;
-                            this.errorHandler.sync(this);
-                            switch (this.interpreter.adaptivePredict(this.tokenStream, 0, this.context)) {
-                                case 1:
-                                    {
-                                        this.state = 94;
-                                        this.blockDef();
-                                    }
-                                    break;
-                                case 2:
-                                    {
-                                        this.state = 95;
-                                        this.inlineDef();
-                                    }
-                                    break;
-                            }
-                        }
+                _la = this.tokenStream.LA(1);
+                if ((((_la) & ~0x1F) === 0 && ((1 << _la) & 25833472) !== 0)) {
+                    {
+                        this.state = 106;
+                        this.mainBlock();
                     }
-                    this.state = 100;
-                    this.errorHandler.sync(this);
-                    alternative = this.interpreter.adaptivePredict(this.tokenStream, 1, this.context);
                 }
-                this.state = 101;
+                this.state = 109;
                 this.match(DaedalusParser.EOF);
             }
         }
@@ -58681,49 +64980,41 @@ class DaedalusParser extends Parser {
     blockDef() {
         let localContext = new BlockDefContext(this.context, this.state);
         this.enterRule(localContext, 2, DaedalusParser.RULE_blockDef);
-        let _la;
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 107;
+                this.state = 115;
                 this.errorHandler.sync(this);
                 switch (this.tokenStream.LA(1)) {
                     case DaedalusParser.Func:
                         {
-                            this.state = 103;
+                            this.state = 111;
                             this.functionDef();
                         }
                         break;
                     case DaedalusParser.Class:
                         {
-                            this.state = 104;
+                            this.state = 112;
                             this.classDef();
                         }
                         break;
                     case DaedalusParser.Prototype:
                         {
-                            this.state = 105;
+                            this.state = 113;
                             this.prototypeDef();
                         }
                         break;
                     case DaedalusParser.Instance:
                         {
-                            this.state = 106;
+                            this.state = 114;
                             this.instanceDef();
                         }
                         break;
                     default:
                         throw new NoViableAltException(this);
                 }
-                this.state = 110;
-                this.errorHandler.sync(this);
-                _la = this.tokenStream.LA(1);
-                if (_la === 1) {
-                    {
-                        this.state = 109;
-                        this.match(DaedalusParser.T__0);
-                    }
-                }
+                this.state = 117;
+                this.match(DaedalusParser.Semi);
             }
         }
         catch (re) {
@@ -58746,32 +65037,32 @@ class DaedalusParser extends Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 115;
+                this.state = 122;
                 this.errorHandler.sync(this);
                 switch (this.tokenStream.LA(1)) {
                     case DaedalusParser.Const:
                         {
-                            this.state = 112;
+                            this.state = 119;
                             this.constDef();
                         }
                         break;
                     case DaedalusParser.Var:
                         {
-                            this.state = 113;
+                            this.state = 120;
                             this.varDecl();
                         }
                         break;
                     case DaedalusParser.Instance:
                         {
-                            this.state = 114;
+                            this.state = 121;
                             this.instanceDecl();
                         }
                         break;
                     default:
                         throw new NoViableAltException(this);
                 }
-                this.state = 117;
-                this.match(DaedalusParser.T__0);
+                this.state = 124;
+                this.match(DaedalusParser.Semi);
             }
         }
         catch (re) {
@@ -58794,15 +65085,15 @@ class DaedalusParser extends Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 119;
+                this.state = 126;
                 this.match(DaedalusParser.Func);
-                this.state = 120;
-                this.dataType();
-                this.state = 121;
+                this.state = 127;
+                this.typeReference();
+                this.state = 128;
                 this.nameNode();
-                this.state = 122;
+                this.state = 129;
                 this.parameterList();
-                this.state = 123;
+                this.state = 130;
                 this.statementBlock();
             }
         }
@@ -58827,53 +65118,53 @@ class DaedalusParser extends Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 125;
+                this.state = 132;
                 this.match(DaedalusParser.Const);
-                this.state = 126;
-                this.dataType();
-                this.state = 129;
+                this.state = 133;
+                this.typeReference();
+                this.state = 136;
                 this.errorHandler.sync(this);
-                switch (this.interpreter.adaptivePredict(this.tokenStream, 5, this.context)) {
+                switch (this.interpreter.adaptivePredict(this.tokenStream, 3, this.context)) {
                     case 1:
                         {
-                            this.state = 127;
+                            this.state = 134;
                             this.constValueDef();
                         }
                         break;
                     case 2:
                         {
-                            this.state = 128;
+                            this.state = 135;
                             this.constArrayDef();
                         }
                         break;
                 }
-                this.state = 138;
+                this.state = 145;
                 this.errorHandler.sync(this);
                 _la = this.tokenStream.LA(1);
-                while (_la === 2) {
+                while (_la === 1) {
                     {
                         {
-                            this.state = 131;
-                            this.match(DaedalusParser.T__1);
-                            this.state = 134;
+                            this.state = 138;
+                            this.match(DaedalusParser.T__0);
+                            this.state = 141;
                             this.errorHandler.sync(this);
-                            switch (this.interpreter.adaptivePredict(this.tokenStream, 6, this.context)) {
+                            switch (this.interpreter.adaptivePredict(this.tokenStream, 4, this.context)) {
                                 case 1:
                                     {
-                                        this.state = 132;
+                                        this.state = 139;
                                         this.constValueDef();
                                     }
                                     break;
                                 case 2:
                                     {
-                                        this.state = 133;
+                                        this.state = 140;
                                         this.constArrayDef();
                                     }
                                     break;
                             }
                         }
                     }
-                    this.state = 140;
+                    this.state = 147;
                     this.errorHandler.sync(this);
                     _la = this.tokenStream.LA(1);
                 }
@@ -58900,32 +65191,32 @@ class DaedalusParser extends Parser {
             let alternative;
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 141;
+                this.state = 148;
                 this.match(DaedalusParser.Class);
-                this.state = 142;
-                this.nameNode();
-                this.state = 143;
-                this.match(DaedalusParser.T__2);
                 this.state = 149;
+                this.nameNode();
+                this.state = 150;
+                this.match(DaedalusParser.LeftBrace);
+                this.state = 156;
                 this.errorHandler.sync(this);
-                alternative = this.interpreter.adaptivePredict(this.tokenStream, 8, this.context);
+                alternative = this.interpreter.adaptivePredict(this.tokenStream, 6, this.context);
                 while (alternative !== 1 && alternative !== ATN.INVALID_ALT_NUMBER) {
                     if (alternative === 1 + 1) {
                         {
                             {
-                                this.state = 144;
+                                this.state = 151;
                                 this.varDecl();
-                                this.state = 145;
-                                this.match(DaedalusParser.T__0);
+                                this.state = 152;
+                                this.match(DaedalusParser.Semi);
                             }
                         }
                     }
-                    this.state = 151;
+                    this.state = 158;
                     this.errorHandler.sync(this);
-                    alternative = this.interpreter.adaptivePredict(this.tokenStream, 8, this.context);
+                    alternative = this.interpreter.adaptivePredict(this.tokenStream, 6, this.context);
                 }
-                this.state = 152;
-                this.match(DaedalusParser.T__3);
+                this.state = 159;
+                this.match(DaedalusParser.RightBrace);
             }
         }
         catch (re) {
@@ -58948,17 +65239,17 @@ class DaedalusParser extends Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 154;
+                this.state = 161;
                 this.match(DaedalusParser.Prototype);
-                this.state = 155;
+                this.state = 162;
                 this.nameNode();
-                this.state = 156;
-                this.match(DaedalusParser.T__4);
-                this.state = 157;
+                this.state = 163;
+                this.match(DaedalusParser.LeftParen);
+                this.state = 164;
                 this.parentReference();
-                this.state = 158;
-                this.match(DaedalusParser.T__5);
-                this.state = 159;
+                this.state = 165;
+                this.match(DaedalusParser.RightParen);
+                this.state = 166;
                 this.statementBlock();
             }
         }
@@ -58982,17 +65273,17 @@ class DaedalusParser extends Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 161;
+                this.state = 168;
                 this.match(DaedalusParser.Instance);
-                this.state = 162;
+                this.state = 169;
                 this.nameNode();
-                this.state = 163;
-                this.match(DaedalusParser.T__4);
-                this.state = 164;
+                this.state = 170;
+                this.match(DaedalusParser.LeftParen);
+                this.state = 171;
                 this.parentReference();
-                this.state = 165;
-                this.match(DaedalusParser.T__5);
-                this.state = 166;
+                this.state = 172;
+                this.match(DaedalusParser.RightParen);
+                this.state = 173;
                 this.statementBlock();
             }
         }
@@ -59017,34 +65308,109 @@ class DaedalusParser extends Parser {
             let alternative;
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 168;
+                this.state = 175;
                 this.match(DaedalusParser.Instance);
-                this.state = 169;
+                this.state = 176;
                 this.nameNode();
-                this.state = 174;
+                this.state = 181;
                 this.errorHandler.sync(this);
-                alternative = this.interpreter.adaptivePredict(this.tokenStream, 9, this.context);
+                alternative = this.interpreter.adaptivePredict(this.tokenStream, 7, this.context);
                 while (alternative !== 1 && alternative !== ATN.INVALID_ALT_NUMBER) {
                     if (alternative === 1 + 1) {
                         {
                             {
-                                this.state = 170;
-                                this.match(DaedalusParser.T__1);
-                                this.state = 171;
+                                this.state = 177;
+                                this.match(DaedalusParser.T__0);
+                                this.state = 178;
                                 this.nameNode();
                             }
                         }
                     }
-                    this.state = 176;
+                    this.state = 183;
                     this.errorHandler.sync(this);
-                    alternative = this.interpreter.adaptivePredict(this.tokenStream, 9, this.context);
+                    alternative = this.interpreter.adaptivePredict(this.tokenStream, 7, this.context);
                 }
-                this.state = 177;
-                this.match(DaedalusParser.T__4);
-                this.state = 178;
+                this.state = 184;
+                this.match(DaedalusParser.LeftParen);
+                this.state = 185;
                 this.parentReference();
-                this.state = 179;
-                this.match(DaedalusParser.T__5);
+                this.state = 186;
+                this.match(DaedalusParser.RightParen);
+            }
+        }
+        catch (re) {
+            if (re instanceof RecognitionException) {
+                this.errorHandler.reportError(this, re);
+                this.errorHandler.recover(this, re);
+            }
+            else {
+                throw re;
+            }
+        }
+        finally {
+            this.exitRule();
+        }
+        return localContext;
+    }
+    mainBlock() {
+        let localContext = new MainBlockContext(this.context, this.state);
+        this.enterRule(localContext, 18, DaedalusParser.RULE_mainBlock);
+        let _la;
+        try {
+            this.enterOuterAlt(localContext, 1);
+            {
+                this.state = 189;
+                this.errorHandler.sync(this);
+                _la = this.tokenStream.LA(1);
+                do {
+                    {
+                        {
+                            this.state = 188;
+                            this.contentBlock();
+                        }
+                    }
+                    this.state = 191;
+                    this.errorHandler.sync(this);
+                    _la = this.tokenStream.LA(1);
+                } while ((((_la) & ~0x1F) === 0 && ((1 << _la) & 25833472) !== 0));
+            }
+        }
+        catch (re) {
+            if (re instanceof RecognitionException) {
+                this.errorHandler.reportError(this, re);
+                this.errorHandler.recover(this, re);
+            }
+            else {
+                throw re;
+            }
+        }
+        finally {
+            this.exitRule();
+        }
+        return localContext;
+    }
+    contentBlock() {
+        let localContext = new ContentBlockContext(this.context, this.state);
+        this.enterRule(localContext, 20, DaedalusParser.RULE_contentBlock);
+        try {
+            this.enterOuterAlt(localContext, 1);
+            {
+                this.state = 195;
+                this.errorHandler.sync(this);
+                switch (this.interpreter.adaptivePredict(this.tokenStream, 9, this.context)) {
+                    case 1:
+                        {
+                            this.state = 193;
+                            this.blockDef();
+                        }
+                        break;
+                    case 2:
+                        {
+                            this.state = 194;
+                            this.inlineDef();
+                        }
+                        break;
+                }
             }
         }
         catch (re) {
@@ -59063,60 +65429,68 @@ class DaedalusParser extends Parser {
     }
     varDecl() {
         let localContext = new VarDeclContext(this.context, this.state);
-        this.enterRule(localContext, 18, DaedalusParser.RULE_varDecl);
-        let _la;
+        this.enterRule(localContext, 22, DaedalusParser.RULE_varDecl);
         try {
+            let alternative;
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 181;
+                this.state = 197;
                 this.match(DaedalusParser.Var);
-                this.state = 182;
-                this.dataType();
-                this.state = 185;
+                this.state = 198;
+                this.typeReference();
+                this.state = 201;
                 this.errorHandler.sync(this);
                 switch (this.interpreter.adaptivePredict(this.tokenStream, 10, this.context)) {
                     case 1:
                         {
-                            this.state = 183;
+                            this.state = 199;
                             this.varValueDecl();
                         }
                         break;
                     case 2:
                         {
-                            this.state = 184;
+                            this.state = 200;
                             this.varArrayDecl();
                         }
                         break;
                 }
-                this.state = 194;
+                this.state = 211;
                 this.errorHandler.sync(this);
-                _la = this.tokenStream.LA(1);
-                while (_la === 2) {
-                    {
+                alternative = this.interpreter.adaptivePredict(this.tokenStream, 12, this.context);
+                while (alternative !== 2 && alternative !== ATN.INVALID_ALT_NUMBER) {
+                    if (alternative === 1) {
                         {
-                            this.state = 187;
-                            this.match(DaedalusParser.T__1);
-                            this.state = 190;
-                            this.errorHandler.sync(this);
-                            switch (this.interpreter.adaptivePredict(this.tokenStream, 11, this.context)) {
-                                case 1:
-                                    {
-                                        this.state = 188;
-                                        this.varValueDecl();
-                                    }
-                                    break;
-                                case 2:
-                                    {
-                                        this.state = 189;
-                                        this.varArrayDecl();
-                                    }
-                                    break;
+                            {
+                                this.state = 203;
+                                this.match(DaedalusParser.T__0);
+                                this.state = 207;
+                                this.errorHandler.sync(this);
+                                switch (this.interpreter.adaptivePredict(this.tokenStream, 11, this.context)) {
+                                    case 1:
+                                        {
+                                            this.state = 204;
+                                            this.varDecl();
+                                        }
+                                        break;
+                                    case 2:
+                                        {
+                                            this.state = 205;
+                                            this.varValueDecl();
+                                        }
+                                        break;
+                                    case 3:
+                                        {
+                                            this.state = 206;
+                                            this.varArrayDecl();
+                                        }
+                                        break;
+                                }
                             }
                         }
                     }
-                    this.state = 196;
+                    this.state = 213;
                     this.errorHandler.sync(this);
-                    _la = this.tokenStream.LA(1);
+                    alternative = this.interpreter.adaptivePredict(this.tokenStream, 12, this.context);
                 }
             }
         }
@@ -59136,19 +65510,19 @@ class DaedalusParser extends Parser {
     }
     constArrayDef() {
         let localContext = new ConstArrayDefContext(this.context, this.state);
-        this.enterRule(localContext, 20, DaedalusParser.RULE_constArrayDef);
+        this.enterRule(localContext, 24, DaedalusParser.RULE_constArrayDef);
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 197;
+                this.state = 214;
                 this.nameNode();
-                this.state = 198;
-                this.match(DaedalusParser.T__6);
-                this.state = 199;
+                this.state = 215;
+                this.match(DaedalusParser.LeftBracket);
+                this.state = 216;
                 this.arraySize();
-                this.state = 200;
-                this.match(DaedalusParser.T__7);
-                this.state = 201;
+                this.state = 217;
+                this.match(DaedalusParser.RightBracket);
+                this.state = 218;
                 this.constArrayAssignment();
             }
         }
@@ -59168,39 +65542,39 @@ class DaedalusParser extends Parser {
     }
     constArrayAssignment() {
         let localContext = new ConstArrayAssignmentContext(this.context, this.state);
-        this.enterRule(localContext, 22, DaedalusParser.RULE_constArrayAssignment);
+        this.enterRule(localContext, 26, DaedalusParser.RULE_constArrayAssignment);
         try {
             let alternative;
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 203;
-                this.match(DaedalusParser.T__8);
-                this.state = 204;
-                this.match(DaedalusParser.T__2);
+                this.state = 220;
+                this.match(DaedalusParser.Assign);
+                this.state = 221;
+                this.match(DaedalusParser.LeftBrace);
                 {
-                    this.state = 205;
-                    this.expression(0);
-                    this.state = 210;
+                    this.state = 222;
+                    this.expressionBlock();
+                    this.state = 227;
                     this.errorHandler.sync(this);
                     alternative = this.interpreter.adaptivePredict(this.tokenStream, 13, this.context);
                     while (alternative !== 1 && alternative !== ATN.INVALID_ALT_NUMBER) {
                         if (alternative === 1 + 1) {
                             {
                                 {
-                                    this.state = 206;
-                                    this.match(DaedalusParser.T__1);
-                                    this.state = 207;
-                                    this.expression(0);
+                                    this.state = 223;
+                                    this.match(DaedalusParser.T__0);
+                                    this.state = 224;
+                                    this.expressionBlock();
                                 }
                             }
                         }
-                        this.state = 212;
+                        this.state = 229;
                         this.errorHandler.sync(this);
                         alternative = this.interpreter.adaptivePredict(this.tokenStream, 13, this.context);
                     }
                 }
-                this.state = 213;
-                this.match(DaedalusParser.T__3);
+                this.state = 230;
+                this.match(DaedalusParser.RightBrace);
             }
         }
         catch (re) {
@@ -59219,13 +65593,13 @@ class DaedalusParser extends Parser {
     }
     constValueDef() {
         let localContext = new ConstValueDefContext(this.context, this.state);
-        this.enterRule(localContext, 24, DaedalusParser.RULE_constValueDef);
+        this.enterRule(localContext, 28, DaedalusParser.RULE_constValueDef);
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 215;
+                this.state = 232;
                 this.nameNode();
-                this.state = 216;
+                this.state = 233;
                 this.constValueAssignment();
             }
         }
@@ -59245,14 +65619,14 @@ class DaedalusParser extends Parser {
     }
     constValueAssignment() {
         let localContext = new ConstValueAssignmentContext(this.context, this.state);
-        this.enterRule(localContext, 26, DaedalusParser.RULE_constValueAssignment);
+        this.enterRule(localContext, 30, DaedalusParser.RULE_constValueAssignment);
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 218;
-                this.match(DaedalusParser.T__8);
-                this.state = 219;
-                this.expression(0);
+                this.state = 235;
+                this.match(DaedalusParser.Assign);
+                this.state = 236;
+                this.expressionBlock();
             }
         }
         catch (re) {
@@ -59271,18 +65645,18 @@ class DaedalusParser extends Parser {
     }
     varArrayDecl() {
         let localContext = new VarArrayDeclContext(this.context, this.state);
-        this.enterRule(localContext, 28, DaedalusParser.RULE_varArrayDecl);
+        this.enterRule(localContext, 32, DaedalusParser.RULE_varArrayDecl);
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 221;
+                this.state = 238;
                 this.nameNode();
-                this.state = 222;
-                this.match(DaedalusParser.T__6);
-                this.state = 223;
+                this.state = 239;
+                this.match(DaedalusParser.LeftBracket);
+                this.state = 240;
                 this.arraySize();
-                this.state = 224;
-                this.match(DaedalusParser.T__7);
+                this.state = 241;
+                this.match(DaedalusParser.RightBracket);
             }
         }
         catch (re) {
@@ -59301,11 +65675,11 @@ class DaedalusParser extends Parser {
     }
     varValueDecl() {
         let localContext = new VarValueDeclContext(this.context, this.state);
-        this.enterRule(localContext, 30, DaedalusParser.RULE_varValueDecl);
+        this.enterRule(localContext, 34, DaedalusParser.RULE_varValueDecl);
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 226;
+                this.state = 243;
                 this.nameNode();
             }
         }
@@ -59325,43 +65699,43 @@ class DaedalusParser extends Parser {
     }
     parameterList() {
         let localContext = new ParameterListContext(this.context, this.state);
-        this.enterRule(localContext, 32, DaedalusParser.RULE_parameterList);
+        this.enterRule(localContext, 36, DaedalusParser.RULE_parameterList);
         let _la;
         try {
             let alternative;
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 228;
-                this.match(DaedalusParser.T__4);
-                this.state = 237;
+                this.state = 245;
+                this.match(DaedalusParser.LeftParen);
+                this.state = 254;
                 this.errorHandler.sync(this);
                 _la = this.tokenStream.LA(1);
-                if (_la === 35) {
+                if (_la === 13) {
                     {
-                        this.state = 229;
+                        this.state = 246;
                         this.parameterDecl();
-                        this.state = 234;
+                        this.state = 251;
                         this.errorHandler.sync(this);
                         alternative = this.interpreter.adaptivePredict(this.tokenStream, 14, this.context);
                         while (alternative !== 1 && alternative !== ATN.INVALID_ALT_NUMBER) {
                             if (alternative === 1 + 1) {
                                 {
                                     {
-                                        this.state = 230;
-                                        this.match(DaedalusParser.T__1);
-                                        this.state = 231;
+                                        this.state = 247;
+                                        this.match(DaedalusParser.T__0);
+                                        this.state = 248;
                                         this.parameterDecl();
                                     }
                                 }
                             }
-                            this.state = 236;
+                            this.state = 253;
                             this.errorHandler.sync(this);
                             alternative = this.interpreter.adaptivePredict(this.tokenStream, 14, this.context);
                         }
                     }
                 }
-                this.state = 239;
-                this.match(DaedalusParser.T__5);
+                this.state = 256;
+                this.match(DaedalusParser.RightParen);
             }
         }
         catch (re) {
@@ -59380,28 +65754,28 @@ class DaedalusParser extends Parser {
     }
     parameterDecl() {
         let localContext = new ParameterDeclContext(this.context, this.state);
-        this.enterRule(localContext, 34, DaedalusParser.RULE_parameterDecl);
+        this.enterRule(localContext, 38, DaedalusParser.RULE_parameterDecl);
         let _la;
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 241;
+                this.state = 258;
                 this.match(DaedalusParser.Var);
-                this.state = 242;
-                this.dataType();
-                this.state = 243;
+                this.state = 259;
+                this.typeReference();
+                this.state = 260;
                 this.nameNode();
-                this.state = 248;
+                this.state = 265;
                 this.errorHandler.sync(this);
                 _la = this.tokenStream.LA(1);
-                if (_la === 7) {
+                if (_la === 28) {
                     {
-                        this.state = 244;
-                        this.match(DaedalusParser.T__6);
-                        this.state = 245;
+                        this.state = 261;
+                        this.match(DaedalusParser.LeftBracket);
+                        this.state = 262;
                         this.arraySize();
-                        this.state = 246;
-                        this.match(DaedalusParser.T__7);
+                        this.state = 263;
+                        this.match(DaedalusParser.RightBracket);
                     }
                 }
             }
@@ -59422,76 +65796,81 @@ class DaedalusParser extends Parser {
     }
     statementBlock() {
         let localContext = new StatementBlockContext(this.context, this.state);
-        this.enterRule(localContext, 36, DaedalusParser.RULE_statementBlock);
+        this.enterRule(localContext, 40, DaedalusParser.RULE_statementBlock);
         let _la;
         try {
             let alternative;
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 250;
-                this.match(DaedalusParser.T__2);
-                this.state = 262;
+                this.state = 267;
+                this.match(DaedalusParser.LeftBrace);
+                this.state = 277;
                 this.errorHandler.sync(this);
                 alternative = this.interpreter.adaptivePredict(this.tokenStream, 19, this.context);
                 while (alternative !== 1 && alternative !== ATN.INVALID_ALT_NUMBER) {
                     if (alternative === 1 + 1) {
                         {
-                            {
-                                this.state = 258;
-                                this.errorHandler.sync(this);
-                                switch (this.tokenStream.LA(1)) {
-                                    case DaedalusParser.T__4:
-                                    case DaedalusParser.T__14:
-                                    case DaedalusParser.T__15:
-                                    case DaedalusParser.T__24:
-                                    case DaedalusParser.T__25:
-                                    case DaedalusParser.Const:
-                                    case DaedalusParser.Var:
-                                    case DaedalusParser.Return:
-                                    case DaedalusParser.Null:
-                                    case DaedalusParser.NoFunc:
-                                    case DaedalusParser.Identifier:
-                                    case DaedalusParser.IntegerLiteral:
-                                    case DaedalusParser.FloatLiteral:
-                                    case DaedalusParser.StringLiteral:
+                            this.state = 275;
+                            this.errorHandler.sync(this);
+                            switch (this.tokenStream.LA(1)) {
+                                case DaedalusParser.IntegerLiteral:
+                                case DaedalusParser.FloatLiteral:
+                                case DaedalusParser.StringLiteral:
+                                case DaedalusParser.Const:
+                                case DaedalusParser.Var:
+                                case DaedalusParser.Int:
+                                case DaedalusParser.Func:
+                                case DaedalusParser.StringKeyword:
+                                case DaedalusParser.Class:
+                                case DaedalusParser.Void:
+                                case DaedalusParser.Return:
+                                case DaedalusParser.Float:
+                                case DaedalusParser.Prototype:
+                                case DaedalusParser.Instance:
+                                case DaedalusParser.Null:
+                                case DaedalusParser.LeftParen:
+                                case DaedalusParser.Plus:
+                                case DaedalusParser.Minus:
+                                case DaedalusParser.Tilde:
+                                case DaedalusParser.Not:
+                                case DaedalusParser.Identifier:
+                                    {
                                         {
-                                            {
-                                                this.state = 251;
-                                                this.statement();
-                                                this.state = 252;
-                                                this.match(DaedalusParser.T__0);
-                                            }
+                                            this.state = 268;
+                                            this.statement();
+                                            this.state = 269;
+                                            this.match(DaedalusParser.Semi);
                                         }
-                                        break;
-                                    case DaedalusParser.If:
+                                    }
+                                    break;
+                                case DaedalusParser.If:
+                                    {
                                         {
-                                            {
-                                                this.state = 254;
-                                                this.ifBlockStatement();
-                                                this.state = 256;
-                                                this.errorHandler.sync(this);
-                                                _la = this.tokenStream.LA(1);
-                                                if (_la === 1) {
-                                                    {
-                                                        this.state = 255;
-                                                        this.match(DaedalusParser.T__0);
-                                                    }
+                                            this.state = 271;
+                                            this.ifBlockStatement();
+                                            this.state = 273;
+                                            this.errorHandler.sync(this);
+                                            _la = this.tokenStream.LA(1);
+                                            if (_la === 52) {
+                                                {
+                                                    this.state = 272;
+                                                    this.match(DaedalusParser.Semi);
                                                 }
                                             }
                                         }
-                                        break;
-                                    default:
-                                        throw new NoViableAltException(this);
-                                }
+                                    }
+                                    break;
+                                default:
+                                    throw new NoViableAltException(this);
                             }
                         }
                     }
-                    this.state = 264;
+                    this.state = 279;
                     this.errorHandler.sync(this);
                     alternative = this.interpreter.adaptivePredict(this.tokenStream, 19, this.context);
                 }
-                this.state = 265;
-                this.match(DaedalusParser.T__3);
+                this.state = 280;
+                this.match(DaedalusParser.RightBrace);
             }
         }
         catch (re) {
@@ -59510,43 +65889,43 @@ class DaedalusParser extends Parser {
     }
     statement() {
         let localContext = new StatementContext(this.context, this.state);
-        this.enterRule(localContext, 38, DaedalusParser.RULE_statement);
+        this.enterRule(localContext, 42, DaedalusParser.RULE_statement);
         try {
-            this.state = 272;
+            this.state = 287;
             this.errorHandler.sync(this);
             switch (this.interpreter.adaptivePredict(this.tokenStream, 20, this.context)) {
                 case 1:
                     this.enterOuterAlt(localContext, 1);
                     {
-                        this.state = 267;
+                        this.state = 282;
                         this.assignment();
                     }
                     break;
                 case 2:
                     this.enterOuterAlt(localContext, 2);
                     {
-                        this.state = 268;
+                        this.state = 283;
                         this.returnStatement();
                     }
                     break;
                 case 3:
                     this.enterOuterAlt(localContext, 3);
                     {
-                        this.state = 269;
+                        this.state = 284;
                         this.constDef();
                     }
                     break;
                 case 4:
                     this.enterOuterAlt(localContext, 4);
                     {
-                        this.state = 270;
+                        this.state = 285;
                         this.varDecl();
                     }
                     break;
                 case 5:
                     this.enterOuterAlt(localContext, 5);
                     {
-                        this.state = 271;
+                        this.state = 286;
                         this.expression(0);
                     }
                     break;
@@ -59566,47 +65945,47 @@ class DaedalusParser extends Parser {
         }
         return localContext;
     }
-    functionCall() {
-        let localContext = new FunctionCallContext(this.context, this.state);
-        this.enterRule(localContext, 40, DaedalusParser.RULE_functionCall);
+    funcCall() {
+        let localContext = new FuncCallContext(this.context, this.state);
+        this.enterRule(localContext, 44, DaedalusParser.RULE_funcCall);
         let _la;
         try {
             let alternative;
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 274;
+                this.state = 289;
                 this.nameNode();
-                this.state = 275;
-                this.match(DaedalusParser.T__4);
-                this.state = 284;
+                this.state = 290;
+                this.match(DaedalusParser.LeftParen);
+                this.state = 299;
                 this.errorHandler.sync(this);
                 _la = this.tokenStream.LA(1);
-                if ((((_la) & ~0x1F) === 0 && ((1 << _la) & 100761632) !== 0) || ((((_la - 47)) & ~0x1F) === 0 && ((1 << (_la - 47)) & 63) !== 0)) {
+                if ((((_la) & ~0x1F) === 0 && ((1 << _la) & 132034048) !== 0) || ((((_la - 36)) & ~0x1F) === 0 && ((1 << (_la - 36)) & 131123) !== 0)) {
                     {
-                        this.state = 276;
-                        this.expression(0);
-                        this.state = 281;
+                        this.state = 291;
+                        this.funcArgExpression();
+                        this.state = 296;
                         this.errorHandler.sync(this);
                         alternative = this.interpreter.adaptivePredict(this.tokenStream, 21, this.context);
                         while (alternative !== 1 && alternative !== ATN.INVALID_ALT_NUMBER) {
                             if (alternative === 1 + 1) {
                                 {
                                     {
-                                        this.state = 277;
-                                        this.match(DaedalusParser.T__1);
-                                        this.state = 278;
-                                        this.expression(0);
+                                        this.state = 292;
+                                        this.match(DaedalusParser.T__0);
+                                        this.state = 293;
+                                        this.funcArgExpression();
                                     }
                                 }
                             }
-                            this.state = 283;
+                            this.state = 298;
                             this.errorHandler.sync(this);
                             alternative = this.interpreter.adaptivePredict(this.tokenStream, 21, this.context);
                         }
                     }
                 }
-                this.state = 286;
-                this.match(DaedalusParser.T__5);
+                this.state = 301;
+                this.match(DaedalusParser.RightParen);
             }
         }
         catch (re) {
@@ -59625,16 +66004,40 @@ class DaedalusParser extends Parser {
     }
     assignment() {
         let localContext = new AssignmentContext(this.context, this.state);
-        this.enterRule(localContext, 42, DaedalusParser.RULE_assignment);
+        this.enterRule(localContext, 46, DaedalusParser.RULE_assignment);
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 288;
+                this.state = 303;
                 this.reference();
-                this.state = 289;
+                this.state = 304;
                 this.assignmentOperator();
-                this.state = 290;
-                this.expression(0);
+                this.state = 305;
+                this.expressionBlock();
+            }
+        }
+        catch (re) {
+            if (re instanceof RecognitionException) {
+                this.errorHandler.reportError(this, re);
+                this.errorHandler.recover(this, re);
+            }
+            else {
+                throw re;
+            }
+        }
+        finally {
+            this.exitRule();
+        }
+        return localContext;
+    }
+    ifCondition() {
+        let localContext = new IfConditionContext(this.context, this.state);
+        this.enterRule(localContext, 48, DaedalusParser.RULE_ifCondition);
+        try {
+            this.enterOuterAlt(localContext, 1);
+            {
+                this.state = 307;
+                this.expressionBlock();
             }
         }
         catch (re) {
@@ -59653,13 +66056,13 @@ class DaedalusParser extends Parser {
     }
     elseBlock() {
         let localContext = new ElseBlockContext(this.context, this.state);
-        this.enterRule(localContext, 44, DaedalusParser.RULE_elseBlock);
+        this.enterRule(localContext, 50, DaedalusParser.RULE_elseBlock);
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 292;
+                this.state = 309;
                 this.match(DaedalusParser.Else);
-                this.state = 293;
+                this.state = 310;
                 this.statementBlock();
             }
         }
@@ -59679,17 +66082,17 @@ class DaedalusParser extends Parser {
     }
     elseIfBlock() {
         let localContext = new ElseIfBlockContext(this.context, this.state);
-        this.enterRule(localContext, 46, DaedalusParser.RULE_elseIfBlock);
+        this.enterRule(localContext, 52, DaedalusParser.RULE_elseIfBlock);
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 295;
+                this.state = 312;
                 this.match(DaedalusParser.Else);
-                this.state = 296;
+                this.state = 313;
                 this.match(DaedalusParser.If);
-                this.state = 297;
-                this.expression(0);
-                this.state = 298;
+                this.state = 314;
+                this.ifCondition();
+                this.state = 315;
                 this.statementBlock();
             }
         }
@@ -59709,15 +66112,15 @@ class DaedalusParser extends Parser {
     }
     ifBlock() {
         let localContext = new IfBlockContext(this.context, this.state);
-        this.enterRule(localContext, 48, DaedalusParser.RULE_ifBlock);
+        this.enterRule(localContext, 54, DaedalusParser.RULE_ifBlock);
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 300;
+                this.state = 317;
                 this.match(DaedalusParser.If);
-                this.state = 301;
-                this.expression(0);
-                this.state = 302;
+                this.state = 318;
+                this.ifCondition();
+                this.state = 319;
                 this.statementBlock();
             }
         }
@@ -59737,36 +66140,36 @@ class DaedalusParser extends Parser {
     }
     ifBlockStatement() {
         let localContext = new IfBlockStatementContext(this.context, this.state);
-        this.enterRule(localContext, 50, DaedalusParser.RULE_ifBlockStatement);
+        this.enterRule(localContext, 56, DaedalusParser.RULE_ifBlockStatement);
         let _la;
         try {
             let alternative;
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 304;
+                this.state = 321;
                 this.ifBlock();
-                this.state = 308;
+                this.state = 325;
                 this.errorHandler.sync(this);
                 alternative = this.interpreter.adaptivePredict(this.tokenStream, 23, this.context);
                 while (alternative !== 1 && alternative !== ATN.INVALID_ALT_NUMBER) {
                     if (alternative === 1 + 1) {
                         {
                             {
-                                this.state = 305;
+                                this.state = 322;
                                 this.elseIfBlock();
                             }
                         }
                     }
-                    this.state = 310;
+                    this.state = 327;
                     this.errorHandler.sync(this);
                     alternative = this.interpreter.adaptivePredict(this.tokenStream, 23, this.context);
                 }
-                this.state = 312;
+                this.state = 329;
                 this.errorHandler.sync(this);
                 _la = this.tokenStream.LA(1);
-                if (_la === 38) {
+                if (_la === 16) {
                     {
-                        this.state = 311;
+                        this.state = 328;
                         this.elseBlock();
                     }
                 }
@@ -59788,22 +66191,70 @@ class DaedalusParser extends Parser {
     }
     returnStatement() {
         let localContext = new ReturnStatementContext(this.context, this.state);
-        this.enterRule(localContext, 52, DaedalusParser.RULE_returnStatement);
+        this.enterRule(localContext, 58, DaedalusParser.RULE_returnStatement);
         let _la;
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 314;
+                this.state = 331;
                 this.match(DaedalusParser.Return);
-                this.state = 316;
+                this.state = 333;
                 this.errorHandler.sync(this);
                 _la = this.tokenStream.LA(1);
-                if ((((_la) & ~0x1F) === 0 && ((1 << _la) & 100761632) !== 0) || ((((_la - 47)) & ~0x1F) === 0 && ((1 << (_la - 47)) & 63) !== 0)) {
+                if ((((_la) & ~0x1F) === 0 && ((1 << _la) & 132034048) !== 0) || ((((_la - 36)) & ~0x1F) === 0 && ((1 << (_la - 36)) & 131123) !== 0)) {
                     {
-                        this.state = 315;
-                        this.expression(0);
+                        this.state = 332;
+                        this.expressionBlock();
                     }
                 }
+            }
+        }
+        catch (re) {
+            if (re instanceof RecognitionException) {
+                this.errorHandler.reportError(this, re);
+                this.errorHandler.recover(this, re);
+            }
+            else {
+                throw re;
+            }
+        }
+        finally {
+            this.exitRule();
+        }
+        return localContext;
+    }
+    funcArgExpression() {
+        let localContext = new FuncArgExpressionContext(this.context, this.state);
+        this.enterRule(localContext, 60, DaedalusParser.RULE_funcArgExpression);
+        try {
+            this.enterOuterAlt(localContext, 1);
+            {
+                this.state = 335;
+                this.expressionBlock();
+            }
+        }
+        catch (re) {
+            if (re instanceof RecognitionException) {
+                this.errorHandler.reportError(this, re);
+                this.errorHandler.recover(this, re);
+            }
+            else {
+                throw re;
+            }
+        }
+        finally {
+            this.exitRule();
+        }
+        return localContext;
+    }
+    expressionBlock() {
+        let localContext = new ExpressionBlockContext(this.context, this.state);
+        this.enterRule(localContext, 62, DaedalusParser.RULE_expressionBlock);
+        try {
+            this.enterOuterAlt(localContext, 1);
+            {
+                this.state = 337;
+                this.expression(0);
             }
         }
         catch (re) {
@@ -59828,55 +66279,61 @@ class DaedalusParser extends Parser {
         let parentState = this.state;
         let localContext = new ExpressionContext(this.context, parentState);
         let previousContext = localContext;
-        let _startState = 54;
-        this.enterRecursionRule(localContext, 54, DaedalusParser.RULE_expression, _p);
+        let _startState = 64;
+        this.enterRecursionRule(localContext, 64, DaedalusParser.RULE_expression, _p);
         try {
             let alternative;
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 327;
+                this.state = 348;
                 this.errorHandler.sync(this);
                 switch (this.tokenStream.LA(1)) {
-                    case DaedalusParser.T__4:
+                    case DaedalusParser.LeftParen:
                         {
                             localContext = new BracketExpressionContext(localContext);
                             this.context = localContext;
                             previousContext = localContext;
-                            this.state = 319;
-                            this.match(DaedalusParser.T__4);
-                            this.state = 320;
+                            this.state = 340;
+                            this.match(DaedalusParser.LeftParen);
+                            this.state = 341;
                             this.expression(0);
-                            this.state = 321;
-                            this.match(DaedalusParser.T__5);
+                            this.state = 342;
+                            this.match(DaedalusParser.RightParen);
                         }
                         break;
-                    case DaedalusParser.T__14:
-                    case DaedalusParser.T__15:
-                    case DaedalusParser.T__24:
-                    case DaedalusParser.T__25:
+                    case DaedalusParser.Plus:
+                    case DaedalusParser.Minus:
+                    case DaedalusParser.Tilde:
+                    case DaedalusParser.Not:
                         {
-                            localContext = new UnaryExpressionContext(localContext);
+                            localContext = new UnaryOperationContext(localContext);
                             this.context = localContext;
                             previousContext = localContext;
-                            {
-                                this.state = 323;
-                                localContext._oper = this.unaryOperator();
-                            }
-                            this.state = 324;
+                            this.state = 344;
+                            this.unaryOperator();
+                            this.state = 345;
                             this.expression(11);
                         }
                         break;
-                    case DaedalusParser.Null:
-                    case DaedalusParser.NoFunc:
-                    case DaedalusParser.Identifier:
                     case DaedalusParser.IntegerLiteral:
                     case DaedalusParser.FloatLiteral:
                     case DaedalusParser.StringLiteral:
+                    case DaedalusParser.Var:
+                    case DaedalusParser.Int:
+                    case DaedalusParser.Func:
+                    case DaedalusParser.StringKeyword:
+                    case DaedalusParser.Class:
+                    case DaedalusParser.Void:
+                    case DaedalusParser.Float:
+                    case DaedalusParser.Prototype:
+                    case DaedalusParser.Instance:
+                    case DaedalusParser.Null:
+                    case DaedalusParser.Identifier:
                         {
-                            localContext = new ValueExpressionContext(localContext);
+                            localContext = new ValExpressionContext(localContext);
                             this.context = localContext;
                             previousContext = localContext;
-                            this.state = 326;
+                            this.state = 347;
                             this.value();
                         }
                         break;
@@ -59884,7 +66341,7 @@ class DaedalusParser extends Parser {
                         throw new NoViableAltException(this);
                 }
                 this.context.stop = this.tokenStream.LT(-1);
-                this.state = 367;
+                this.state = 388;
                 this.errorHandler.sync(this);
                 alternative = this.interpreter.adaptivePredict(this.tokenStream, 28, this.context);
                 while (alternative !== 2 && alternative !== ATN.INVALID_ALT_NUMBER) {
@@ -59894,22 +66351,20 @@ class DaedalusParser extends Parser {
                         }
                         previousContext = localContext;
                         {
-                            this.state = 365;
+                            this.state = 386;
                             this.errorHandler.sync(this);
                             switch (this.interpreter.adaptivePredict(this.tokenStream, 27, this.context)) {
                                 case 1:
                                     {
                                         localContext = new MultExpressionContext(new ExpressionContext(parentContext, parentState));
                                         this.pushNewRecursionContext(localContext, _startState, DaedalusParser.RULE_expression);
-                                        this.state = 329;
+                                        this.state = 350;
                                         if (!(this.precpred(this.context, 10))) {
                                             throw this.createFailedPredicateException("this.precpred(this.context, 10)");
                                         }
-                                        {
-                                            this.state = 330;
-                                            localContext._oper = this.multOperator();
-                                        }
-                                        this.state = 331;
+                                        this.state = 351;
+                                        this.multOperator();
+                                        this.state = 352;
                                         this.expression(11);
                                     }
                                     break;
@@ -59917,15 +66372,13 @@ class DaedalusParser extends Parser {
                                     {
                                         localContext = new AddExpressionContext(new ExpressionContext(parentContext, parentState));
                                         this.pushNewRecursionContext(localContext, _startState, DaedalusParser.RULE_expression);
-                                        this.state = 333;
+                                        this.state = 354;
                                         if (!(this.precpred(this.context, 9))) {
                                             throw this.createFailedPredicateException("this.precpred(this.context, 9)");
                                         }
-                                        {
-                                            this.state = 334;
-                                            localContext._oper = this.addOperator();
-                                        }
-                                        this.state = 335;
+                                        this.state = 355;
+                                        this.addOperator();
+                                        this.state = 356;
                                         this.expression(10);
                                     }
                                     break;
@@ -59933,15 +66386,13 @@ class DaedalusParser extends Parser {
                                     {
                                         localContext = new BitMoveExpressionContext(new ExpressionContext(parentContext, parentState));
                                         this.pushNewRecursionContext(localContext, _startState, DaedalusParser.RULE_expression);
-                                        this.state = 337;
+                                        this.state = 358;
                                         if (!(this.precpred(this.context, 8))) {
                                             throw this.createFailedPredicateException("this.precpred(this.context, 8)");
                                         }
-                                        {
-                                            this.state = 338;
-                                            localContext._oper = this.bitMoveOperator();
-                                        }
-                                        this.state = 339;
+                                        this.state = 359;
+                                        this.bitMoveOperator();
+                                        this.state = 360;
                                         this.expression(9);
                                     }
                                     break;
@@ -59949,15 +66400,13 @@ class DaedalusParser extends Parser {
                                     {
                                         localContext = new CompExpressionContext(new ExpressionContext(parentContext, parentState));
                                         this.pushNewRecursionContext(localContext, _startState, DaedalusParser.RULE_expression);
-                                        this.state = 341;
+                                        this.state = 362;
                                         if (!(this.precpred(this.context, 7))) {
                                             throw this.createFailedPredicateException("this.precpred(this.context, 7)");
                                         }
-                                        {
-                                            this.state = 342;
-                                            localContext._oper = this.compOperator();
-                                        }
-                                        this.state = 343;
+                                        this.state = 363;
+                                        this.compOperator();
+                                        this.state = 364;
                                         this.expression(8);
                                     }
                                     break;
@@ -59965,15 +66414,13 @@ class DaedalusParser extends Parser {
                                     {
                                         localContext = new EqExpressionContext(new ExpressionContext(parentContext, parentState));
                                         this.pushNewRecursionContext(localContext, _startState, DaedalusParser.RULE_expression);
-                                        this.state = 345;
+                                        this.state = 366;
                                         if (!(this.precpred(this.context, 6))) {
                                             throw this.createFailedPredicateException("this.precpred(this.context, 6)");
                                         }
-                                        {
-                                            this.state = 346;
-                                            localContext._oper = this.eqOperator();
-                                        }
-                                        this.state = 347;
+                                        this.state = 367;
+                                        this.eqOperator();
+                                        this.state = 368;
                                         this.expression(7);
                                     }
                                     break;
@@ -59981,15 +66428,13 @@ class DaedalusParser extends Parser {
                                     {
                                         localContext = new BinAndExpressionContext(new ExpressionContext(parentContext, parentState));
                                         this.pushNewRecursionContext(localContext, _startState, DaedalusParser.RULE_expression);
-                                        this.state = 349;
+                                        this.state = 370;
                                         if (!(this.precpred(this.context, 5))) {
                                             throw this.createFailedPredicateException("this.precpred(this.context, 5)");
                                         }
-                                        {
-                                            this.state = 350;
-                                            localContext._oper = this.binAndOperator();
-                                        }
-                                        this.state = 351;
+                                        this.state = 371;
+                                        this.binAndOperator();
+                                        this.state = 372;
                                         this.expression(6);
                                     }
                                     break;
@@ -59997,15 +66442,13 @@ class DaedalusParser extends Parser {
                                     {
                                         localContext = new BinOrExpressionContext(new ExpressionContext(parentContext, parentState));
                                         this.pushNewRecursionContext(localContext, _startState, DaedalusParser.RULE_expression);
-                                        this.state = 353;
+                                        this.state = 374;
                                         if (!(this.precpred(this.context, 4))) {
                                             throw this.createFailedPredicateException("this.precpred(this.context, 4)");
                                         }
-                                        {
-                                            this.state = 354;
-                                            localContext._oper = this.binOrOperator();
-                                        }
-                                        this.state = 355;
+                                        this.state = 375;
+                                        this.binOrOperator();
+                                        this.state = 376;
                                         this.expression(5);
                                     }
                                     break;
@@ -60013,15 +66456,13 @@ class DaedalusParser extends Parser {
                                     {
                                         localContext = new LogAndExpressionContext(new ExpressionContext(parentContext, parentState));
                                         this.pushNewRecursionContext(localContext, _startState, DaedalusParser.RULE_expression);
-                                        this.state = 357;
+                                        this.state = 378;
                                         if (!(this.precpred(this.context, 3))) {
                                             throw this.createFailedPredicateException("this.precpred(this.context, 3)");
                                         }
-                                        {
-                                            this.state = 358;
-                                            localContext._oper = this.logAndOperator();
-                                        }
-                                        this.state = 359;
+                                        this.state = 379;
+                                        this.logAndOperator();
+                                        this.state = 380;
                                         this.expression(4);
                                     }
                                     break;
@@ -60029,22 +66470,20 @@ class DaedalusParser extends Parser {
                                     {
                                         localContext = new LogOrExpressionContext(new ExpressionContext(parentContext, parentState));
                                         this.pushNewRecursionContext(localContext, _startState, DaedalusParser.RULE_expression);
-                                        this.state = 361;
+                                        this.state = 382;
                                         if (!(this.precpred(this.context, 2))) {
                                             throw this.createFailedPredicateException("this.precpred(this.context, 2)");
                                         }
-                                        {
-                                            this.state = 362;
-                                            localContext._oper = this.logOrOperator();
-                                        }
-                                        this.state = 363;
+                                        this.state = 383;
+                                        this.logOrOperator();
+                                        this.state = 384;
                                         this.expression(3);
                                     }
                                     break;
                             }
                         }
                     }
-                    this.state = 369;
+                    this.state = 390;
                     this.errorHandler.sync(this);
                     alternative = this.interpreter.adaptivePredict(this.tokenStream, 28, this.context);
                 }
@@ -60066,23 +66505,33 @@ class DaedalusParser extends Parser {
     }
     arrayIndex() {
         let localContext = new ArrayIndexContext(this.context, this.state);
-        this.enterRule(localContext, 56, DaedalusParser.RULE_arrayIndex);
+        this.enterRule(localContext, 66, DaedalusParser.RULE_arrayIndex);
         try {
-            this.state = 372;
+            this.state = 393;
             this.errorHandler.sync(this);
             switch (this.tokenStream.LA(1)) {
                 case DaedalusParser.IntegerLiteral:
                     this.enterOuterAlt(localContext, 1);
                     {
-                        this.state = 370;
+                        this.state = 391;
                         this.match(DaedalusParser.IntegerLiteral);
                     }
                     break;
+                case DaedalusParser.Var:
+                case DaedalusParser.Int:
+                case DaedalusParser.Func:
+                case DaedalusParser.StringKeyword:
+                case DaedalusParser.Class:
+                case DaedalusParser.Void:
+                case DaedalusParser.Float:
+                case DaedalusParser.Prototype:
+                case DaedalusParser.Instance:
+                case DaedalusParser.Null:
                 case DaedalusParser.Identifier:
                     this.enterOuterAlt(localContext, 2);
                     {
-                        this.state = 371;
-                        this.reference();
+                        this.state = 392;
+                        this.referenceAtom();
                     }
                     break;
                 default:
@@ -60105,23 +66554,33 @@ class DaedalusParser extends Parser {
     }
     arraySize() {
         let localContext = new ArraySizeContext(this.context, this.state);
-        this.enterRule(localContext, 58, DaedalusParser.RULE_arraySize);
+        this.enterRule(localContext, 68, DaedalusParser.RULE_arraySize);
         try {
-            this.state = 376;
+            this.state = 397;
             this.errorHandler.sync(this);
             switch (this.tokenStream.LA(1)) {
                 case DaedalusParser.IntegerLiteral:
                     this.enterOuterAlt(localContext, 1);
                     {
-                        this.state = 374;
+                        this.state = 395;
                         this.match(DaedalusParser.IntegerLiteral);
                     }
                     break;
+                case DaedalusParser.Var:
+                case DaedalusParser.Int:
+                case DaedalusParser.Func:
+                case DaedalusParser.StringKeyword:
+                case DaedalusParser.Class:
+                case DaedalusParser.Void:
+                case DaedalusParser.Float:
+                case DaedalusParser.Prototype:
+                case DaedalusParser.Instance:
+                case DaedalusParser.Null:
                 case DaedalusParser.Identifier:
                     this.enterOuterAlt(localContext, 2);
                     {
-                        this.state = 375;
-                        this.reference();
+                        this.state = 396;
+                        this.referenceAtom();
                     }
                     break;
                 default:
@@ -60144,16 +66603,16 @@ class DaedalusParser extends Parser {
     }
     value() {
         let localContext = new ValueContext(this.context, this.state);
-        this.enterRule(localContext, 60, DaedalusParser.RULE_value);
+        this.enterRule(localContext, 70, DaedalusParser.RULE_value);
         try {
-            this.state = 385;
+            this.state = 405;
             this.errorHandler.sync(this);
             switch (this.interpreter.adaptivePredict(this.tokenStream, 31, this.context)) {
                 case 1:
                     localContext = new IntegerLiteralValueContext(localContext);
                     this.enterOuterAlt(localContext, 1);
                     {
-                        this.state = 378;
+                        this.state = 399;
                         this.match(DaedalusParser.IntegerLiteral);
                     }
                     break;
@@ -60161,7 +66620,7 @@ class DaedalusParser extends Parser {
                     localContext = new FloatLiteralValueContext(localContext);
                     this.enterOuterAlt(localContext, 2);
                     {
-                        this.state = 379;
+                        this.state = 400;
                         this.match(DaedalusParser.FloatLiteral);
                     }
                     break;
@@ -60169,7 +66628,7 @@ class DaedalusParser extends Parser {
                     localContext = new StringLiteralValueContext(localContext);
                     this.enterOuterAlt(localContext, 3);
                     {
-                        this.state = 380;
+                        this.state = 401;
                         this.match(DaedalusParser.StringLiteral);
                     }
                     break;
@@ -60177,31 +66636,23 @@ class DaedalusParser extends Parser {
                     localContext = new NullLiteralValueContext(localContext);
                     this.enterOuterAlt(localContext, 4);
                     {
-                        this.state = 381;
+                        this.state = 402;
                         this.match(DaedalusParser.Null);
                     }
                     break;
                 case 5:
-                    localContext = new NoFuncLiteralValueContext(localContext);
+                    localContext = new FuncCallValueContext(localContext);
                     this.enterOuterAlt(localContext, 5);
                     {
-                        this.state = 382;
-                        this.match(DaedalusParser.NoFunc);
+                        this.state = 403;
+                        this.funcCall();
                     }
                     break;
                 case 6:
-                    localContext = new FunctionCallValueContext(localContext);
+                    localContext = new ReferenceValueContext(localContext);
                     this.enterOuterAlt(localContext, 6);
                     {
-                        this.state = 383;
-                        this.functionCall();
-                    }
-                    break;
-                case 7:
-                    localContext = new ReferenceValueContext(localContext);
-                    this.enterOuterAlt(localContext, 7);
-                    {
-                        this.state = 384;
+                        this.state = 404;
                         this.reference();
                     }
                     break;
@@ -60223,23 +66674,23 @@ class DaedalusParser extends Parser {
     }
     referenceAtom() {
         let localContext = new ReferenceAtomContext(this.context, this.state);
-        this.enterRule(localContext, 62, DaedalusParser.RULE_referenceAtom);
+        this.enterRule(localContext, 72, DaedalusParser.RULE_referenceAtom);
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 387;
+                this.state = 407;
                 this.nameNode();
-                this.state = 392;
+                this.state = 412;
                 this.errorHandler.sync(this);
                 switch (this.interpreter.adaptivePredict(this.tokenStream, 32, this.context)) {
                     case 1:
                         {
-                            this.state = 388;
-                            this.match(DaedalusParser.T__6);
-                            this.state = 389;
+                            this.state = 408;
+                            this.match(DaedalusParser.LeftBracket);
+                            this.state = 409;
                             this.arrayIndex();
-                            this.state = 390;
-                            this.match(DaedalusParser.T__7);
+                            this.state = 410;
+                            this.match(DaedalusParser.RightBracket);
                         }
                         break;
                 }
@@ -60261,30 +66712,23 @@ class DaedalusParser extends Parser {
     }
     reference() {
         let localContext = new ReferenceContext(this.context, this.state);
-        this.enterRule(localContext, 64, DaedalusParser.RULE_reference);
+        this.enterRule(localContext, 74, DaedalusParser.RULE_reference);
         try {
-            let alternative;
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 394;
+                this.state = 414;
                 this.referenceAtom();
-                this.state = 399;
+                this.state = 417;
                 this.errorHandler.sync(this);
-                alternative = this.interpreter.adaptivePredict(this.tokenStream, 33, this.context);
-                while (alternative !== 2 && alternative !== ATN.INVALID_ALT_NUMBER) {
-                    if (alternative === 1) {
+                switch (this.interpreter.adaptivePredict(this.tokenStream, 33, this.context)) {
+                    case 1:
                         {
-                            {
-                                this.state = 395;
-                                this.match(DaedalusParser.T__9);
-                                this.state = 396;
-                                this.referenceAtom();
-                            }
+                            this.state = 415;
+                            this.match(DaedalusParser.Dot);
+                            this.state = 416;
+                            this.referenceAtom();
                         }
-                    }
-                    this.state = 401;
-                    this.errorHandler.sync(this);
-                    alternative = this.interpreter.adaptivePredict(this.tokenStream, 33, this.context);
+                        break;
                 }
             }
         }
@@ -60302,16 +66746,48 @@ class DaedalusParser extends Parser {
         }
         return localContext;
     }
-    dataType() {
-        let localContext = new DataTypeContext(this.context, this.state);
-        this.enterRule(localContext, 66, DaedalusParser.RULE_dataType);
+    typeReference() {
+        let localContext = new TypeReferenceContext(this.context, this.state);
+        this.enterRule(localContext, 76, DaedalusParser.RULE_typeReference);
         let _la;
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 402;
+                this.state = 419;
                 _la = this.tokenStream.LA(1);
-                if (!(((((_la - 37)) & ~0x1F) === 0 && ((1 << (_la - 37)) & 4269) !== 0))) {
+                if (!((((_la) & ~0x1F) === 0 && ((1 << _la) & 22446080) !== 0) || _la === 53)) {
+                    this.errorHandler.recoverInline(this);
+                }
+                else {
+                    this.errorHandler.reportMatch(this);
+                    this.consume();
+                }
+            }
+        }
+        catch (re) {
+            if (re instanceof RecognitionException) {
+                this.errorHandler.reportError(this, re);
+                this.errorHandler.recover(this, re);
+            }
+            else {
+                throw re;
+            }
+        }
+        finally {
+            this.exitRule();
+        }
+        return localContext;
+    }
+    anyIdentifier() {
+        let localContext = new AnyIdentifierContext(this.context, this.state);
+        this.enterRule(localContext, 78, DaedalusParser.RULE_anyIdentifier);
+        let _la;
+        try {
+            this.enterOuterAlt(localContext, 1);
+            {
+                this.state = 421;
+                _la = this.tokenStream.LA(1);
+                if (!((((_la) & ~0x1F) === 0 && ((1 << _la) & 64921600) !== 0) || _la === 53)) {
                     this.errorHandler.recoverInline(this);
                 }
                 else {
@@ -60336,12 +66812,12 @@ class DaedalusParser extends Parser {
     }
     nameNode() {
         let localContext = new NameNodeContext(this.context, this.state);
-        this.enterRule(localContext, 68, DaedalusParser.RULE_nameNode);
+        this.enterRule(localContext, 80, DaedalusParser.RULE_nameNode);
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 404;
-                this.match(DaedalusParser.Identifier);
+                this.state = 423;
+                this.anyIdentifier();
             }
         }
         catch (re) {
@@ -60360,11 +66836,11 @@ class DaedalusParser extends Parser {
     }
     parentReference() {
         let localContext = new ParentReferenceContext(this.context, this.state);
-        this.enterRule(localContext, 70, DaedalusParser.RULE_parentReference);
+        this.enterRule(localContext, 82, DaedalusParser.RULE_parentReference);
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 406;
+                this.state = 425;
                 this.match(DaedalusParser.Identifier);
             }
         }
@@ -60384,142 +66860,14 @@ class DaedalusParser extends Parser {
     }
     assignmentOperator() {
         let localContext = new AssignmentOperatorContext(this.context, this.state);
-        this.enterRule(localContext, 72, DaedalusParser.RULE_assignmentOperator);
+        this.enterRule(localContext, 84, DaedalusParser.RULE_assignmentOperator);
         let _la;
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 408;
+                this.state = 427;
                 _la = this.tokenStream.LA(1);
-                if (!((((_la) & ~0x1F) === 0 && ((1 << _la) & 31232) !== 0))) {
-                    this.errorHandler.recoverInline(this);
-                }
-                else {
-                    this.errorHandler.reportMatch(this);
-                    this.consume();
-                }
-            }
-        }
-        catch (re) {
-            if (re instanceof RecognitionException) {
-                this.errorHandler.reportError(this, re);
-                this.errorHandler.recover(this, re);
-            }
-            else {
-                throw re;
-            }
-        }
-        finally {
-            this.exitRule();
-        }
-        return localContext;
-    }
-    addOperator() {
-        let localContext = new AddOperatorContext(this.context, this.state);
-        this.enterRule(localContext, 74, DaedalusParser.RULE_addOperator);
-        let _la;
-        try {
-            this.enterOuterAlt(localContext, 1);
-            {
-                this.state = 410;
-                _la = this.tokenStream.LA(1);
-                if (!(_la === 15 || _la === 16)) {
-                    this.errorHandler.recoverInline(this);
-                }
-                else {
-                    this.errorHandler.reportMatch(this);
-                    this.consume();
-                }
-            }
-        }
-        catch (re) {
-            if (re instanceof RecognitionException) {
-                this.errorHandler.reportError(this, re);
-                this.errorHandler.recover(this, re);
-            }
-            else {
-                throw re;
-            }
-        }
-        finally {
-            this.exitRule();
-        }
-        return localContext;
-    }
-    bitMoveOperator() {
-        let localContext = new BitMoveOperatorContext(this.context, this.state);
-        this.enterRule(localContext, 76, DaedalusParser.RULE_bitMoveOperator);
-        let _la;
-        try {
-            this.enterOuterAlt(localContext, 1);
-            {
-                this.state = 412;
-                _la = this.tokenStream.LA(1);
-                if (!(_la === 17 || _la === 18)) {
-                    this.errorHandler.recoverInline(this);
-                }
-                else {
-                    this.errorHandler.reportMatch(this);
-                    this.consume();
-                }
-            }
-        }
-        catch (re) {
-            if (re instanceof RecognitionException) {
-                this.errorHandler.reportError(this, re);
-                this.errorHandler.recover(this, re);
-            }
-            else {
-                throw re;
-            }
-        }
-        finally {
-            this.exitRule();
-        }
-        return localContext;
-    }
-    compOperator() {
-        let localContext = new CompOperatorContext(this.context, this.state);
-        this.enterRule(localContext, 78, DaedalusParser.RULE_compOperator);
-        let _la;
-        try {
-            this.enterOuterAlt(localContext, 1);
-            {
-                this.state = 414;
-                _la = this.tokenStream.LA(1);
-                if (!((((_la) & ~0x1F) === 0 && ((1 << _la) & 7864320) !== 0))) {
-                    this.errorHandler.recoverInline(this);
-                }
-                else {
-                    this.errorHandler.reportMatch(this);
-                    this.consume();
-                }
-            }
-        }
-        catch (re) {
-            if (re instanceof RecognitionException) {
-                this.errorHandler.reportError(this, re);
-                this.errorHandler.recover(this, re);
-            }
-            else {
-                throw re;
-            }
-        }
-        finally {
-            this.exitRule();
-        }
-        return localContext;
-    }
-    eqOperator() {
-        let localContext = new EqOperatorContext(this.context, this.state);
-        this.enterRule(localContext, 80, DaedalusParser.RULE_eqOperator);
-        let _la;
-        try {
-            this.enterOuterAlt(localContext, 1);
-            {
-                this.state = 416;
-                _la = this.tokenStream.LA(1);
-                if (!(_la === 23 || _la === 24)) {
+                if (!(((((_la - 42)) & ~0x1F) === 0 && ((1 << (_la - 42)) & 505) !== 0))) {
                     this.errorHandler.recoverInline(this);
                 }
                 else {
@@ -60544,14 +66892,142 @@ class DaedalusParser extends Parser {
     }
     unaryOperator() {
         let localContext = new UnaryOperatorContext(this.context, this.state);
-        this.enterRule(localContext, 82, DaedalusParser.RULE_unaryOperator);
+        this.enterRule(localContext, 86, DaedalusParser.RULE_unaryOperator);
         let _la;
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 418;
+                this.state = 429;
                 _la = this.tokenStream.LA(1);
-                if (!((((_la) & ~0x1F) === 0 && ((1 << _la) & 100761600) !== 0))) {
+                if (!(((((_la - 36)) & ~0x1F) === 0 && ((1 << (_la - 36)) & 51) !== 0))) {
+                    this.errorHandler.recoverInline(this);
+                }
+                else {
+                    this.errorHandler.reportMatch(this);
+                    this.consume();
+                }
+            }
+        }
+        catch (re) {
+            if (re instanceof RecognitionException) {
+                this.errorHandler.reportError(this, re);
+                this.errorHandler.recover(this, re);
+            }
+            else {
+                throw re;
+            }
+        }
+        finally {
+            this.exitRule();
+        }
+        return localContext;
+    }
+    addOperator() {
+        let localContext = new AddOperatorContext(this.context, this.state);
+        this.enterRule(localContext, 88, DaedalusParser.RULE_addOperator);
+        let _la;
+        try {
+            this.enterOuterAlt(localContext, 1);
+            {
+                this.state = 431;
+                _la = this.tokenStream.LA(1);
+                if (!(_la === 36 || _la === 37)) {
+                    this.errorHandler.recoverInline(this);
+                }
+                else {
+                    this.errorHandler.reportMatch(this);
+                    this.consume();
+                }
+            }
+        }
+        catch (re) {
+            if (re instanceof RecognitionException) {
+                this.errorHandler.reportError(this, re);
+                this.errorHandler.recover(this, re);
+            }
+            else {
+                throw re;
+            }
+        }
+        finally {
+            this.exitRule();
+        }
+        return localContext;
+    }
+    bitMoveOperator() {
+        let localContext = new BitMoveOperatorContext(this.context, this.state);
+        this.enterRule(localContext, 90, DaedalusParser.RULE_bitMoveOperator);
+        let _la;
+        try {
+            this.enterOuterAlt(localContext, 1);
+            {
+                this.state = 433;
+                _la = this.tokenStream.LA(1);
+                if (!(_la === 2 || _la === 3)) {
+                    this.errorHandler.recoverInline(this);
+                }
+                else {
+                    this.errorHandler.reportMatch(this);
+                    this.consume();
+                }
+            }
+        }
+        catch (re) {
+            if (re instanceof RecognitionException) {
+                this.errorHandler.reportError(this, re);
+                this.errorHandler.recover(this, re);
+            }
+            else {
+                throw re;
+            }
+        }
+        finally {
+            this.exitRule();
+        }
+        return localContext;
+    }
+    compOperator() {
+        let localContext = new CompOperatorContext(this.context, this.state);
+        this.enterRule(localContext, 92, DaedalusParser.RULE_compOperator);
+        let _la;
+        try {
+            this.enterOuterAlt(localContext, 1);
+            {
+                this.state = 435;
+                _la = this.tokenStream.LA(1);
+                if (!(_la === 4 || _la === 5 || _la === 43 || _la === 44)) {
+                    this.errorHandler.recoverInline(this);
+                }
+                else {
+                    this.errorHandler.reportMatch(this);
+                    this.consume();
+                }
+            }
+        }
+        catch (re) {
+            if (re instanceof RecognitionException) {
+                this.errorHandler.reportError(this, re);
+                this.errorHandler.recover(this, re);
+            }
+            else {
+                throw re;
+            }
+        }
+        finally {
+            this.exitRule();
+        }
+        return localContext;
+    }
+    eqOperator() {
+        let localContext = new EqOperatorContext(this.context, this.state);
+        this.enterRule(localContext, 94, DaedalusParser.RULE_eqOperator);
+        let _la;
+        try {
+            this.enterOuterAlt(localContext, 1);
+            {
+                this.state = 437;
+                _la = this.tokenStream.LA(1);
+                if (!(_la === 6 || _la === 7)) {
                     this.errorHandler.recoverInline(this);
                 }
                 else {
@@ -60576,14 +67052,14 @@ class DaedalusParser extends Parser {
     }
     multOperator() {
         let localContext = new MultOperatorContext(this.context, this.state);
-        this.enterRule(localContext, 84, DaedalusParser.RULE_multOperator);
+        this.enterRule(localContext, 96, DaedalusParser.RULE_multOperator);
         let _la;
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 420;
+                this.state = 439;
                 _la = this.tokenStream.LA(1);
-                if (!((((_la) & ~0x1F) === 0 && ((1 << _la) & 939524096) !== 0))) {
+                if (!(((((_la - 8)) & ~0x1F) === 0 && ((1 << (_la - 8)) & 3221225473) !== 0))) {
                     this.errorHandler.recoverInline(this);
                 }
                 else {
@@ -60608,12 +67084,12 @@ class DaedalusParser extends Parser {
     }
     binAndOperator() {
         let localContext = new BinAndOperatorContext(this.context, this.state);
-        this.enterRule(localContext, 86, DaedalusParser.RULE_binAndOperator);
+        this.enterRule(localContext, 98, DaedalusParser.RULE_binAndOperator);
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 422;
-                this.match(DaedalusParser.T__29);
+                this.state = 441;
+                this.match(DaedalusParser.BitAnd);
             }
         }
         catch (re) {
@@ -60632,12 +67108,12 @@ class DaedalusParser extends Parser {
     }
     binOrOperator() {
         let localContext = new BinOrOperatorContext(this.context, this.state);
-        this.enterRule(localContext, 88, DaedalusParser.RULE_binOrOperator);
+        this.enterRule(localContext, 100, DaedalusParser.RULE_binOrOperator);
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 424;
-                this.match(DaedalusParser.T__30);
+                this.state = 443;
+                this.match(DaedalusParser.BitOr);
             }
         }
         catch (re) {
@@ -60656,12 +67132,12 @@ class DaedalusParser extends Parser {
     }
     logAndOperator() {
         let localContext = new LogAndOperatorContext(this.context, this.state);
-        this.enterRule(localContext, 90, DaedalusParser.RULE_logAndOperator);
+        this.enterRule(localContext, 102, DaedalusParser.RULE_logAndOperator);
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 426;
-                this.match(DaedalusParser.T__31);
+                this.state = 445;
+                this.match(DaedalusParser.And);
             }
         }
         catch (re) {
@@ -60680,12 +67156,12 @@ class DaedalusParser extends Parser {
     }
     logOrOperator() {
         let localContext = new LogOrOperatorContext(this.context, this.state);
-        this.enterRule(localContext, 92, DaedalusParser.RULE_logOrOperator);
+        this.enterRule(localContext, 104, DaedalusParser.RULE_logOrOperator);
         try {
             this.enterOuterAlt(localContext, 1);
             {
-                this.state = 428;
-                this.match(DaedalusParser.T__32);
+                this.state = 447;
+                this.match(DaedalusParser.Or);
             }
         }
         catch (re) {
@@ -60704,7 +67180,7 @@ class DaedalusParser extends Parser {
     }
     sempred(localContext, ruleIndex, predIndex) {
         switch (ruleIndex) {
-            case 27:
+            case 32:
                 return this.expression_sempred(localContext, predIndex);
         }
         return true;
@@ -60733,157 +67209,164 @@ class DaedalusParser extends Parser {
         return true;
     }
     static _serializedATN = [
-        4, 1, 57, 431, 2, 0, 7, 0, 2, 1, 7, 1, 2, 2, 7, 2, 2, 3, 7, 3, 2, 4, 7, 4, 2, 5, 7, 5, 2, 6, 7,
+        4, 1, 57, 450, 2, 0, 7, 0, 2, 1, 7, 1, 2, 2, 7, 2, 2, 3, 7, 3, 2, 4, 7, 4, 2, 5, 7, 5, 2, 6, 7,
         6, 2, 7, 7, 7, 2, 8, 7, 8, 2, 9, 7, 9, 2, 10, 7, 10, 2, 11, 7, 11, 2, 12, 7, 12, 2, 13, 7, 13,
         2, 14, 7, 14, 2, 15, 7, 15, 2, 16, 7, 16, 2, 17, 7, 17, 2, 18, 7, 18, 2, 19, 7, 19, 2, 20,
         7, 20, 2, 21, 7, 21, 2, 22, 7, 22, 2, 23, 7, 23, 2, 24, 7, 24, 2, 25, 7, 25, 2, 26, 7, 26,
         2, 27, 7, 27, 2, 28, 7, 28, 2, 29, 7, 29, 2, 30, 7, 30, 2, 31, 7, 31, 2, 32, 7, 32, 2, 33,
         7, 33, 2, 34, 7, 34, 2, 35, 7, 35, 2, 36, 7, 36, 2, 37, 7, 37, 2, 38, 7, 38, 2, 39, 7, 39,
         2, 40, 7, 40, 2, 41, 7, 41, 2, 42, 7, 42, 2, 43, 7, 43, 2, 44, 7, 44, 2, 45, 7, 45, 2, 46,
-        7, 46, 1, 0, 1, 0, 5, 0, 97, 8, 0, 10, 0, 12, 0, 100, 9, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1,
-        1, 3, 1, 108, 8, 1, 1, 1, 3, 1, 111, 8, 1, 1, 2, 1, 2, 1, 2, 3, 2, 116, 8, 2, 1, 2, 1, 2, 1,
-        3, 1, 3, 1, 3, 1, 3, 1, 3, 1, 3, 1, 4, 1, 4, 1, 4, 1, 4, 3, 4, 130, 8, 4, 1, 4, 1, 4, 1, 4, 3,
-        4, 135, 8, 4, 5, 4, 137, 8, 4, 10, 4, 12, 4, 140, 9, 4, 1, 5, 1, 5, 1, 5, 1, 5, 1, 5, 1, 5,
-        5, 5, 148, 8, 5, 10, 5, 12, 5, 151, 9, 5, 1, 5, 1, 5, 1, 6, 1, 6, 1, 6, 1, 6, 1, 6, 1, 6, 1,
-        6, 1, 7, 1, 7, 1, 7, 1, 7, 1, 7, 1, 7, 1, 7, 1, 8, 1, 8, 1, 8, 1, 8, 5, 8, 173, 8, 8, 10, 8, 12,
-        8, 176, 9, 8, 1, 8, 1, 8, 1, 8, 1, 8, 1, 9, 1, 9, 1, 9, 1, 9, 3, 9, 186, 8, 9, 1, 9, 1, 9, 1,
-        9, 3, 9, 191, 8, 9, 5, 9, 193, 8, 9, 10, 9, 12, 9, 196, 9, 9, 1, 10, 1, 10, 1, 10, 1, 10,
-        1, 10, 1, 10, 1, 11, 1, 11, 1, 11, 1, 11, 1, 11, 5, 11, 209, 8, 11, 10, 11, 12, 11, 212,
-        9, 11, 1, 11, 1, 11, 1, 12, 1, 12, 1, 12, 1, 13, 1, 13, 1, 13, 1, 14, 1, 14, 1, 14, 1, 14,
-        1, 14, 1, 15, 1, 15, 1, 16, 1, 16, 1, 16, 1, 16, 5, 16, 233, 8, 16, 10, 16, 12, 16, 236,
-        9, 16, 3, 16, 238, 8, 16, 1, 16, 1, 16, 1, 17, 1, 17, 1, 17, 1, 17, 1, 17, 1, 17, 1, 17,
-        3, 17, 249, 8, 17, 1, 18, 1, 18, 1, 18, 1, 18, 1, 18, 1, 18, 3, 18, 257, 8, 18, 3, 18, 259,
-        8, 18, 5, 18, 261, 8, 18, 10, 18, 12, 18, 264, 9, 18, 1, 18, 1, 18, 1, 19, 1, 19, 1, 19,
-        1, 19, 1, 19, 3, 19, 273, 8, 19, 1, 20, 1, 20, 1, 20, 1, 20, 1, 20, 5, 20, 280, 8, 20, 10,
-        20, 12, 20, 283, 9, 20, 3, 20, 285, 8, 20, 1, 20, 1, 20, 1, 21, 1, 21, 1, 21, 1, 21, 1,
-        22, 1, 22, 1, 22, 1, 23, 1, 23, 1, 23, 1, 23, 1, 23, 1, 24, 1, 24, 1, 24, 1, 24, 1, 25, 1,
-        25, 5, 25, 307, 8, 25, 10, 25, 12, 25, 310, 9, 25, 1, 25, 3, 25, 313, 8, 25, 1, 26, 1,
-        26, 3, 26, 317, 8, 26, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 3,
-        27, 328, 8, 27, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 1,
-        27, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 1,
-        27, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 1, 27, 5,
-        27, 366, 8, 27, 10, 27, 12, 27, 369, 9, 27, 1, 28, 1, 28, 3, 28, 373, 8, 28, 1, 29, 1,
-        29, 3, 29, 377, 8, 29, 1, 30, 1, 30, 1, 30, 1, 30, 1, 30, 1, 30, 1, 30, 3, 30, 386, 8, 30,
-        1, 31, 1, 31, 1, 31, 1, 31, 1, 31, 3, 31, 393, 8, 31, 1, 32, 1, 32, 1, 32, 5, 32, 398, 8,
-        32, 10, 32, 12, 32, 401, 9, 32, 1, 33, 1, 33, 1, 34, 1, 34, 1, 35, 1, 35, 1, 36, 1, 36,
-        1, 37, 1, 37, 1, 38, 1, 38, 1, 39, 1, 39, 1, 40, 1, 40, 1, 41, 1, 41, 1, 42, 1, 42, 1, 43,
-        1, 43, 1, 44, 1, 44, 1, 45, 1, 45, 1, 46, 1, 46, 1, 46, 8, 98, 149, 174, 210, 234, 262,
-        281, 308, 1, 54, 47, 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34,
-        36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64, 66, 68, 70, 72, 74, 76, 78,
-        80, 82, 84, 86, 88, 90, 92, 0, 8, 5, 0, 37, 37, 39, 40, 42, 42, 44, 44, 49, 49, 2, 0, 9,
-        9, 11, 14, 1, 0, 15, 16, 1, 0, 17, 18, 1, 0, 19, 22, 1, 0, 23, 24, 2, 0, 15, 16, 25, 26,
-        1, 0, 27, 29, 436, 0, 98, 1, 0, 0, 0, 2, 107, 1, 0, 0, 0, 4, 115, 1, 0, 0, 0, 6, 119, 1, 0,
-        0, 0, 8, 125, 1, 0, 0, 0, 10, 141, 1, 0, 0, 0, 12, 154, 1, 0, 0, 0, 14, 161, 1, 0, 0, 0, 16,
-        168, 1, 0, 0, 0, 18, 181, 1, 0, 0, 0, 20, 197, 1, 0, 0, 0, 22, 203, 1, 0, 0, 0, 24, 215,
-        1, 0, 0, 0, 26, 218, 1, 0, 0, 0, 28, 221, 1, 0, 0, 0, 30, 226, 1, 0, 0, 0, 32, 228, 1, 0,
-        0, 0, 34, 241, 1, 0, 0, 0, 36, 250, 1, 0, 0, 0, 38, 272, 1, 0, 0, 0, 40, 274, 1, 0, 0, 0,
-        42, 288, 1, 0, 0, 0, 44, 292, 1, 0, 0, 0, 46, 295, 1, 0, 0, 0, 48, 300, 1, 0, 0, 0, 50, 304,
-        1, 0, 0, 0, 52, 314, 1, 0, 0, 0, 54, 327, 1, 0, 0, 0, 56, 372, 1, 0, 0, 0, 58, 376, 1, 0,
-        0, 0, 60, 385, 1, 0, 0, 0, 62, 387, 1, 0, 0, 0, 64, 394, 1, 0, 0, 0, 66, 402, 1, 0, 0, 0,
-        68, 404, 1, 0, 0, 0, 70, 406, 1, 0, 0, 0, 72, 408, 1, 0, 0, 0, 74, 410, 1, 0, 0, 0, 76, 412,
-        1, 0, 0, 0, 78, 414, 1, 0, 0, 0, 80, 416, 1, 0, 0, 0, 82, 418, 1, 0, 0, 0, 84, 420, 1, 0,
-        0, 0, 86, 422, 1, 0, 0, 0, 88, 424, 1, 0, 0, 0, 90, 426, 1, 0, 0, 0, 92, 428, 1, 0, 0, 0,
-        94, 97, 3, 2, 1, 0, 95, 97, 3, 4, 2, 0, 96, 94, 1, 0, 0, 0, 96, 95, 1, 0, 0, 0, 97, 100, 1,
-        0, 0, 0, 98, 99, 1, 0, 0, 0, 98, 96, 1, 0, 0, 0, 99, 101, 1, 0, 0, 0, 100, 98, 1, 0, 0, 0,
-        101, 102, 5, 0, 0, 1, 102, 1, 1, 0, 0, 0, 103, 108, 3, 6, 3, 0, 104, 108, 3, 10, 5, 0, 105,
-        108, 3, 12, 6, 0, 106, 108, 3, 14, 7, 0, 107, 103, 1, 0, 0, 0, 107, 104, 1, 0, 0, 0, 107,
-        105, 1, 0, 0, 0, 107, 106, 1, 0, 0, 0, 108, 110, 1, 0, 0, 0, 109, 111, 5, 1, 0, 0, 110,
-        109, 1, 0, 0, 0, 110, 111, 1, 0, 0, 0, 111, 3, 1, 0, 0, 0, 112, 116, 3, 8, 4, 0, 113, 116,
-        3, 18, 9, 0, 114, 116, 3, 16, 8, 0, 115, 112, 1, 0, 0, 0, 115, 113, 1, 0, 0, 0, 115, 114,
-        1, 0, 0, 0, 116, 117, 1, 0, 0, 0, 117, 118, 5, 1, 0, 0, 118, 5, 1, 0, 0, 0, 119, 120, 5,
-        39, 0, 0, 120, 121, 3, 66, 33, 0, 121, 122, 3, 68, 34, 0, 122, 123, 3, 32, 16, 0, 123,
-        124, 3, 36, 18, 0, 124, 7, 1, 0, 0, 0, 125, 126, 5, 34, 0, 0, 126, 129, 3, 66, 33, 0, 127,
-        130, 3, 24, 12, 0, 128, 130, 3, 20, 10, 0, 129, 127, 1, 0, 0, 0, 129, 128, 1, 0, 0, 0,
-        130, 138, 1, 0, 0, 0, 131, 134, 5, 2, 0, 0, 132, 135, 3, 24, 12, 0, 133, 135, 3, 20, 10,
-        0, 134, 132, 1, 0, 0, 0, 134, 133, 1, 0, 0, 0, 135, 137, 1, 0, 0, 0, 136, 131, 1, 0, 0,
-        0, 137, 140, 1, 0, 0, 0, 138, 136, 1, 0, 0, 0, 138, 139, 1, 0, 0, 0, 139, 9, 1, 0, 0, 0,
-        140, 138, 1, 0, 0, 0, 141, 142, 5, 41, 0, 0, 142, 143, 3, 68, 34, 0, 143, 149, 5, 3, 0,
-        0, 144, 145, 3, 18, 9, 0, 145, 146, 5, 1, 0, 0, 146, 148, 1, 0, 0, 0, 147, 144, 1, 0, 0,
-        0, 148, 151, 1, 0, 0, 0, 149, 150, 1, 0, 0, 0, 149, 147, 1, 0, 0, 0, 150, 152, 1, 0, 0,
-        0, 151, 149, 1, 0, 0, 0, 152, 153, 5, 4, 0, 0, 153, 11, 1, 0, 0, 0, 154, 155, 5, 45, 0,
-        0, 155, 156, 3, 68, 34, 0, 156, 157, 5, 5, 0, 0, 157, 158, 3, 70, 35, 0, 158, 159, 5,
-        6, 0, 0, 159, 160, 3, 36, 18, 0, 160, 13, 1, 0, 0, 0, 161, 162, 5, 46, 0, 0, 162, 163,
-        3, 68, 34, 0, 163, 164, 5, 5, 0, 0, 164, 165, 3, 70, 35, 0, 165, 166, 5, 6, 0, 0, 166,
-        167, 3, 36, 18, 0, 167, 15, 1, 0, 0, 0, 168, 169, 5, 46, 0, 0, 169, 174, 3, 68, 34, 0,
-        170, 171, 5, 2, 0, 0, 171, 173, 3, 68, 34, 0, 172, 170, 1, 0, 0, 0, 173, 176, 1, 0, 0,
-        0, 174, 175, 1, 0, 0, 0, 174, 172, 1, 0, 0, 0, 175, 177, 1, 0, 0, 0, 176, 174, 1, 0, 0,
-        0, 177, 178, 5, 5, 0, 0, 178, 179, 3, 70, 35, 0, 179, 180, 5, 6, 0, 0, 180, 17, 1, 0, 0,
-        0, 181, 182, 5, 35, 0, 0, 182, 185, 3, 66, 33, 0, 183, 186, 3, 30, 15, 0, 184, 186, 3,
-        28, 14, 0, 185, 183, 1, 0, 0, 0, 185, 184, 1, 0, 0, 0, 186, 194, 1, 0, 0, 0, 187, 190,
-        5, 2, 0, 0, 188, 191, 3, 30, 15, 0, 189, 191, 3, 28, 14, 0, 190, 188, 1, 0, 0, 0, 190,
-        189, 1, 0, 0, 0, 191, 193, 1, 0, 0, 0, 192, 187, 1, 0, 0, 0, 193, 196, 1, 0, 0, 0, 194,
-        192, 1, 0, 0, 0, 194, 195, 1, 0, 0, 0, 195, 19, 1, 0, 0, 0, 196, 194, 1, 0, 0, 0, 197, 198,
-        3, 68, 34, 0, 198, 199, 5, 7, 0, 0, 199, 200, 3, 58, 29, 0, 200, 201, 5, 8, 0, 0, 201,
-        202, 3, 22, 11, 0, 202, 21, 1, 0, 0, 0, 203, 204, 5, 9, 0, 0, 204, 205, 5, 3, 0, 0, 205,
-        210, 3, 54, 27, 0, 206, 207, 5, 2, 0, 0, 207, 209, 3, 54, 27, 0, 208, 206, 1, 0, 0, 0,
-        209, 212, 1, 0, 0, 0, 210, 211, 1, 0, 0, 0, 210, 208, 1, 0, 0, 0, 211, 213, 1, 0, 0, 0,
-        212, 210, 1, 0, 0, 0, 213, 214, 5, 4, 0, 0, 214, 23, 1, 0, 0, 0, 215, 216, 3, 68, 34, 0,
-        216, 217, 3, 26, 13, 0, 217, 25, 1, 0, 0, 0, 218, 219, 5, 9, 0, 0, 219, 220, 3, 54, 27,
-        0, 220, 27, 1, 0, 0, 0, 221, 222, 3, 68, 34, 0, 222, 223, 5, 7, 0, 0, 223, 224, 3, 58,
-        29, 0, 224, 225, 5, 8, 0, 0, 225, 29, 1, 0, 0, 0, 226, 227, 3, 68, 34, 0, 227, 31, 1, 0,
-        0, 0, 228, 237, 5, 5, 0, 0, 229, 234, 3, 34, 17, 0, 230, 231, 5, 2, 0, 0, 231, 233, 3,
-        34, 17, 0, 232, 230, 1, 0, 0, 0, 233, 236, 1, 0, 0, 0, 234, 235, 1, 0, 0, 0, 234, 232,
-        1, 0, 0, 0, 235, 238, 1, 0, 0, 0, 236, 234, 1, 0, 0, 0, 237, 229, 1, 0, 0, 0, 237, 238,
-        1, 0, 0, 0, 238, 239, 1, 0, 0, 0, 239, 240, 5, 6, 0, 0, 240, 33, 1, 0, 0, 0, 241, 242, 5,
-        35, 0, 0, 242, 243, 3, 66, 33, 0, 243, 248, 3, 68, 34, 0, 244, 245, 5, 7, 0, 0, 245, 246,
-        3, 58, 29, 0, 246, 247, 5, 8, 0, 0, 247, 249, 1, 0, 0, 0, 248, 244, 1, 0, 0, 0, 248, 249,
-        1, 0, 0, 0, 249, 35, 1, 0, 0, 0, 250, 262, 5, 3, 0, 0, 251, 252, 3, 38, 19, 0, 252, 253,
-        5, 1, 0, 0, 253, 259, 1, 0, 0, 0, 254, 256, 3, 50, 25, 0, 255, 257, 5, 1, 0, 0, 256, 255,
-        1, 0, 0, 0, 256, 257, 1, 0, 0, 0, 257, 259, 1, 0, 0, 0, 258, 251, 1, 0, 0, 0, 258, 254,
-        1, 0, 0, 0, 259, 261, 1, 0, 0, 0, 260, 258, 1, 0, 0, 0, 261, 264, 1, 0, 0, 0, 262, 263,
-        1, 0, 0, 0, 262, 260, 1, 0, 0, 0, 263, 265, 1, 0, 0, 0, 264, 262, 1, 0, 0, 0, 265, 266,
-        5, 4, 0, 0, 266, 37, 1, 0, 0, 0, 267, 273, 3, 42, 21, 0, 268, 273, 3, 52, 26, 0, 269, 273,
-        3, 8, 4, 0, 270, 273, 3, 18, 9, 0, 271, 273, 3, 54, 27, 0, 272, 267, 1, 0, 0, 0, 272, 268,
-        1, 0, 0, 0, 272, 269, 1, 0, 0, 0, 272, 270, 1, 0, 0, 0, 272, 271, 1, 0, 0, 0, 273, 39, 1,
-        0, 0, 0, 274, 275, 3, 68, 34, 0, 275, 284, 5, 5, 0, 0, 276, 281, 3, 54, 27, 0, 277, 278,
-        5, 2, 0, 0, 278, 280, 3, 54, 27, 0, 279, 277, 1, 0, 0, 0, 280, 283, 1, 0, 0, 0, 281, 282,
-        1, 0, 0, 0, 281, 279, 1, 0, 0, 0, 282, 285, 1, 0, 0, 0, 283, 281, 1, 0, 0, 0, 284, 276,
-        1, 0, 0, 0, 284, 285, 1, 0, 0, 0, 285, 286, 1, 0, 0, 0, 286, 287, 5, 6, 0, 0, 287, 41, 1,
-        0, 0, 0, 288, 289, 3, 64, 32, 0, 289, 290, 3, 72, 36, 0, 290, 291, 3, 54, 27, 0, 291,
-        43, 1, 0, 0, 0, 292, 293, 5, 38, 0, 0, 293, 294, 3, 36, 18, 0, 294, 45, 1, 0, 0, 0, 295,
-        296, 5, 38, 0, 0, 296, 297, 5, 36, 0, 0, 297, 298, 3, 54, 27, 0, 298, 299, 3, 36, 18,
-        0, 299, 47, 1, 0, 0, 0, 300, 301, 5, 36, 0, 0, 301, 302, 3, 54, 27, 0, 302, 303, 3, 36,
-        18, 0, 303, 49, 1, 0, 0, 0, 304, 308, 3, 48, 24, 0, 305, 307, 3, 46, 23, 0, 306, 305,
-        1, 0, 0, 0, 307, 310, 1, 0, 0, 0, 308, 309, 1, 0, 0, 0, 308, 306, 1, 0, 0, 0, 309, 312,
-        1, 0, 0, 0, 310, 308, 1, 0, 0, 0, 311, 313, 3, 44, 22, 0, 312, 311, 1, 0, 0, 0, 312, 313,
-        1, 0, 0, 0, 313, 51, 1, 0, 0, 0, 314, 316, 5, 43, 0, 0, 315, 317, 3, 54, 27, 0, 316, 315,
-        1, 0, 0, 0, 316, 317, 1, 0, 0, 0, 317, 53, 1, 0, 0, 0, 318, 319, 6, 27, -1, 0, 319, 320,
-        5, 5, 0, 0, 320, 321, 3, 54, 27, 0, 321, 322, 5, 6, 0, 0, 322, 328, 1, 0, 0, 0, 323, 324,
-        3, 82, 41, 0, 324, 325, 3, 54, 27, 11, 325, 328, 1, 0, 0, 0, 326, 328, 3, 60, 30, 0, 327,
-        318, 1, 0, 0, 0, 327, 323, 1, 0, 0, 0, 327, 326, 1, 0, 0, 0, 328, 367, 1, 0, 0, 0, 329,
-        330, 10, 10, 0, 0, 330, 331, 3, 84, 42, 0, 331, 332, 3, 54, 27, 11, 332, 366, 1, 0, 0,
-        0, 333, 334, 10, 9, 0, 0, 334, 335, 3, 74, 37, 0, 335, 336, 3, 54, 27, 10, 336, 366,
-        1, 0, 0, 0, 337, 338, 10, 8, 0, 0, 338, 339, 3, 76, 38, 0, 339, 340, 3, 54, 27, 9, 340,
-        366, 1, 0, 0, 0, 341, 342, 10, 7, 0, 0, 342, 343, 3, 78, 39, 0, 343, 344, 3, 54, 27, 8,
-        344, 366, 1, 0, 0, 0, 345, 346, 10, 6, 0, 0, 346, 347, 3, 80, 40, 0, 347, 348, 3, 54,
-        27, 7, 348, 366, 1, 0, 0, 0, 349, 350, 10, 5, 0, 0, 350, 351, 3, 86, 43, 0, 351, 352,
-        3, 54, 27, 6, 352, 366, 1, 0, 0, 0, 353, 354, 10, 4, 0, 0, 354, 355, 3, 88, 44, 0, 355,
-        356, 3, 54, 27, 5, 356, 366, 1, 0, 0, 0, 357, 358, 10, 3, 0, 0, 358, 359, 3, 90, 45, 0,
-        359, 360, 3, 54, 27, 4, 360, 366, 1, 0, 0, 0, 361, 362, 10, 2, 0, 0, 362, 363, 3, 92,
-        46, 0, 363, 364, 3, 54, 27, 3, 364, 366, 1, 0, 0, 0, 365, 329, 1, 0, 0, 0, 365, 333, 1,
-        0, 0, 0, 365, 337, 1, 0, 0, 0, 365, 341, 1, 0, 0, 0, 365, 345, 1, 0, 0, 0, 365, 349, 1,
-        0, 0, 0, 365, 353, 1, 0, 0, 0, 365, 357, 1, 0, 0, 0, 365, 361, 1, 0, 0, 0, 366, 369, 1,
-        0, 0, 0, 367, 365, 1, 0, 0, 0, 367, 368, 1, 0, 0, 0, 368, 55, 1, 0, 0, 0, 369, 367, 1, 0,
-        0, 0, 370, 373, 5, 50, 0, 0, 371, 373, 3, 64, 32, 0, 372, 370, 1, 0, 0, 0, 372, 371, 1,
-        0, 0, 0, 373, 57, 1, 0, 0, 0, 374, 377, 5, 50, 0, 0, 375, 377, 3, 64, 32, 0, 376, 374,
-        1, 0, 0, 0, 376, 375, 1, 0, 0, 0, 377, 59, 1, 0, 0, 0, 378, 386, 5, 50, 0, 0, 379, 386,
-        5, 51, 0, 0, 380, 386, 5, 52, 0, 0, 381, 386, 5, 47, 0, 0, 382, 386, 5, 48, 0, 0, 383,
-        386, 3, 40, 20, 0, 384, 386, 3, 64, 32, 0, 385, 378, 1, 0, 0, 0, 385, 379, 1, 0, 0, 0,
-        385, 380, 1, 0, 0, 0, 385, 381, 1, 0, 0, 0, 385, 382, 1, 0, 0, 0, 385, 383, 1, 0, 0, 0,
-        385, 384, 1, 0, 0, 0, 386, 61, 1, 0, 0, 0, 387, 392, 3, 68, 34, 0, 388, 389, 5, 7, 0, 0,
-        389, 390, 3, 56, 28, 0, 390, 391, 5, 8, 0, 0, 391, 393, 1, 0, 0, 0, 392, 388, 1, 0, 0,
-        0, 392, 393, 1, 0, 0, 0, 393, 63, 1, 0, 0, 0, 394, 399, 3, 62, 31, 0, 395, 396, 5, 10,
-        0, 0, 396, 398, 3, 62, 31, 0, 397, 395, 1, 0, 0, 0, 398, 401, 1, 0, 0, 0, 399, 397, 1,
-        0, 0, 0, 399, 400, 1, 0, 0, 0, 400, 65, 1, 0, 0, 0, 401, 399, 1, 0, 0, 0, 402, 403, 7, 0,
-        0, 0, 403, 67, 1, 0, 0, 0, 404, 405, 5, 49, 0, 0, 405, 69, 1, 0, 0, 0, 406, 407, 5, 49,
-        0, 0, 407, 71, 1, 0, 0, 0, 408, 409, 7, 1, 0, 0, 409, 73, 1, 0, 0, 0, 410, 411, 7, 2, 0,
-        0, 411, 75, 1, 0, 0, 0, 412, 413, 7, 3, 0, 0, 413, 77, 1, 0, 0, 0, 414, 415, 7, 4, 0, 0,
-        415, 79, 1, 0, 0, 0, 416, 417, 7, 5, 0, 0, 417, 81, 1, 0, 0, 0, 418, 419, 7, 6, 0, 0, 419,
-        83, 1, 0, 0, 0, 420, 421, 7, 7, 0, 0, 421, 85, 1, 0, 0, 0, 422, 423, 5, 30, 0, 0, 423, 87,
-        1, 0, 0, 0, 424, 425, 5, 31, 0, 0, 425, 89, 1, 0, 0, 0, 426, 427, 5, 32, 0, 0, 427, 91,
-        1, 0, 0, 0, 428, 429, 5, 33, 0, 0, 429, 93, 1, 0, 0, 0, 34, 96, 98, 107, 110, 115, 129,
-        134, 138, 149, 174, 185, 190, 194, 210, 234, 237, 248, 256, 258, 262, 272, 281,
-        284, 308, 312, 316, 327, 365, 367, 372, 376, 385, 392, 399
+        7, 46, 2, 47, 7, 47, 2, 48, 7, 48, 2, 49, 7, 49, 2, 50, 7, 50, 2, 51, 7, 51, 2, 52, 7, 52,
+        1, 0, 3, 0, 108, 8, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 116, 8, 1, 1, 1, 1, 1, 1, 2,
+        1, 2, 1, 2, 3, 2, 123, 8, 2, 1, 2, 1, 2, 1, 3, 1, 3, 1, 3, 1, 3, 1, 3, 1, 3, 1, 4, 1, 4, 1, 4,
+        1, 4, 3, 4, 137, 8, 4, 1, 4, 1, 4, 1, 4, 3, 4, 142, 8, 4, 5, 4, 144, 8, 4, 10, 4, 12, 4, 147,
+        9, 4, 1, 5, 1, 5, 1, 5, 1, 5, 1, 5, 1, 5, 5, 5, 155, 8, 5, 10, 5, 12, 5, 158, 9, 5, 1, 5, 1,
+        5, 1, 6, 1, 6, 1, 6, 1, 6, 1, 6, 1, 6, 1, 6, 1, 7, 1, 7, 1, 7, 1, 7, 1, 7, 1, 7, 1, 7, 1, 8, 1,
+        8, 1, 8, 1, 8, 5, 8, 180, 8, 8, 10, 8, 12, 8, 183, 9, 8, 1, 8, 1, 8, 1, 8, 1, 8, 1, 9, 4, 9,
+        190, 8, 9, 11, 9, 12, 9, 191, 1, 10, 1, 10, 3, 10, 196, 8, 10, 1, 11, 1, 11, 1, 11, 1, 11,
+        3, 11, 202, 8, 11, 1, 11, 1, 11, 1, 11, 1, 11, 3, 11, 208, 8, 11, 5, 11, 210, 8, 11, 10,
+        11, 12, 11, 213, 9, 11, 1, 12, 1, 12, 1, 12, 1, 12, 1, 12, 1, 12, 1, 13, 1, 13, 1, 13, 1,
+        13, 1, 13, 5, 13, 226, 8, 13, 10, 13, 12, 13, 229, 9, 13, 1, 13, 1, 13, 1, 14, 1, 14, 1,
+        14, 1, 15, 1, 15, 1, 15, 1, 16, 1, 16, 1, 16, 1, 16, 1, 16, 1, 17, 1, 17, 1, 18, 1, 18, 1,
+        18, 1, 18, 5, 18, 250, 8, 18, 10, 18, 12, 18, 253, 9, 18, 3, 18, 255, 8, 18, 1, 18, 1,
+        18, 1, 19, 1, 19, 1, 19, 1, 19, 1, 19, 1, 19, 1, 19, 3, 19, 266, 8, 19, 1, 20, 1, 20, 1,
+        20, 1, 20, 1, 20, 1, 20, 3, 20, 274, 8, 20, 5, 20, 276, 8, 20, 10, 20, 12, 20, 279, 9,
+        20, 1, 20, 1, 20, 1, 21, 1, 21, 1, 21, 1, 21, 1, 21, 3, 21, 288, 8, 21, 1, 22, 1, 22, 1,
+        22, 1, 22, 1, 22, 5, 22, 295, 8, 22, 10, 22, 12, 22, 298, 9, 22, 3, 22, 300, 8, 22, 1,
+        22, 1, 22, 1, 23, 1, 23, 1, 23, 1, 23, 1, 24, 1, 24, 1, 25, 1, 25, 1, 25, 1, 26, 1, 26, 1,
+        26, 1, 26, 1, 26, 1, 27, 1, 27, 1, 27, 1, 27, 1, 28, 1, 28, 5, 28, 324, 8, 28, 10, 28, 12,
+        28, 327, 9, 28, 1, 28, 3, 28, 330, 8, 28, 1, 29, 1, 29, 3, 29, 334, 8, 29, 1, 30, 1, 30,
+        1, 31, 1, 31, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 3, 32, 349,
+        8, 32, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32,
+        1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32,
+        1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 1, 32, 5, 32, 387,
+        8, 32, 10, 32, 12, 32, 390, 9, 32, 1, 33, 1, 33, 3, 33, 394, 8, 33, 1, 34, 1, 34, 3, 34,
+        398, 8, 34, 1, 35, 1, 35, 1, 35, 1, 35, 1, 35, 1, 35, 3, 35, 406, 8, 35, 1, 36, 1, 36, 1,
+        36, 1, 36, 1, 36, 3, 36, 413, 8, 36, 1, 37, 1, 37, 1, 37, 3, 37, 418, 8, 37, 1, 38, 1, 38,
+        1, 39, 1, 39, 1, 40, 1, 40, 1, 41, 1, 41, 1, 42, 1, 42, 1, 43, 1, 43, 1, 44, 1, 44, 1, 45,
+        1, 45, 1, 46, 1, 46, 1, 47, 1, 47, 1, 48, 1, 48, 1, 49, 1, 49, 1, 50, 1, 50, 1, 51, 1, 51,
+        1, 52, 1, 52, 1, 52, 7, 156, 181, 227, 251, 277, 296, 325, 1, 64, 53, 0, 2, 4, 6, 8, 10,
+        12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54,
+        56, 58, 60, 62, 64, 66, 68, 70, 72, 74, 76, 78, 80, 82, 84, 86, 88, 90, 92, 94, 96, 98,
+        100, 102, 104, 0, 9, 6, 0, 15, 15, 17, 18, 20, 20, 22, 22, 24, 24, 53, 53, 5, 0, 13, 13,
+        15, 15, 17, 20, 22, 25, 53, 53, 2, 0, 42, 42, 45, 50, 2, 0, 36, 37, 40, 41, 1, 0, 36, 37,
+        1, 0, 2, 3, 2, 0, 4, 5, 43, 44, 1, 0, 6, 7, 2, 0, 8, 8, 38, 39, 449, 0, 107, 1, 0, 0, 0, 2,
+        115, 1, 0, 0, 0, 4, 122, 1, 0, 0, 0, 6, 126, 1, 0, 0, 0, 8, 132, 1, 0, 0, 0, 10, 148, 1, 0,
+        0, 0, 12, 161, 1, 0, 0, 0, 14, 168, 1, 0, 0, 0, 16, 175, 1, 0, 0, 0, 18, 189, 1, 0, 0, 0,
+        20, 195, 1, 0, 0, 0, 22, 197, 1, 0, 0, 0, 24, 214, 1, 0, 0, 0, 26, 220, 1, 0, 0, 0, 28, 232,
+        1, 0, 0, 0, 30, 235, 1, 0, 0, 0, 32, 238, 1, 0, 0, 0, 34, 243, 1, 0, 0, 0, 36, 245, 1, 0,
+        0, 0, 38, 258, 1, 0, 0, 0, 40, 267, 1, 0, 0, 0, 42, 287, 1, 0, 0, 0, 44, 289, 1, 0, 0, 0,
+        46, 303, 1, 0, 0, 0, 48, 307, 1, 0, 0, 0, 50, 309, 1, 0, 0, 0, 52, 312, 1, 0, 0, 0, 54, 317,
+        1, 0, 0, 0, 56, 321, 1, 0, 0, 0, 58, 331, 1, 0, 0, 0, 60, 335, 1, 0, 0, 0, 62, 337, 1, 0,
+        0, 0, 64, 348, 1, 0, 0, 0, 66, 393, 1, 0, 0, 0, 68, 397, 1, 0, 0, 0, 70, 405, 1, 0, 0, 0,
+        72, 407, 1, 0, 0, 0, 74, 414, 1, 0, 0, 0, 76, 419, 1, 0, 0, 0, 78, 421, 1, 0, 0, 0, 80, 423,
+        1, 0, 0, 0, 82, 425, 1, 0, 0, 0, 84, 427, 1, 0, 0, 0, 86, 429, 1, 0, 0, 0, 88, 431, 1, 0,
+        0, 0, 90, 433, 1, 0, 0, 0, 92, 435, 1, 0, 0, 0, 94, 437, 1, 0, 0, 0, 96, 439, 1, 0, 0, 0,
+        98, 441, 1, 0, 0, 0, 100, 443, 1, 0, 0, 0, 102, 445, 1, 0, 0, 0, 104, 447, 1, 0, 0, 0, 106,
+        108, 3, 18, 9, 0, 107, 106, 1, 0, 0, 0, 107, 108, 1, 0, 0, 0, 108, 109, 1, 0, 0, 0, 109,
+        110, 5, 0, 0, 1, 110, 1, 1, 0, 0, 0, 111, 116, 3, 6, 3, 0, 112, 116, 3, 10, 5, 0, 113, 116,
+        3, 12, 6, 0, 114, 116, 3, 14, 7, 0, 115, 111, 1, 0, 0, 0, 115, 112, 1, 0, 0, 0, 115, 113,
+        1, 0, 0, 0, 115, 114, 1, 0, 0, 0, 116, 117, 1, 0, 0, 0, 117, 118, 5, 52, 0, 0, 118, 3, 1,
+        0, 0, 0, 119, 123, 3, 8, 4, 0, 120, 123, 3, 22, 11, 0, 121, 123, 3, 16, 8, 0, 122, 119,
+        1, 0, 0, 0, 122, 120, 1, 0, 0, 0, 122, 121, 1, 0, 0, 0, 123, 124, 1, 0, 0, 0, 124, 125,
+        5, 52, 0, 0, 125, 5, 1, 0, 0, 0, 126, 127, 5, 17, 0, 0, 127, 128, 3, 76, 38, 0, 128, 129,
+        3, 80, 40, 0, 129, 130, 3, 36, 18, 0, 130, 131, 3, 40, 20, 0, 131, 7, 1, 0, 0, 0, 132,
+        133, 5, 12, 0, 0, 133, 136, 3, 76, 38, 0, 134, 137, 3, 28, 14, 0, 135, 137, 3, 24, 12,
+        0, 136, 134, 1, 0, 0, 0, 136, 135, 1, 0, 0, 0, 137, 145, 1, 0, 0, 0, 138, 141, 5, 1, 0,
+        0, 139, 142, 3, 28, 14, 0, 140, 142, 3, 24, 12, 0, 141, 139, 1, 0, 0, 0, 141, 140, 1,
+        0, 0, 0, 142, 144, 1, 0, 0, 0, 143, 138, 1, 0, 0, 0, 144, 147, 1, 0, 0, 0, 145, 143, 1,
+        0, 0, 0, 145, 146, 1, 0, 0, 0, 146, 9, 1, 0, 0, 0, 147, 145, 1, 0, 0, 0, 148, 149, 5, 19,
+        0, 0, 149, 150, 3, 80, 40, 0, 150, 156, 5, 30, 0, 0, 151, 152, 3, 22, 11, 0, 152, 153,
+        5, 52, 0, 0, 153, 155, 1, 0, 0, 0, 154, 151, 1, 0, 0, 0, 155, 158, 1, 0, 0, 0, 156, 157,
+        1, 0, 0, 0, 156, 154, 1, 0, 0, 0, 157, 159, 1, 0, 0, 0, 158, 156, 1, 0, 0, 0, 159, 160,
+        5, 31, 0, 0, 160, 11, 1, 0, 0, 0, 161, 162, 5, 23, 0, 0, 162, 163, 3, 80, 40, 0, 163, 164,
+        5, 26, 0, 0, 164, 165, 3, 82, 41, 0, 165, 166, 5, 27, 0, 0, 166, 167, 3, 40, 20, 0, 167,
+        13, 1, 0, 0, 0, 168, 169, 5, 24, 0, 0, 169, 170, 3, 80, 40, 0, 170, 171, 5, 26, 0, 0, 171,
+        172, 3, 82, 41, 0, 172, 173, 5, 27, 0, 0, 173, 174, 3, 40, 20, 0, 174, 15, 1, 0, 0, 0,
+        175, 176, 5, 24, 0, 0, 176, 181, 3, 80, 40, 0, 177, 178, 5, 1, 0, 0, 178, 180, 3, 80,
+        40, 0, 179, 177, 1, 0, 0, 0, 180, 183, 1, 0, 0, 0, 181, 182, 1, 0, 0, 0, 181, 179, 1, 0,
+        0, 0, 182, 184, 1, 0, 0, 0, 183, 181, 1, 0, 0, 0, 184, 185, 5, 26, 0, 0, 185, 186, 3, 82,
+        41, 0, 186, 187, 5, 27, 0, 0, 187, 17, 1, 0, 0, 0, 188, 190, 3, 20, 10, 0, 189, 188, 1,
+        0, 0, 0, 190, 191, 1, 0, 0, 0, 191, 189, 1, 0, 0, 0, 191, 192, 1, 0, 0, 0, 192, 19, 1, 0,
+        0, 0, 193, 196, 3, 2, 1, 0, 194, 196, 3, 4, 2, 0, 195, 193, 1, 0, 0, 0, 195, 194, 1, 0,
+        0, 0, 196, 21, 1, 0, 0, 0, 197, 198, 5, 13, 0, 0, 198, 201, 3, 76, 38, 0, 199, 202, 3,
+        34, 17, 0, 200, 202, 3, 32, 16, 0, 201, 199, 1, 0, 0, 0, 201, 200, 1, 0, 0, 0, 202, 211,
+        1, 0, 0, 0, 203, 207, 5, 1, 0, 0, 204, 208, 3, 22, 11, 0, 205, 208, 3, 34, 17, 0, 206,
+        208, 3, 32, 16, 0, 207, 204, 1, 0, 0, 0, 207, 205, 1, 0, 0, 0, 207, 206, 1, 0, 0, 0, 208,
+        210, 1, 0, 0, 0, 209, 203, 1, 0, 0, 0, 210, 213, 1, 0, 0, 0, 211, 209, 1, 0, 0, 0, 211,
+        212, 1, 0, 0, 0, 212, 23, 1, 0, 0, 0, 213, 211, 1, 0, 0, 0, 214, 215, 3, 80, 40, 0, 215,
+        216, 5, 28, 0, 0, 216, 217, 3, 68, 34, 0, 217, 218, 5, 29, 0, 0, 218, 219, 3, 26, 13,
+        0, 219, 25, 1, 0, 0, 0, 220, 221, 5, 42, 0, 0, 221, 222, 5, 30, 0, 0, 222, 227, 3, 62,
+        31, 0, 223, 224, 5, 1, 0, 0, 224, 226, 3, 62, 31, 0, 225, 223, 1, 0, 0, 0, 226, 229, 1,
+        0, 0, 0, 227, 228, 1, 0, 0, 0, 227, 225, 1, 0, 0, 0, 228, 230, 1, 0, 0, 0, 229, 227, 1,
+        0, 0, 0, 230, 231, 5, 31, 0, 0, 231, 27, 1, 0, 0, 0, 232, 233, 3, 80, 40, 0, 233, 234,
+        3, 30, 15, 0, 234, 29, 1, 0, 0, 0, 235, 236, 5, 42, 0, 0, 236, 237, 3, 62, 31, 0, 237,
+        31, 1, 0, 0, 0, 238, 239, 3, 80, 40, 0, 239, 240, 5, 28, 0, 0, 240, 241, 3, 68, 34, 0,
+        241, 242, 5, 29, 0, 0, 242, 33, 1, 0, 0, 0, 243, 244, 3, 80, 40, 0, 244, 35, 1, 0, 0, 0,
+        245, 254, 5, 26, 0, 0, 246, 251, 3, 38, 19, 0, 247, 248, 5, 1, 0, 0, 248, 250, 3, 38,
+        19, 0, 249, 247, 1, 0, 0, 0, 250, 253, 1, 0, 0, 0, 251, 252, 1, 0, 0, 0, 251, 249, 1, 0,
+        0, 0, 252, 255, 1, 0, 0, 0, 253, 251, 1, 0, 0, 0, 254, 246, 1, 0, 0, 0, 254, 255, 1, 0,
+        0, 0, 255, 256, 1, 0, 0, 0, 256, 257, 5, 27, 0, 0, 257, 37, 1, 0, 0, 0, 258, 259, 5, 13,
+        0, 0, 259, 260, 3, 76, 38, 0, 260, 265, 3, 80, 40, 0, 261, 262, 5, 28, 0, 0, 262, 263,
+        3, 68, 34, 0, 263, 264, 5, 29, 0, 0, 264, 266, 1, 0, 0, 0, 265, 261, 1, 0, 0, 0, 265, 266,
+        1, 0, 0, 0, 266, 39, 1, 0, 0, 0, 267, 277, 5, 30, 0, 0, 268, 269, 3, 42, 21, 0, 269, 270,
+        5, 52, 0, 0, 270, 276, 1, 0, 0, 0, 271, 273, 3, 56, 28, 0, 272, 274, 5, 52, 0, 0, 273,
+        272, 1, 0, 0, 0, 273, 274, 1, 0, 0, 0, 274, 276, 1, 0, 0, 0, 275, 268, 1, 0, 0, 0, 275,
+        271, 1, 0, 0, 0, 276, 279, 1, 0, 0, 0, 277, 278, 1, 0, 0, 0, 277, 275, 1, 0, 0, 0, 278,
+        280, 1, 0, 0, 0, 279, 277, 1, 0, 0, 0, 280, 281, 5, 31, 0, 0, 281, 41, 1, 0, 0, 0, 282,
+        288, 3, 46, 23, 0, 283, 288, 3, 58, 29, 0, 284, 288, 3, 8, 4, 0, 285, 288, 3, 22, 11,
+        0, 286, 288, 3, 64, 32, 0, 287, 282, 1, 0, 0, 0, 287, 283, 1, 0, 0, 0, 287, 284, 1, 0,
+        0, 0, 287, 285, 1, 0, 0, 0, 287, 286, 1, 0, 0, 0, 288, 43, 1, 0, 0, 0, 289, 290, 3, 80,
+        40, 0, 290, 299, 5, 26, 0, 0, 291, 296, 3, 60, 30, 0, 292, 293, 5, 1, 0, 0, 293, 295,
+        3, 60, 30, 0, 294, 292, 1, 0, 0, 0, 295, 298, 1, 0, 0, 0, 296, 297, 1, 0, 0, 0, 296, 294,
+        1, 0, 0, 0, 297, 300, 1, 0, 0, 0, 298, 296, 1, 0, 0, 0, 299, 291, 1, 0, 0, 0, 299, 300,
+        1, 0, 0, 0, 300, 301, 1, 0, 0, 0, 301, 302, 5, 27, 0, 0, 302, 45, 1, 0, 0, 0, 303, 304,
+        3, 74, 37, 0, 304, 305, 3, 84, 42, 0, 305, 306, 3, 62, 31, 0, 306, 47, 1, 0, 0, 0, 307,
+        308, 3, 62, 31, 0, 308, 49, 1, 0, 0, 0, 309, 310, 5, 16, 0, 0, 310, 311, 3, 40, 20, 0,
+        311, 51, 1, 0, 0, 0, 312, 313, 5, 16, 0, 0, 313, 314, 5, 14, 0, 0, 314, 315, 3, 48, 24,
+        0, 315, 316, 3, 40, 20, 0, 316, 53, 1, 0, 0, 0, 317, 318, 5, 14, 0, 0, 318, 319, 3, 48,
+        24, 0, 319, 320, 3, 40, 20, 0, 320, 55, 1, 0, 0, 0, 321, 325, 3, 54, 27, 0, 322, 324,
+        3, 52, 26, 0, 323, 322, 1, 0, 0, 0, 324, 327, 1, 0, 0, 0, 325, 326, 1, 0, 0, 0, 325, 323,
+        1, 0, 0, 0, 326, 329, 1, 0, 0, 0, 327, 325, 1, 0, 0, 0, 328, 330, 3, 50, 25, 0, 329, 328,
+        1, 0, 0, 0, 329, 330, 1, 0, 0, 0, 330, 57, 1, 0, 0, 0, 331, 333, 5, 21, 0, 0, 332, 334,
+        3, 62, 31, 0, 333, 332, 1, 0, 0, 0, 333, 334, 1, 0, 0, 0, 334, 59, 1, 0, 0, 0, 335, 336,
+        3, 62, 31, 0, 336, 61, 1, 0, 0, 0, 337, 338, 3, 64, 32, 0, 338, 63, 1, 0, 0, 0, 339, 340,
+        6, 32, -1, 0, 340, 341, 5, 26, 0, 0, 341, 342, 3, 64, 32, 0, 342, 343, 5, 27, 0, 0, 343,
+        349, 1, 0, 0, 0, 344, 345, 3, 86, 43, 0, 345, 346, 3, 64, 32, 11, 346, 349, 1, 0, 0, 0,
+        347, 349, 3, 70, 35, 0, 348, 339, 1, 0, 0, 0, 348, 344, 1, 0, 0, 0, 348, 347, 1, 0, 0,
+        0, 349, 388, 1, 0, 0, 0, 350, 351, 10, 10, 0, 0, 351, 352, 3, 96, 48, 0, 352, 353, 3,
+        64, 32, 11, 353, 387, 1, 0, 0, 0, 354, 355, 10, 9, 0, 0, 355, 356, 3, 88, 44, 0, 356,
+        357, 3, 64, 32, 10, 357, 387, 1, 0, 0, 0, 358, 359, 10, 8, 0, 0, 359, 360, 3, 90, 45,
+        0, 360, 361, 3, 64, 32, 9, 361, 387, 1, 0, 0, 0, 362, 363, 10, 7, 0, 0, 363, 364, 3, 92,
+        46, 0, 364, 365, 3, 64, 32, 8, 365, 387, 1, 0, 0, 0, 366, 367, 10, 6, 0, 0, 367, 368,
+        3, 94, 47, 0, 368, 369, 3, 64, 32, 7, 369, 387, 1, 0, 0, 0, 370, 371, 10, 5, 0, 0, 371,
+        372, 3, 98, 49, 0, 372, 373, 3, 64, 32, 6, 373, 387, 1, 0, 0, 0, 374, 375, 10, 4, 0, 0,
+        375, 376, 3, 100, 50, 0, 376, 377, 3, 64, 32, 5, 377, 387, 1, 0, 0, 0, 378, 379, 10,
+        3, 0, 0, 379, 380, 3, 102, 51, 0, 380, 381, 3, 64, 32, 4, 381, 387, 1, 0, 0, 0, 382, 383,
+        10, 2, 0, 0, 383, 384, 3, 104, 52, 0, 384, 385, 3, 64, 32, 3, 385, 387, 1, 0, 0, 0, 386,
+        350, 1, 0, 0, 0, 386, 354, 1, 0, 0, 0, 386, 358, 1, 0, 0, 0, 386, 362, 1, 0, 0, 0, 386,
+        366, 1, 0, 0, 0, 386, 370, 1, 0, 0, 0, 386, 374, 1, 0, 0, 0, 386, 378, 1, 0, 0, 0, 386,
+        382, 1, 0, 0, 0, 387, 390, 1, 0, 0, 0, 388, 386, 1, 0, 0, 0, 388, 389, 1, 0, 0, 0, 389,
+        65, 1, 0, 0, 0, 390, 388, 1, 0, 0, 0, 391, 394, 5, 9, 0, 0, 392, 394, 3, 72, 36, 0, 393,
+        391, 1, 0, 0, 0, 393, 392, 1, 0, 0, 0, 394, 67, 1, 0, 0, 0, 395, 398, 5, 9, 0, 0, 396, 398,
+        3, 72, 36, 0, 397, 395, 1, 0, 0, 0, 397, 396, 1, 0, 0, 0, 398, 69, 1, 0, 0, 0, 399, 406,
+        5, 9, 0, 0, 400, 406, 5, 10, 0, 0, 401, 406, 5, 11, 0, 0, 402, 406, 5, 25, 0, 0, 403, 406,
+        3, 44, 22, 0, 404, 406, 3, 74, 37, 0, 405, 399, 1, 0, 0, 0, 405, 400, 1, 0, 0, 0, 405,
+        401, 1, 0, 0, 0, 405, 402, 1, 0, 0, 0, 405, 403, 1, 0, 0, 0, 405, 404, 1, 0, 0, 0, 406,
+        71, 1, 0, 0, 0, 407, 412, 3, 80, 40, 0, 408, 409, 5, 28, 0, 0, 409, 410, 3, 66, 33, 0,
+        410, 411, 5, 29, 0, 0, 411, 413, 1, 0, 0, 0, 412, 408, 1, 0, 0, 0, 412, 413, 1, 0, 0, 0,
+        413, 73, 1, 0, 0, 0, 414, 417, 3, 72, 36, 0, 415, 416, 5, 51, 0, 0, 416, 418, 3, 72, 36,
+        0, 417, 415, 1, 0, 0, 0, 417, 418, 1, 0, 0, 0, 418, 75, 1, 0, 0, 0, 419, 420, 7, 0, 0, 0,
+        420, 77, 1, 0, 0, 0, 421, 422, 7, 1, 0, 0, 422, 79, 1, 0, 0, 0, 423, 424, 3, 78, 39, 0,
+        424, 81, 1, 0, 0, 0, 425, 426, 5, 53, 0, 0, 426, 83, 1, 0, 0, 0, 427, 428, 7, 2, 0, 0, 428,
+        85, 1, 0, 0, 0, 429, 430, 7, 3, 0, 0, 430, 87, 1, 0, 0, 0, 431, 432, 7, 4, 0, 0, 432, 89,
+        1, 0, 0, 0, 433, 434, 7, 5, 0, 0, 434, 91, 1, 0, 0, 0, 435, 436, 7, 6, 0, 0, 436, 93, 1,
+        0, 0, 0, 437, 438, 7, 7, 0, 0, 438, 95, 1, 0, 0, 0, 439, 440, 7, 8, 0, 0, 440, 97, 1, 0,
+        0, 0, 441, 442, 5, 32, 0, 0, 442, 99, 1, 0, 0, 0, 443, 444, 5, 34, 0, 0, 444, 101, 1, 0,
+        0, 0, 445, 446, 5, 33, 0, 0, 446, 103, 1, 0, 0, 0, 447, 448, 5, 35, 0, 0, 448, 105, 1,
+        0, 0, 0, 34, 107, 115, 122, 136, 141, 145, 156, 181, 191, 195, 201, 207, 211, 227,
+        251, 254, 265, 273, 275, 277, 287, 296, 299, 325, 329, 333, 348, 386, 388, 393,
+        397, 405, 412, 417
     ];
     static __ATN;
     static get _ATN() {
@@ -60905,17 +67388,8 @@ class DaedalusFileContext extends ParserRuleContext {
     EOF() {
         return this.getToken(DaedalusParser.EOF, 0);
     }
-    blockDef(i) {
-        if (i === undefined) {
-            return this.getRuleContexts(BlockDefContext);
-        }
-        return this.getRuleContext(i, BlockDefContext);
-    }
-    inlineDef(i) {
-        if (i === undefined) {
-            return this.getRuleContexts(InlineDefContext);
-        }
-        return this.getRuleContext(i, InlineDefContext);
+    mainBlock() {
+        return this.getRuleContext(0, MainBlockContext);
     }
     get ruleIndex() {
         return DaedalusParser.RULE_daedalusFile;
@@ -60932,6 +67406,9 @@ class DaedalusFileContext extends ParserRuleContext {
 class BlockDefContext extends ParserRuleContext {
     constructor(parent, invokingState) {
         super(parent, invokingState);
+    }
+    Semi() {
+        return this.getToken(DaedalusParser.Semi, 0);
     }
     functionDef() {
         return this.getRuleContext(0, FunctionDefContext);
@@ -60961,6 +67438,9 @@ class InlineDefContext extends ParserRuleContext {
     constructor(parent, invokingState) {
         super(parent, invokingState);
     }
+    Semi() {
+        return this.getToken(DaedalusParser.Semi, 0);
+    }
     constDef() {
         return this.getRuleContext(0, ConstDefContext);
     }
@@ -60989,8 +67469,8 @@ class FunctionDefContext extends ParserRuleContext {
     Func() {
         return this.getToken(DaedalusParser.Func, 0);
     }
-    dataType() {
-        return this.getRuleContext(0, DataTypeContext);
+    typeReference() {
+        return this.getRuleContext(0, TypeReferenceContext);
     }
     nameNode() {
         return this.getRuleContext(0, NameNodeContext);
@@ -61020,8 +67500,8 @@ class ConstDefContext extends ParserRuleContext {
     Const() {
         return this.getToken(DaedalusParser.Const, 0);
     }
-    dataType() {
-        return this.getRuleContext(0, DataTypeContext);
+    typeReference() {
+        return this.getRuleContext(0, TypeReferenceContext);
     }
     constValueDef(i) {
         if (i === undefined) {
@@ -61057,11 +67537,25 @@ class ClassDefContext extends ParserRuleContext {
     nameNode() {
         return this.getRuleContext(0, NameNodeContext);
     }
+    LeftBrace() {
+        return this.getToken(DaedalusParser.LeftBrace, 0);
+    }
+    RightBrace() {
+        return this.getToken(DaedalusParser.RightBrace, 0);
+    }
     varDecl(i) {
         if (i === undefined) {
             return this.getRuleContexts(VarDeclContext);
         }
         return this.getRuleContext(i, VarDeclContext);
+    }
+    Semi(i) {
+        if (i === undefined) {
+            return this.getTokens(DaedalusParser.Semi);
+        }
+        else {
+            return this.getToken(DaedalusParser.Semi, i);
+        }
     }
     get ruleIndex() {
         return DaedalusParser.RULE_classDef;
@@ -61085,8 +67579,14 @@ class PrototypeDefContext extends ParserRuleContext {
     nameNode() {
         return this.getRuleContext(0, NameNodeContext);
     }
+    LeftParen() {
+        return this.getToken(DaedalusParser.LeftParen, 0);
+    }
     parentReference() {
         return this.getRuleContext(0, ParentReferenceContext);
+    }
+    RightParen() {
+        return this.getToken(DaedalusParser.RightParen, 0);
     }
     statementBlock() {
         return this.getRuleContext(0, StatementBlockContext);
@@ -61113,8 +67613,14 @@ class InstanceDefContext extends ParserRuleContext {
     nameNode() {
         return this.getRuleContext(0, NameNodeContext);
     }
+    LeftParen() {
+        return this.getToken(DaedalusParser.LeftParen, 0);
+    }
     parentReference() {
         return this.getRuleContext(0, ParentReferenceContext);
+    }
+    RightParen() {
+        return this.getToken(DaedalusParser.RightParen, 0);
     }
     statementBlock() {
         return this.getRuleContext(0, StatementBlockContext);
@@ -61144,8 +67650,14 @@ class InstanceDeclContext extends ParserRuleContext {
         }
         return this.getRuleContext(i, NameNodeContext);
     }
+    LeftParen() {
+        return this.getToken(DaedalusParser.LeftParen, 0);
+    }
     parentReference() {
         return this.getRuleContext(0, ParentReferenceContext);
+    }
+    RightParen() {
+        return this.getToken(DaedalusParser.RightParen, 0);
     }
     get ruleIndex() {
         return DaedalusParser.RULE_instanceDecl;
@@ -61159,6 +67671,50 @@ class InstanceDeclContext extends ParserRuleContext {
         }
     }
 }
+class MainBlockContext extends ParserRuleContext {
+    constructor(parent, invokingState) {
+        super(parent, invokingState);
+    }
+    contentBlock(i) {
+        if (i === undefined) {
+            return this.getRuleContexts(ContentBlockContext);
+        }
+        return this.getRuleContext(i, ContentBlockContext);
+    }
+    get ruleIndex() {
+        return DaedalusParser.RULE_mainBlock;
+    }
+    accept(visitor) {
+        if (visitor.visitMainBlock) {
+            return visitor.visitMainBlock(this);
+        }
+        else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
+class ContentBlockContext extends ParserRuleContext {
+    constructor(parent, invokingState) {
+        super(parent, invokingState);
+    }
+    blockDef() {
+        return this.getRuleContext(0, BlockDefContext);
+    }
+    inlineDef() {
+        return this.getRuleContext(0, InlineDefContext);
+    }
+    get ruleIndex() {
+        return DaedalusParser.RULE_contentBlock;
+    }
+    accept(visitor) {
+        if (visitor.visitContentBlock) {
+            return visitor.visitContentBlock(this);
+        }
+        else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
 class VarDeclContext extends ParserRuleContext {
     constructor(parent, invokingState) {
         super(parent, invokingState);
@@ -61166,8 +67722,8 @@ class VarDeclContext extends ParserRuleContext {
     Var() {
         return this.getToken(DaedalusParser.Var, 0);
     }
-    dataType() {
-        return this.getRuleContext(0, DataTypeContext);
+    typeReference() {
+        return this.getRuleContext(0, TypeReferenceContext);
     }
     varValueDecl(i) {
         if (i === undefined) {
@@ -61180,6 +67736,12 @@ class VarDeclContext extends ParserRuleContext {
             return this.getRuleContexts(VarArrayDeclContext);
         }
         return this.getRuleContext(i, VarArrayDeclContext);
+    }
+    varDecl(i) {
+        if (i === undefined) {
+            return this.getRuleContexts(VarDeclContext);
+        }
+        return this.getRuleContext(i, VarDeclContext);
     }
     get ruleIndex() {
         return DaedalusParser.RULE_varDecl;
@@ -61200,8 +67762,14 @@ class ConstArrayDefContext extends ParserRuleContext {
     nameNode() {
         return this.getRuleContext(0, NameNodeContext);
     }
+    LeftBracket() {
+        return this.getToken(DaedalusParser.LeftBracket, 0);
+    }
     arraySize() {
         return this.getRuleContext(0, ArraySizeContext);
+    }
+    RightBracket() {
+        return this.getToken(DaedalusParser.RightBracket, 0);
     }
     constArrayAssignment() {
         return this.getRuleContext(0, ConstArrayAssignmentContext);
@@ -61222,11 +67790,20 @@ class ConstArrayAssignmentContext extends ParserRuleContext {
     constructor(parent, invokingState) {
         super(parent, invokingState);
     }
-    expression(i) {
+    Assign() {
+        return this.getToken(DaedalusParser.Assign, 0);
+    }
+    LeftBrace() {
+        return this.getToken(DaedalusParser.LeftBrace, 0);
+    }
+    RightBrace() {
+        return this.getToken(DaedalusParser.RightBrace, 0);
+    }
+    expressionBlock(i) {
         if (i === undefined) {
-            return this.getRuleContexts(ExpressionContext);
+            return this.getRuleContexts(ExpressionBlockContext);
         }
-        return this.getRuleContext(i, ExpressionContext);
+        return this.getRuleContext(i, ExpressionBlockContext);
     }
     get ruleIndex() {
         return DaedalusParser.RULE_constArrayAssignment;
@@ -61266,8 +67843,11 @@ class ConstValueAssignmentContext extends ParserRuleContext {
     constructor(parent, invokingState) {
         super(parent, invokingState);
     }
-    expression() {
-        return this.getRuleContext(0, ExpressionContext);
+    Assign() {
+        return this.getToken(DaedalusParser.Assign, 0);
+    }
+    expressionBlock() {
+        return this.getRuleContext(0, ExpressionBlockContext);
     }
     get ruleIndex() {
         return DaedalusParser.RULE_constValueAssignment;
@@ -61288,8 +67868,14 @@ class VarArrayDeclContext extends ParserRuleContext {
     nameNode() {
         return this.getRuleContext(0, NameNodeContext);
     }
+    LeftBracket() {
+        return this.getToken(DaedalusParser.LeftBracket, 0);
+    }
     arraySize() {
         return this.getRuleContext(0, ArraySizeContext);
+    }
+    RightBracket() {
+        return this.getToken(DaedalusParser.RightBracket, 0);
     }
     get ruleIndex() {
         return DaedalusParser.RULE_varArrayDecl;
@@ -61326,6 +67912,12 @@ class ParameterListContext extends ParserRuleContext {
     constructor(parent, invokingState) {
         super(parent, invokingState);
     }
+    LeftParen() {
+        return this.getToken(DaedalusParser.LeftParen, 0);
+    }
+    RightParen() {
+        return this.getToken(DaedalusParser.RightParen, 0);
+    }
     parameterDecl(i) {
         if (i === undefined) {
             return this.getRuleContexts(ParameterDeclContext);
@@ -61351,14 +67943,20 @@ class ParameterDeclContext extends ParserRuleContext {
     Var() {
         return this.getToken(DaedalusParser.Var, 0);
     }
-    dataType() {
-        return this.getRuleContext(0, DataTypeContext);
+    typeReference() {
+        return this.getRuleContext(0, TypeReferenceContext);
     }
     nameNode() {
         return this.getRuleContext(0, NameNodeContext);
     }
+    LeftBracket() {
+        return this.getToken(DaedalusParser.LeftBracket, 0);
+    }
     arraySize() {
         return this.getRuleContext(0, ArraySizeContext);
+    }
+    RightBracket() {
+        return this.getToken(DaedalusParser.RightBracket, 0);
     }
     get ruleIndex() {
         return DaedalusParser.RULE_parameterDecl;
@@ -61376,11 +67974,25 @@ class StatementBlockContext extends ParserRuleContext {
     constructor(parent, invokingState) {
         super(parent, invokingState);
     }
+    LeftBrace() {
+        return this.getToken(DaedalusParser.LeftBrace, 0);
+    }
+    RightBrace() {
+        return this.getToken(DaedalusParser.RightBrace, 0);
+    }
     statement(i) {
         if (i === undefined) {
             return this.getRuleContexts(StatementContext);
         }
         return this.getRuleContext(i, StatementContext);
+    }
+    Semi(i) {
+        if (i === undefined) {
+            return this.getTokens(DaedalusParser.Semi);
+        }
+        else {
+            return this.getToken(DaedalusParser.Semi, i);
+        }
     }
     ifBlockStatement(i) {
         if (i === undefined) {
@@ -61431,25 +68043,31 @@ class StatementContext extends ParserRuleContext {
         }
     }
 }
-class FunctionCallContext extends ParserRuleContext {
+class FuncCallContext extends ParserRuleContext {
     constructor(parent, invokingState) {
         super(parent, invokingState);
     }
     nameNode() {
         return this.getRuleContext(0, NameNodeContext);
     }
-    expression(i) {
+    LeftParen() {
+        return this.getToken(DaedalusParser.LeftParen, 0);
+    }
+    RightParen() {
+        return this.getToken(DaedalusParser.RightParen, 0);
+    }
+    funcArgExpression(i) {
         if (i === undefined) {
-            return this.getRuleContexts(ExpressionContext);
+            return this.getRuleContexts(FuncArgExpressionContext);
         }
-        return this.getRuleContext(i, ExpressionContext);
+        return this.getRuleContext(i, FuncArgExpressionContext);
     }
     get ruleIndex() {
-        return DaedalusParser.RULE_functionCall;
+        return DaedalusParser.RULE_funcCall;
     }
     accept(visitor) {
-        if (visitor.visitFunctionCall) {
-            return visitor.visitFunctionCall(this);
+        if (visitor.visitFuncCall) {
+            return visitor.visitFuncCall(this);
         }
         else {
             return visitor.visitChildren(this);
@@ -61466,8 +68084,8 @@ class AssignmentContext extends ParserRuleContext {
     assignmentOperator() {
         return this.getRuleContext(0, AssignmentOperatorContext);
     }
-    expression() {
-        return this.getRuleContext(0, ExpressionContext);
+    expressionBlock() {
+        return this.getRuleContext(0, ExpressionBlockContext);
     }
     get ruleIndex() {
         return DaedalusParser.RULE_assignment;
@@ -61475,6 +68093,25 @@ class AssignmentContext extends ParserRuleContext {
     accept(visitor) {
         if (visitor.visitAssignment) {
             return visitor.visitAssignment(this);
+        }
+        else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
+class IfConditionContext extends ParserRuleContext {
+    constructor(parent, invokingState) {
+        super(parent, invokingState);
+    }
+    expressionBlock() {
+        return this.getRuleContext(0, ExpressionBlockContext);
+    }
+    get ruleIndex() {
+        return DaedalusParser.RULE_ifCondition;
+    }
+    accept(visitor) {
+        if (visitor.visitIfCondition) {
+            return visitor.visitIfCondition(this);
         }
         else {
             return visitor.visitChildren(this);
@@ -61513,8 +68150,8 @@ class ElseIfBlockContext extends ParserRuleContext {
     If() {
         return this.getToken(DaedalusParser.If, 0);
     }
-    expression() {
-        return this.getRuleContext(0, ExpressionContext);
+    ifCondition() {
+        return this.getRuleContext(0, IfConditionContext);
     }
     statementBlock() {
         return this.getRuleContext(0, StatementBlockContext);
@@ -61538,8 +68175,8 @@ class IfBlockContext extends ParserRuleContext {
     If() {
         return this.getToken(DaedalusParser.If, 0);
     }
-    expression() {
-        return this.getRuleContext(0, ExpressionContext);
+    ifCondition() {
+        return this.getRuleContext(0, IfConditionContext);
     }
     statementBlock() {
         return this.getRuleContext(0, StatementBlockContext);
@@ -61591,8 +68228,8 @@ class ReturnStatementContext extends ParserRuleContext {
     Return() {
         return this.getToken(DaedalusParser.Return, 0);
     }
-    expression() {
-        return this.getRuleContext(0, ExpressionContext);
+    expressionBlock() {
+        return this.getRuleContext(0, ExpressionBlockContext);
     }
     get ruleIndex() {
         return DaedalusParser.RULE_returnStatement;
@@ -61600,6 +68237,44 @@ class ReturnStatementContext extends ParserRuleContext {
     accept(visitor) {
         if (visitor.visitReturnStatement) {
             return visitor.visitReturnStatement(this);
+        }
+        else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
+class FuncArgExpressionContext extends ParserRuleContext {
+    constructor(parent, invokingState) {
+        super(parent, invokingState);
+    }
+    expressionBlock() {
+        return this.getRuleContext(0, ExpressionBlockContext);
+    }
+    get ruleIndex() {
+        return DaedalusParser.RULE_funcArgExpression;
+    }
+    accept(visitor) {
+        if (visitor.visitFuncArgExpression) {
+            return visitor.visitFuncArgExpression(this);
+        }
+        else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
+class ExpressionBlockContext extends ParserRuleContext {
+    constructor(parent, invokingState) {
+        super(parent, invokingState);
+    }
+    expression() {
+        return this.getRuleContext(0, ExpressionContext);
+    }
+    get ruleIndex() {
+        return DaedalusParser.RULE_expressionBlock;
+    }
+    accept(visitor) {
+        if (visitor.visitExpressionBlock) {
+            return visitor.visitExpressionBlock(this);
         }
         else {
             return visitor.visitChildren(this);
@@ -61618,7 +68293,6 @@ class ExpressionContext extends ParserRuleContext {
     }
 }
 class BitMoveExpressionContext extends ExpressionContext {
-    _oper;
     constructor(ctx) {
         super(ctx.parent, ctx.invokingState);
         super.copyFrom(ctx);
@@ -61641,25 +68315,7 @@ class BitMoveExpressionContext extends ExpressionContext {
         }
     }
 }
-class ValueExpressionContext extends ExpressionContext {
-    constructor(ctx) {
-        super(ctx.parent, ctx.invokingState);
-        super.copyFrom(ctx);
-    }
-    value() {
-        return this.getRuleContext(0, ValueContext);
-    }
-    accept(visitor) {
-        if (visitor.visitValueExpression) {
-            return visitor.visitValueExpression(this);
-        }
-        else {
-            return visitor.visitChildren(this);
-        }
-    }
-}
 class EqExpressionContext extends ExpressionContext {
-    _oper;
     constructor(ctx) {
         super(ctx.parent, ctx.invokingState);
         super.copyFrom(ctx);
@@ -61682,8 +68338,24 @@ class EqExpressionContext extends ExpressionContext {
         }
     }
 }
+class ValExpressionContext extends ExpressionContext {
+    constructor(ctx) {
+        super(ctx.parent, ctx.invokingState);
+        super.copyFrom(ctx);
+    }
+    value() {
+        return this.getRuleContext(0, ValueContext);
+    }
+    accept(visitor) {
+        if (visitor.visitValExpression) {
+            return visitor.visitValExpression(this);
+        }
+        else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
 class AddExpressionContext extends ExpressionContext {
-    _oper;
     constructor(ctx) {
         super(ctx.parent, ctx.invokingState);
         super.copyFrom(ctx);
@@ -61707,7 +68379,6 @@ class AddExpressionContext extends ExpressionContext {
     }
 }
 class CompExpressionContext extends ExpressionContext {
-    _oper;
     constructor(ctx) {
         super(ctx.parent, ctx.invokingState);
         super.copyFrom(ctx);
@@ -61731,7 +68402,6 @@ class CompExpressionContext extends ExpressionContext {
     }
 }
 class LogOrExpressionContext extends ExpressionContext {
-    _oper;
     constructor(ctx) {
         super(ctx.parent, ctx.invokingState);
         super.copyFrom(ctx);
@@ -61755,7 +68425,6 @@ class LogOrExpressionContext extends ExpressionContext {
     }
 }
 class BinAndExpressionContext extends ExpressionContext {
-    _oper;
     constructor(ctx) {
         super(ctx.parent, ctx.invokingState);
         super.copyFrom(ctx);
@@ -61779,7 +68448,6 @@ class BinAndExpressionContext extends ExpressionContext {
     }
 }
 class BinOrExpressionContext extends ExpressionContext {
-    _oper;
     constructor(ctx) {
         super(ctx.parent, ctx.invokingState);
         super.copyFrom(ctx);
@@ -61803,7 +68471,6 @@ class BinOrExpressionContext extends ExpressionContext {
     }
 }
 class MultExpressionContext extends ExpressionContext {
-    _oper;
     constructor(ctx) {
         super(ctx.parent, ctx.invokingState);
         super.copyFrom(ctx);
@@ -61831,8 +68498,14 @@ class BracketExpressionContext extends ExpressionContext {
         super(ctx.parent, ctx.invokingState);
         super.copyFrom(ctx);
     }
+    LeftParen() {
+        return this.getToken(DaedalusParser.LeftParen, 0);
+    }
     expression() {
         return this.getRuleContext(0, ExpressionContext);
+    }
+    RightParen() {
+        return this.getToken(DaedalusParser.RightParen, 0);
     }
     accept(visitor) {
         if (visitor.visitBracketExpression) {
@@ -61843,21 +68516,20 @@ class BracketExpressionContext extends ExpressionContext {
         }
     }
 }
-class UnaryExpressionContext extends ExpressionContext {
-    _oper;
+class UnaryOperationContext extends ExpressionContext {
     constructor(ctx) {
         super(ctx.parent, ctx.invokingState);
         super.copyFrom(ctx);
     }
-    expression() {
-        return this.getRuleContext(0, ExpressionContext);
-    }
     unaryOperator() {
         return this.getRuleContext(0, UnaryOperatorContext);
     }
+    expression() {
+        return this.getRuleContext(0, ExpressionContext);
+    }
     accept(visitor) {
-        if (visitor.visitUnaryExpression) {
-            return visitor.visitUnaryExpression(this);
+        if (visitor.visitUnaryOperation) {
+            return visitor.visitUnaryOperation(this);
         }
         else {
             return visitor.visitChildren(this);
@@ -61865,7 +68537,6 @@ class UnaryExpressionContext extends ExpressionContext {
     }
 }
 class LogAndExpressionContext extends ExpressionContext {
-    _oper;
     constructor(ctx) {
         super(ctx.parent, ctx.invokingState);
         super.copyFrom(ctx);
@@ -61895,8 +68566,8 @@ class ArrayIndexContext extends ParserRuleContext {
     IntegerLiteral() {
         return this.getToken(DaedalusParser.IntegerLiteral, 0);
     }
-    reference() {
-        return this.getRuleContext(0, ReferenceContext);
+    referenceAtom() {
+        return this.getRuleContext(0, ReferenceAtomContext);
     }
     get ruleIndex() {
         return DaedalusParser.RULE_arrayIndex;
@@ -61917,8 +68588,8 @@ class ArraySizeContext extends ParserRuleContext {
     IntegerLiteral() {
         return this.getToken(DaedalusParser.IntegerLiteral, 0);
     }
-    reference() {
-        return this.getRuleContext(0, ReferenceContext);
+    referenceAtom() {
+        return this.getRuleContext(0, ReferenceAtomContext);
     }
     get ruleIndex() {
         return DaedalusParser.RULE_arraySize;
@@ -61960,23 +68631,6 @@ class IntegerLiteralValueContext extends ValueContext {
         }
     }
 }
-class FunctionCallValueContext extends ValueContext {
-    constructor(ctx) {
-        super(ctx.parent, ctx.invokingState);
-        super.copyFrom(ctx);
-    }
-    functionCall() {
-        return this.getRuleContext(0, FunctionCallContext);
-    }
-    accept(visitor) {
-        if (visitor.visitFunctionCallValue) {
-            return visitor.visitFunctionCallValue(this);
-        }
-        else {
-            return visitor.visitChildren(this);
-        }
-    }
-}
 class FloatLiteralValueContext extends ValueContext {
     constructor(ctx) {
         super(ctx.parent, ctx.invokingState);
@@ -62011,23 +68665,6 @@ class StringLiteralValueContext extends ValueContext {
         }
     }
 }
-class NoFuncLiteralValueContext extends ValueContext {
-    constructor(ctx) {
-        super(ctx.parent, ctx.invokingState);
-        super.copyFrom(ctx);
-    }
-    NoFunc() {
-        return this.getToken(DaedalusParser.NoFunc, 0);
-    }
-    accept(visitor) {
-        if (visitor.visitNoFuncLiteralValue) {
-            return visitor.visitNoFuncLiteralValue(this);
-        }
-        else {
-            return visitor.visitChildren(this);
-        }
-    }
-}
 class NullLiteralValueContext extends ValueContext {
     constructor(ctx) {
         super(ctx.parent, ctx.invokingState);
@@ -62039,6 +68676,23 @@ class NullLiteralValueContext extends ValueContext {
     accept(visitor) {
         if (visitor.visitNullLiteralValue) {
             return visitor.visitNullLiteralValue(this);
+        }
+        else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
+class FuncCallValueContext extends ValueContext {
+    constructor(ctx) {
+        super(ctx.parent, ctx.invokingState);
+        super.copyFrom(ctx);
+    }
+    funcCall() {
+        return this.getRuleContext(0, FuncCallContext);
+    }
+    accept(visitor) {
+        if (visitor.visitFuncCallValue) {
+            return visitor.visitFuncCallValue(this);
         }
         else {
             return visitor.visitChildren(this);
@@ -62069,8 +68723,14 @@ class ReferenceAtomContext extends ParserRuleContext {
     nameNode() {
         return this.getRuleContext(0, NameNodeContext);
     }
+    LeftBracket() {
+        return this.getToken(DaedalusParser.LeftBracket, 0);
+    }
     arrayIndex() {
         return this.getRuleContext(0, ArrayIndexContext);
+    }
+    RightBracket() {
+        return this.getToken(DaedalusParser.RightBracket, 0);
     }
     get ruleIndex() {
         return DaedalusParser.RULE_referenceAtom;
@@ -62094,6 +68754,9 @@ class ReferenceContext extends ParserRuleContext {
         }
         return this.getRuleContext(i, ReferenceAtomContext);
     }
+    Dot() {
+        return this.getToken(DaedalusParser.Dot, 0);
+    }
     get ruleIndex() {
         return DaedalusParser.RULE_reference;
     }
@@ -62106,7 +68769,7 @@ class ReferenceContext extends ParserRuleContext {
         }
     }
 }
-class DataTypeContext extends ParserRuleContext {
+class TypeReferenceContext extends ParserRuleContext {
     constructor(parent, invokingState) {
         super(parent, invokingState);
     }
@@ -62122,18 +68785,70 @@ class DataTypeContext extends ParserRuleContext {
     Float() {
         return this.getToken(DaedalusParser.Float, 0);
     }
-    String() {
-        return this.getToken(DaedalusParser.String, 0);
+    StringKeyword() {
+        return this.getToken(DaedalusParser.StringKeyword, 0);
     }
     Func() {
         return this.getToken(DaedalusParser.Func, 0);
     }
+    Instance() {
+        return this.getToken(DaedalusParser.Instance, 0);
+    }
     get ruleIndex() {
-        return DaedalusParser.RULE_dataType;
+        return DaedalusParser.RULE_typeReference;
     }
     accept(visitor) {
-        if (visitor.visitDataType) {
-            return visitor.visitDataType(this);
+        if (visitor.visitTypeReference) {
+            return visitor.visitTypeReference(this);
+        }
+        else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
+class AnyIdentifierContext extends ParserRuleContext {
+    constructor(parent, invokingState) {
+        super(parent, invokingState);
+    }
+    Void() {
+        return this.getToken(DaedalusParser.Void, 0);
+    }
+    Var() {
+        return this.getToken(DaedalusParser.Var, 0);
+    }
+    Int() {
+        return this.getToken(DaedalusParser.Int, 0);
+    }
+    Float() {
+        return this.getToken(DaedalusParser.Float, 0);
+    }
+    StringKeyword() {
+        return this.getToken(DaedalusParser.StringKeyword, 0);
+    }
+    Func() {
+        return this.getToken(DaedalusParser.Func, 0);
+    }
+    Instance() {
+        return this.getToken(DaedalusParser.Instance, 0);
+    }
+    Class() {
+        return this.getToken(DaedalusParser.Class, 0);
+    }
+    Prototype() {
+        return this.getToken(DaedalusParser.Prototype, 0);
+    }
+    Null() {
+        return this.getToken(DaedalusParser.Null, 0);
+    }
+    Identifier() {
+        return this.getToken(DaedalusParser.Identifier, 0);
+    }
+    get ruleIndex() {
+        return DaedalusParser.RULE_anyIdentifier;
+    }
+    accept(visitor) {
+        if (visitor.visitAnyIdentifier) {
+            return visitor.visitAnyIdentifier(this);
         }
         else {
             return visitor.visitChildren(this);
@@ -62144,8 +68859,8 @@ class NameNodeContext extends ParserRuleContext {
     constructor(parent, invokingState) {
         super(parent, invokingState);
     }
-    Identifier() {
-        return this.getToken(DaedalusParser.Identifier, 0);
+    anyIdentifier() {
+        return this.getRuleContext(0, AnyIdentifierContext);
     }
     get ruleIndex() {
         return DaedalusParser.RULE_nameNode;
@@ -62182,6 +68897,27 @@ class AssignmentOperatorContext extends ParserRuleContext {
     constructor(parent, invokingState) {
         super(parent, invokingState);
     }
+    Assign() {
+        return this.getToken(DaedalusParser.Assign, 0);
+    }
+    StarAssign() {
+        return this.getToken(DaedalusParser.StarAssign, 0);
+    }
+    DivAssign() {
+        return this.getToken(DaedalusParser.DivAssign, 0);
+    }
+    PlusAssign() {
+        return this.getToken(DaedalusParser.PlusAssign, 0);
+    }
+    MinusAssign() {
+        return this.getToken(DaedalusParser.MinusAssign, 0);
+    }
+    AndAssign() {
+        return this.getToken(DaedalusParser.AndAssign, 0);
+    }
+    OrAssign() {
+        return this.getToken(DaedalusParser.OrAssign, 0);
+    }
     get ruleIndex() {
         return DaedalusParser.RULE_assignmentOperator;
     }
@@ -62194,9 +68930,43 @@ class AssignmentOperatorContext extends ParserRuleContext {
         }
     }
 }
+class UnaryOperatorContext extends ParserRuleContext {
+    constructor(parent, invokingState) {
+        super(parent, invokingState);
+    }
+    Plus() {
+        return this.getToken(DaedalusParser.Plus, 0);
+    }
+    Tilde() {
+        return this.getToken(DaedalusParser.Tilde, 0);
+    }
+    Minus() {
+        return this.getToken(DaedalusParser.Minus, 0);
+    }
+    Not() {
+        return this.getToken(DaedalusParser.Not, 0);
+    }
+    get ruleIndex() {
+        return DaedalusParser.RULE_unaryOperator;
+    }
+    accept(visitor) {
+        if (visitor.visitUnaryOperator) {
+            return visitor.visitUnaryOperator(this);
+        }
+        else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
 class AddOperatorContext extends ParserRuleContext {
     constructor(parent, invokingState) {
         super(parent, invokingState);
+    }
+    Plus() {
+        return this.getToken(DaedalusParser.Plus, 0);
+    }
+    Minus() {
+        return this.getToken(DaedalusParser.Minus, 0);
     }
     get ruleIndex() {
         return DaedalusParser.RULE_addOperator;
@@ -62230,6 +69000,12 @@ class CompOperatorContext extends ParserRuleContext {
     constructor(parent, invokingState) {
         super(parent, invokingState);
     }
+    Less() {
+        return this.getToken(DaedalusParser.Less, 0);
+    }
+    Greater() {
+        return this.getToken(DaedalusParser.Greater, 0);
+    }
     get ruleIndex() {
         return DaedalusParser.RULE_compOperator;
     }
@@ -62258,25 +69034,15 @@ class EqOperatorContext extends ParserRuleContext {
         }
     }
 }
-class UnaryOperatorContext extends ParserRuleContext {
-    constructor(parent, invokingState) {
-        super(parent, invokingState);
-    }
-    get ruleIndex() {
-        return DaedalusParser.RULE_unaryOperator;
-    }
-    accept(visitor) {
-        if (visitor.visitUnaryOperator) {
-            return visitor.visitUnaryOperator(this);
-        }
-        else {
-            return visitor.visitChildren(this);
-        }
-    }
-}
 class MultOperatorContext extends ParserRuleContext {
     constructor(parent, invokingState) {
         super(parent, invokingState);
+    }
+    Star() {
+        return this.getToken(DaedalusParser.Star, 0);
+    }
+    Div() {
+        return this.getToken(DaedalusParser.Div, 0);
     }
     get ruleIndex() {
         return DaedalusParser.RULE_multOperator;
@@ -62294,6 +69060,9 @@ class BinAndOperatorContext extends ParserRuleContext {
     constructor(parent, invokingState) {
         super(parent, invokingState);
     }
+    BitAnd() {
+        return this.getToken(DaedalusParser.BitAnd, 0);
+    }
     get ruleIndex() {
         return DaedalusParser.RULE_binAndOperator;
     }
@@ -62309,6 +69078,9 @@ class BinAndOperatorContext extends ParserRuleContext {
 class BinOrOperatorContext extends ParserRuleContext {
     constructor(parent, invokingState) {
         super(parent, invokingState);
+    }
+    BitOr() {
+        return this.getToken(DaedalusParser.BitOr, 0);
     }
     get ruleIndex() {
         return DaedalusParser.RULE_binOrOperator;
@@ -62326,6 +69098,9 @@ class LogAndOperatorContext extends ParserRuleContext {
     constructor(parent, invokingState) {
         super(parent, invokingState);
     }
+    And() {
+        return this.getToken(DaedalusParser.And, 0);
+    }
     get ruleIndex() {
         return DaedalusParser.RULE_logAndOperator;
     }
@@ -62341,6 +69116,9 @@ class LogAndOperatorContext extends ParserRuleContext {
 class LogOrOperatorContext extends ParserRuleContext {
     constructor(parent, invokingState) {
         super(parent, invokingState);
+    }
+    Or() {
+        return this.getToken(DaedalusParser.Or, 0);
     }
     get ruleIndex() {
         return DaedalusParser.RULE_logOrOperator;
@@ -62421,6 +69199,18 @@ class DaedalusVisitor extends AbstractParseTreeVisitor {
      */
     visitInstanceDecl;
     /**
+     * Visit a parse tree produced by `DaedalusParser.mainBlock`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitMainBlock;
+    /**
+     * Visit a parse tree produced by `DaedalusParser.contentBlock`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitContentBlock;
+    /**
      * Visit a parse tree produced by `DaedalusParser.varDecl`.
      * @param ctx the parse tree
      * @return the visitor result
@@ -62487,17 +69277,23 @@ class DaedalusVisitor extends AbstractParseTreeVisitor {
      */
     visitStatement;
     /**
-     * Visit a parse tree produced by `DaedalusParser.functionCall`.
+     * Visit a parse tree produced by `DaedalusParser.funcCall`.
      * @param ctx the parse tree
      * @return the visitor result
      */
-    visitFunctionCall;
+    visitFuncCall;
     /**
      * Visit a parse tree produced by `DaedalusParser.assignment`.
      * @param ctx the parse tree
      * @return the visitor result
      */
     visitAssignment;
+    /**
+     * Visit a parse tree produced by `DaedalusParser.ifCondition`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitIfCondition;
     /**
      * Visit a parse tree produced by `DaedalusParser.elseBlock`.
      * @param ctx the parse tree
@@ -62529,6 +69325,18 @@ class DaedalusVisitor extends AbstractParseTreeVisitor {
      */
     visitReturnStatement;
     /**
+     * Visit a parse tree produced by `DaedalusParser.funcArgExpression`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitFuncArgExpression;
+    /**
+     * Visit a parse tree produced by `DaedalusParser.expressionBlock`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitExpressionBlock;
+    /**
      * Visit a parse tree produced by the `bitMoveExpression`
      * labeled alternative in `DaedalusParser.expression`.
      * @param ctx the parse tree
@@ -62536,19 +69344,19 @@ class DaedalusVisitor extends AbstractParseTreeVisitor {
      */
     visitBitMoveExpression;
     /**
-     * Visit a parse tree produced by the `valueExpression`
-     * labeled alternative in `DaedalusParser.expression`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitValueExpression;
-    /**
      * Visit a parse tree produced by the `eqExpression`
      * labeled alternative in `DaedalusParser.expression`.
      * @param ctx the parse tree
      * @return the visitor result
      */
     visitEqExpression;
+    /**
+     * Visit a parse tree produced by the `valExpression`
+     * labeled alternative in `DaedalusParser.expression`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitValExpression;
     /**
      * Visit a parse tree produced by the `addExpression`
      * labeled alternative in `DaedalusParser.expression`.
@@ -62599,12 +69407,12 @@ class DaedalusVisitor extends AbstractParseTreeVisitor {
      */
     visitBracketExpression;
     /**
-     * Visit a parse tree produced by the `unaryExpression`
+     * Visit a parse tree produced by the `unaryOperation`
      * labeled alternative in `DaedalusParser.expression`.
      * @param ctx the parse tree
      * @return the visitor result
      */
-    visitUnaryExpression;
+    visitUnaryOperation;
     /**
      * Visit a parse tree produced by the `logAndExpression`
      * labeled alternative in `DaedalusParser.expression`.
@@ -62653,19 +69461,12 @@ class DaedalusVisitor extends AbstractParseTreeVisitor {
      */
     visitNullLiteralValue;
     /**
-     * Visit a parse tree produced by the `noFuncLiteralValue`
+     * Visit a parse tree produced by the `funcCallValue`
      * labeled alternative in `DaedalusParser.value`.
      * @param ctx the parse tree
      * @return the visitor result
      */
-    visitNoFuncLiteralValue;
-    /**
-     * Visit a parse tree produced by the `functionCallValue`
-     * labeled alternative in `DaedalusParser.value`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitFunctionCallValue;
+    visitFuncCallValue;
     /**
      * Visit a parse tree produced by the `referenceValue`
      * labeled alternative in `DaedalusParser.value`.
@@ -62686,11 +69487,17 @@ class DaedalusVisitor extends AbstractParseTreeVisitor {
      */
     visitReference;
     /**
-     * Visit a parse tree produced by `DaedalusParser.dataType`.
+     * Visit a parse tree produced by `DaedalusParser.typeReference`.
      * @param ctx the parse tree
      * @return the visitor result
      */
-    visitDataType;
+    visitTypeReference;
+    /**
+     * Visit a parse tree produced by `DaedalusParser.anyIdentifier`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitAnyIdentifier;
     /**
      * Visit a parse tree produced by `DaedalusParser.nameNode`.
      * @param ctx the parse tree
@@ -62709,6 +69516,12 @@ class DaedalusVisitor extends AbstractParseTreeVisitor {
      * @return the visitor result
      */
     visitAssignmentOperator;
+    /**
+     * Visit a parse tree produced by `DaedalusParser.unaryOperator`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitUnaryOperator;
     /**
      * Visit a parse tree produced by `DaedalusParser.addOperator`.
      * @param ctx the parse tree
@@ -62733,12 +69546,6 @@ class DaedalusVisitor extends AbstractParseTreeVisitor {
      * @return the visitor result
      */
     visitEqOperator;
-    /**
-     * Visit a parse tree produced by `DaedalusParser.unaryOperator`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitUnaryOperator;
     /**
      * Visit a parse tree produced by `DaedalusParser.multOperator`.
      * @param ctx the parse tree
@@ -62824,7 +69631,7 @@ class SymbolVisitor extends DaedalusVisitor {
     visitReference = (ctx) => {
         let name = ctx
             .referenceAtom()
-            .map((atom) => atom.nameNode().Identifier()?.getSymbol()?.text)
+            .map((atom) => atom.nameNode().anyIdentifier().Identifier()?.getSymbol()?.text)
             .filter((n) => n !== undefined)
             .join('.')
             .toUpperCase();
@@ -62851,7 +69658,7 @@ class SymbolVisitor extends DaedalusVisitor {
         return this.visitChildren(ctx);
     };
     visitDecl = (ctx) => {
-        const identifier = ctx.nameNode().Identifier();
+        const identifier = ctx.nameNode().anyIdentifier().Identifier();
         if (identifier) {
             const symbol = identifier.getSymbol();
             const symbolName = symbol.text?.toUpperCase();
@@ -62872,7 +69679,7 @@ class SymbolVisitor extends DaedalusVisitor {
     visitDef = (ctx) => {
         const nodes = [ctx.nameNode()].flat();
         nodes.forEach((node) => {
-            const identifier = node.Identifier();
+            const identifier = node.anyIdentifier().Identifier();
             if (identifier) {
                 const symbol = identifier.getSymbol();
                 if (symbol.text) {
@@ -62913,7 +69720,7 @@ class SymbolVisitor extends DaedalusVisitor {
         return this.visitDecl(ctx);
     };
     visitParameterDecl = (ctx) => {
-        const identifier = ctx.dataType().Identifier();
+        const identifier = ctx.typeReference().Identifier();
         if (identifier) {
             const symbol = identifier.getSymbol();
             const refName = symbol.text?.toUpperCase();
@@ -62923,7 +69730,7 @@ class SymbolVisitor extends DaedalusVisitor {
         return this.visitDecl(ctx);
     };
     visitVarDecl = (ctx) => {
-        const identifier = ctx.dataType().Identifier();
+        const identifier = ctx.typeReference().Identifier();
         if (identifier) {
             const symbol = identifier.getSymbol();
             const refName = symbol.text?.toUpperCase();
@@ -62943,284 +69750,390 @@ function normalizePath(filepath) {
 ;// CONCATENATED MODULE: ./src/externals.ts
 const basic = {
     CONTENT: [
-        'Print',
-        'PrintMulti',
-        'PrintDebug',
-        'PrintScreen',
-        'Hlp_Random',
-        'Hlp_StrCmp',
-        'Hlp_IsValidNpc',
-        'Hlp_IsValidItem',
-        'Hlp_IsItem',
-        'Hlp_GetNpc',
-        'Hlp_GetInstanceID',
-        'Hlp_GetInstanceID',
-        'AI_Wait',
-        'Npc_GetStateTime',
-        'Npc_SetStateTime',
-        'Wld_GetDay',
-        'Wld_IsTime',
-        'Wld_InsertNpc',
-        'Wld_InsertNpcAndRespawn',
-        'AI_PlayAni',
-        'AI_StandUp',
-        'AI_StandUpQuick',
-        'AI_Quicklook',
-        'AI_LookAt',
-        'AI_LookAtNpc',
-        'AI_StopLookAt',
-        'AI_PointAt',
-        'AI_PointAtNpc',
-        'AI_StopPointAt',
-        'AI_TakeItem',
-        'AI_DropItem',
-        'AI_UseItem',
-        'AI_UseItemToState',
-        'AI_UseMob',
-        'Wld_IsMobAvailable',
-        'Wld_GetMobState',
-        'AI_SetWalkmode',
-        'AI_GotoWP',
-        'AI_GotoFP',
-        'AI_GotoNextFP',
-        'AI_GotoNpc',
-        'AI_GotoItem',
-        'AI_GotoSound',
-        'AI_Teleport',
-        'Npc_GetNearestWP',
-        'Npc_GetNextWP',
-        'Wld_IsFPAvailable',
-        'Wld_IsNextFPAvailable',
-        'Npc_IsOnFP',
-        'Npc_IsWayBlocked',
-        'AI_TurnToNpc',
-        'AI_TurnAway',
-        'AI_WhirlAround',
-        'AI_TurnToSound',
-        'AI_AlignToWP',
-        'AI_Dodge',
-        'Mdl_ApplyOverlayMds',
-        'Mdl_RemoveOverlayMDS',
-        'Mdl_ApplyOverlayMDSTimed',
-        'Mdl_ApplyRandomAni',
-        'Mdl_ApplyRandomAniFreq',
-        'Mdl_StartFaceAni',
-        'Mdl_ApplyRandomFaceAni',
-        'Npc_GetBodyState',
-        'Npc_HasBodyFlag',
-        'AI_PlayAniBS',
-        'Npc_SetToFistMode',
-        'Npc_SetToFightMode',
-        'Npc_IsInFightMode',
-        'AI_DrawWeapon',
-        'AI_ReadyMeleeWeapon',
-        'AI_ReadyRangedWeapon',
-        'AI_RemoveWeapon',
-        'Npc_GetReadiedWeapon',
-        'Npc_HasReadiedWeapon',
-        'Npc_HasReadiedMeleeWeapon',
-        'Npc_HasReadiedRangedWeapon',
-        'Npc_HasRangedWeaponWithAmmo',
-        'Npc_GetTarget',
-        'Npc_GetNextTarget',
-        'Npc_IsNextTargetAvailable',
-        'Npc_SetTarget',
-        'AI_Attack',
-        'AI_FinishingMove',
-        'AI_Defend',
-        'AI_Flee',
-        'AI_AimAt',
-        'AI_ShootAt',
-        'AI_StopAim',
-        'Npc_AreWeStronger',
-        'Npc_IsAiming',
-        'Wld_InsertItem',
-        'AI_LookForItem',
-        'Wld_RemoveItem',
-        'CreateInvItem',
-        'CreateInvItems',
-        'Npc_GetInvItem',
-        'Npc_HasItems',
-        'Npc_GetInvItemBySlot',
-        'Npc_RemoveInvItem',
-        'Npc_RemoveInvItems',
-        'Mob_CreateItems',
-        'Mob_HasItems',
-        'EquipItem',
-        'AI_EquipBestMeleeWeapon',
-        'AI_EquipBestRangedWeapon',
-        'AI_EquipBestArmor',
-        'AI_UnequipWeapons',
-        'AI_UnequipArmor',
-        'AI_EquipArmor',
-        'Npc_GetEquippedMeleeWeapon',
-        'Npc_GetEquippedRangedWeapon',
-        'Npc_GetEquippedArmor',
-        'Npc_HasEquippedWeapon',
-        'Npc_HasEquippedMeleeWeapon',
-        'Npc_HasEquippedRangedWeapon',
-        'Npc_HasEquippedArmor',
-        'Npc_OwnedByNpc',
-        'Npc_OwnedByGuild',
-        'Npc_IsDetectedMobOwnedByNpc',
-        'Npc_IsDetectedMobOwnedByGuild',
-        'Npc_GiveItem',
-        'Npc_StartItemReactModules',
-        'Npc_HasOffered',
-        'Doc_Open',
-        'Doc_Font',
-        'Doc_Print',
-        'Doc_MapCoordinates',
-        'AI_Output',
-        'AI_OutputSVM',
-        'AI_OutputSVM_Overlay',
-        'AI_WaitTillEnd',
-        'AI_Ask',
-        'AI_AskText',
-        'AI_WaitForQuestion',
-        'Npc_SetRefuseTalk',
-        'Npc_RefuseTalk',
-        'Npc_MemoryEntry',
-        'Npc_MemoryEntryGuild',
-        'Npc_HasNews',
-        'Npc_IsNewsGossip',
-        'Npc_GetNewsWitness',
-        'Npc_GetNewsVictim',
-        'Npc_GetNewsOffender',
-        'Npc_IsDead',
-        'Npc_KnowsInfo',
-        'Npc_CheckInfo',
-        'NPC_GiveInfo',
-        'Npc_CheckAvailableMission',
-        'Npc_CheckRunningMission',
-        'Npc_CheckOfferMission',
-        'Mis_SetStatus',
-        'Mis_GetStatus',
-        'Mis_OnTime',
-        'AI_StopProcessInfos',
-        'Npc_IsPlayer',
-        'Wld_DetectPlayer',
-        'Npc_HasDetectedNpc',
-        'Npc_IsNear',
-        'Npc_GetDistToNpc',
-        'Npc_GetDistToWP',
-        'Npc_GetDistToItem',
-        'Npc_GetDistToPlayer',
-        'Snd_GetDistToSource',
-        'Npc_GetTrueGuild',
-        'Npc_SetAttitude',
-        'Npc_SetTempAttitude',
-        'Npc_GetAttitude',
-        'Npc_SetTrueGuild',
-        'Wld_SetGuildAttitude',
-        'Wld_GetGuildAttitude',
-        'Npc_GetPermAttitude',
-        'Wld_ExchangeGuildAttitudes',
-        'Npc_GetGuildAttitude',
-        'Npc_SetKnowsPlayer',
-        'Npc_KnowsPlayer',
-        'AI_StartState',
-        'Npc_ClearAIQueue',
-        'AI_SetNpcsToState',
-        'Npc_IsInState',
-        'Npc_WasInState',
+        'INTTOSTRING',
+        'FLOATTOSTRING',
+        'FLOATTOINT',
+        'INTTOFLOAT',
+        'CONCATSTRINGS',
+        'PRINT',
+        'PRINTDEBUG',
+        'PRINTSCREEN',
+        'PRINTDIALOG',
+        'PRINTDEBUGINST',
+        'PRINTDEBUGINSTCH',
+        'PRINTDEBUGCH',
+        'PRINTMULTI',
+        'EXITGAME',
+        'PLAYVIDEO',
+        'SETPERCENTDONE',
+        'INTRODUCECHAPTER',
+        'NPC_MEMORYENTRY',
+        'NPC_MEMORYENTRYGUILD',
+        'NPC_HASNEWS',
+        'NPC_GETNEWSWITNESS',
+        'NPC_GETNEWSOFFENDER',
+        'NPC_GETNEWSVICTIM',
+        'NPC_ISNEWSGOSSIP',
+        'NPC_DELETENEWS',
+        'NPC_GETGUILDATTITUDE',
+        'NPC_GETACTIVESPELL',
+        'NPC_GETACTIVESPELLCAT',
+        'NPC_GETACTIVESPELLLEVEL',
+        'NPC_SETACTIVESPELLINFO',
+        'WLD_DETECTITEM',
+        'WLD_DETECTPLAYER',
+        'WLD_DETECTNPC',
+        'WLD_DETECTNPCEX',
+        'WLD_SETGUILDATTITUDE',
+        'WLD_GETGUILDATTITUDE',
+        'WLD_ISMOBAVAILABLE',
+        'WLD_ISFPAVAILABLE',
+        'WLD_ISNEXTFPAVAILABLE',
+        'NPC_CREATESPELL',
+        'NPC_LEARNSPELL',
+        'NPC_HASITEMS',
+        'NPC_GIVEITEM',
+        'CREATEINVITEM',
+        'CREATEINVITEMS',
+        'NPC_GETINVITEM',
+        'NPC_GETINVITEMBYSLOT',
+        'NPC_REMOVEINVITEM',
+        'NPC_REMOVEINVITEMS',
+        'NPC_ISINSTATE',
+        'NPC_WASINSTATE',
+        'NPC_ISINROUTINE',
+        'AI_SETNPCSTOSTATE',
+        'NPC_HASDETECTEDNPC',
+        'NPC_SETATTITUDE',
+        'NPC_SETTEMPATTITUDE',
+        'NPC_GETATTITUDE',
+        'NPC_GETPERMATTITUDE',
+        'NPC_CHANGEATTRIBUTE',
+        'NPC_GETCOMRADES',
+        'NPC_ISNEAR',
+        'NPC_GETDISTTONPC',
+        'NPC_GETDISTTOPLAYER',
+        'NPC_GETDISTTOITEM',
+        'NPC_GETDISTTOWP',
+        'NPC_CANSEENPC',
+        'NPC_CANSEENPCFREELOS',
+        'NPC_CANSEEITEM',
+        'NPC_ISPLAYER',
+        'NPC_KNOWSPLAYER',
+        'NPC_SETKNOWSPLAYER',
+        'NPC_ISINFIGHTMODE',
+        'NPC_ISAIMING',
+        'NPC_STARTITEMREACTMODULES',
+        'NPC_HASOFFERED',
+        'EQUIPITEM',
+        'NPC_SETTOFISTMODE',
+        'NPC_SETTOFIGHTMODE',
+        'NPC_ISDEAD',
+        'AI_STARTSTATE',
+        'AI_CONTINUEROUTINE',
+        'NPC_GETSTATETIME',
+        'NPC_SETSTATETIME',
+        'AI_OUTPUT',
+        'AI_OUTPUTSVM',
+        'AI_OUTPUTSVM_OVERLAY',
+        'AI_PLAYCUTSCENE',
+        'AI_CANSEENPC',
+        'AI_WAIT',
+        'AI_WAITMS',
+        'AI_WAITTILLEND',
+        'AI_ALIGNTOWP',
+        'AI_SETWALKMODE',
+        'AI_PLAYANI',
+        'AI_PLAYANIBS',
+        'AI_GOTOWP',
+        'AI_TELEPORT',
+        'AI_GOTOITEM',
+        'AI_GOTONPC',
+        'AI_ALIGNTOFP',
+        'AI_GOTOFP',
+        'NPC_ISONFP',
+        'AI_GOTONEXTFP',
+        'AI_GOTOSOUND',
+        'AI_TAKEITEM',
+        'AI_DROPITEM',
+        'AI_DRAWWEAPON',
+        'AI_REMOVEWEAPON',
+        'NPC_HASRANGEDWEAPONWITHAMMO',
+        'NPC_HASEQUIPPEDWEAPON',
+        'NPC_HASEQUIPPEDMELEEWEAPON',
+        'NPC_HASEQUIPPEDRANGEDWEAPON',
+        'NPC_HASEQUIPPEDARMOR',
+        'NPC_HASREADIEDWEAPON',
+        'NPC_HASREADIEDMELEEWEAPON',
+        'NPC_HASREADIEDRANGEDWEAPON',
+        'NPC_GETTRUEGUILD',
+        'NPC_SETTRUEGUILD',
+        'NPC_AREWESTRONGER',
+        'NPC_GETTARGET',
+        'NPC_GETNEXTTARGET',
+        'NPC_ISNEXTTARGETAVAILABLE',
+        'NPC_SETTARGET',
+        'NPC_GETBODYSTATE',
+        'NPC_HASBODYFLAG',
+        'NPC_ISINCUTSCENE',
+        'NPC_ISVOICEACTIVE',
+        'NPC_GETDETECTEDMOB',
+        'NPC_PLAYANI',
+        'NPC_ISDETECTEDMOBOWNEDBYNPC',
+        'NPC_ISDETECTEDMOBOWNEDBYGUILD',
+        'WLD_GETMOBSTATE',
+        'NPC_CLEARAIQUEUE',
+        'INFOMANAGER_HASFINISHED',
+        'AI_STOPPROCESSINFOS',
+        'AI_PROCESSINFOS',
+        'INFO_ADDCHOICE',
+        'INFO_CLEARCHOICES',
+        'NPC_KNOWSINFO',
+        'NPC_CHECKINFO',
+        'NPC_GIVEINFO',
+        'NPC_GETTALENTSKILL',
+        'NPC_GETTALENTVALUE',
+        'NPC_SETTALENTSKILL',
+        'NPC_SETTALENTVALUE',
+        'TAL_CONFIGURE',
+        'NPC_GETNEARESTWP',
+        'NPC_GETNEXTWP',
+        'NPC_ISWAYBLOCKED',
+        'NPC_GETREADIEDWEAPON',
+        'NPC_GETEQUIPPEDMELEEWEAPON',
+        'NPC_GETEQUIPPEDRANGEDWEAPON',
+        'NPC_GETEQUIPPEDARMOR',
+        'AI_EQUIPBESTMELEEWEAPON',
+        'AI_EQUIPBESTRANGEDWEAPON',
+        'AI_EQUIPBESTARMOR',
+        'AI_UNEQUIPWEAPONS',
+        'AI_UNEQUIPARMOR',
+        'AI_EQUIPARMOR',
+        'AI_READYMELEEWEAPON',
+        'AI_READYRANGEDWEAPON',
+        'AI_TURNAWAY',
+        'AI_TURNTONPC',
+        'AI_WHIRLAROUND',
+        'AI_WHIRLAROUNDTOSOURCE',
+        'AI_TURNTOSOUND',
+        'AI_QUICKLOOK',
+        'AI_LOOKAT',
+        'AI_LOOKATNPC',
+        'AI_STOPLOOKAT',
+        'AI_POINTAT',
+        'AI_POINTATNPC',
+        'AI_STOPPOINTAT',
+        'AI_STANDUP',
+        'AI_STANDUPQUICK',
+        'AI_FLEE',
+        'AI_AIMAT',
+        'AI_STOPAIM',
+        'AI_SHOOTAT',
+        'AI_DEFEND',
+        'AI_COMBATREACTTODAMAGE',
+        'AI_READYSPELL',
+        'AI_UNREADYSPELL',
+        'NPC_HASSPELL',
+        'AI_ATTACK',
+        'AI_FINISHINGMOVE',
+        'AI_DODGE',
+        'AI_USEITEM',
+        'AI_USEITEMTOSTATE',
+        'NPC_REFUSETALK',
+        'NPC_SETREFUSETALK',
+        'AI_ASK',
+        'AI_ASKTEXT',
+        'AI_WAITFORQUESTION',
+        'HLP_ISITEM',
+        'HLP_GETINSTANCEID',
+        'HLP_RANDOM',
+        'HLP_STRCMP',
+        'HLP_GETNPC',
+        'HLP_ISVALIDNPC',
+        'HLP_ISVALIDITEM',
+        'SND_PLAY',
+        'SND_PLAY3D',
+        'SND_GETDISTTOSOURCE',
+        'SND_ISSOURCENPC',
+        'SND_ISSOURCEITEM',
+        'NPC_CANSEESOURCE',
+        'MIS_GETSTATUS',
+        'MIS_SETSTATUS',
+        'MIS_ONTIME',
+        'LOG_CREATETOPIC',
+        'LOG_ADDENTRY',
+        'LOG_SETTOPICSTATUS',
+        'MIS_ADDMISSIONENTRY',
+        'MIS_REMOVEMISSION',
+        'NPC_CHECKAVAILABLEMISSION',
+        'NPC_CHECKRUNNINGMISSION',
+        'NPC_CHECKOFFERMISSION',
+        'MDL_SETVISUAL',
+        'MDL_SETVISUALBODY',
+        'MDL_APPLYOVERLAYMDS',
+        'MDL_APPLYOVERLAYMDSTIMED',
+        'MDL_REMOVEOVERLAYMDS',
+        'MDL_APPLYRANDOMANI',
+        'MDL_APPLYRANDOMANIFREQ',
+        'MDL_SETMODELSCALE',
+        'MDL_SETMODELFATNESS',
+        'MDL_STARTFACEANI',
+        'MDL_APPLYRANDOMFACEANI',
+        'WLD_ISTIME',
+        'WLD_GETDAY',
+        'WLD_SETTIME',
+        'WLD_INSERTNPC',
+        'WLD_SPAWNNPCRANGE',
+        'WLD_PLAYEFFECT',
+        'WLD_REMOVENPC',
+        'WLD_INSERTNPCANDRESPAWN',
+        'WLD_INSERTITEM',
+        'WLD_INSERTOBJECT',
+        'WLD_REMOVEITEM',
+        'WLD_EXCHANGEGUILDATTITUDES',
+        'WLD_SETOBJECTROUTINE',
+        'WLD_SETMOBROUTINE',
+        'WLD_SENDTRIGGER',
+        'WLD_SENDUNTRIGGER',
+        'NPC_OWNEDBYNPC',
+        'NPC_OWNEDBYGUILD',
+        'AI_TAKEMOB',
+        'AI_DROPMOB',
+        'AI_USEMOB',
+        'MOB_CREATEITEMS',
+        'MOB_HASITEMS',
+        'DOC_CREATE',
+        'DOC_CREATEMAP',
+        'DOC_SETPAGES',
+        'DOC_SETPAGE',
+        'DOC_SETFONT',
+        'DOC_SETLEVEL',
+        'DOC_SETMARGINS',
+        'DOC_PRINTLINE',
+        'DOC_PRINTLINES',
+        'DOC_SHOW',
+        'DOC_OPEN',
+        'DOC_FONT',
+        'DOC_PRINT',
+        'DOC_MAPCOORDINATES',
         'TA',
-        'TA_Min',
-        'AI_ContinueRoutine',
-        'Npc_IsInRoutine',
-        'Npc_ExchangeRoutine',
-        'Wld_SetObjectRoutine',
-        'Wld_SetMobRoutine',
-        'Rtn_Exchange',
-        'TA_BeginOverlay',
-        'TA_EndOverlay',
-        'TA_RemoveOverlay',
-        'Mdl_SetModelScale',
-        'Mdl_SetModelFatness',
-        'Npc_ChangeAttribute',
-        'Npc_HasTalent',
-        'Npc_HasFightTalent',
-        'Npc_CreateSpell',
-        'Npc_LearnSpell',
-        'Npc_SetTeleportPos',
-        'Npc_GetActiveSpell',
-        'Npc_GetActiveSpellCat',
-        'Npc_SetActiveSpellInfo',
-        'Npc_GetActiveSpellLevel',
-        'AI_ReadySpell',
-        'AI_UnreadySpell',
-        'Npc_HasSpell',
-        'Npc_PercEnable',
-        'Npc_PercDisable',
-        'Npc_SetPercTime',
-        'Perc_SetRange',
-        'Npc_SendPassivePerc',
-        'Npc_SendSinglePerc',
-        'Npc_PerceiveAll',
-        'Wld_DetectNpc',
-        'Wld_DetectNpcEx',
-        'Wld_DetectItem',
-        'Npc_GetDetectedMob',
-        'Npc_CanSeeNpc',
-        'Npc_CanSeeNpcFreeLOS',
-        'Npc_CanSeeItem',
-        'Npc_CanSeeSource',
+        'TA_MIN',
         'TA_CS',
-        'AI_PlayCutscene',
-        'Hlp_CutscenePlayed',
-        'Npc_IsInCutscene',
-        'Snd_Play',
-        'Snd_Play3D',
-        'Snd_IsSourceNpc',
-        'Snd_IsSourceItem',
-        'Wld_AssignRoomToGuild',
-        'Wld_AssignRoomToNpc',
-        'Wld_GetPlayerPortalOwner',
-        'Wld_GetPlayerPortalGuild',
-        'Wld_GetFormerPlayerPortalOwner',
-        'Wld_GetFormerPlayerPortalGuild',
-        'Npc_IsPlayerInMyRoom',
-        'Npc_WasPlayerInMyRoom',
-        'IntToString',
-        'FloatToInt',
-        'IntToFloat',
-        'ConcatStrings',
-        'PrintDebugInst',
-        'PrintDebugInstCh',
-        'PrintDebugCh',
-        'Log_CreateTopic',
-        'Log_SetTopicStatus',
-        'Log_AddEntry',
-        'Doc_Create',
-        'Doc_SetPages',
-        'Doc_SetPage',
-        'Doc_SetFont',
-        'Doc_SetMargins',
-        'Doc_PrintLine',
-        'Doc_PrintLines',
-        'Doc_Show',
+        'TA_BEGINOVERLAY',
+        'TA_ENDOVERLAY',
+        'TA_REMOVEOVERLAY',
+        'NPC_EXCHANGEROUTINE',
+        'RTN_EXCHANGE',
+        'PERC_SETRANGE',
+        'NPC_SETPERCTIME',
+        'NPC_PERCENABLE',
+        'NPC_PERCDISABLE',
+        'NPC_SENDPASSIVEPERC',
+        'NPC_SENDSINGLEPERC',
+        'NPC_PERCEIVEALL',
+        'WLD_ASSIGNROOMTOGUILD',
+        'WLD_ASSIGNROOMTONPC',
+        'WLD_GETPLAYERPORTALOWNER',
+        'WLD_GETPLAYERPORTALGUILD',
+        'WLD_GETFORMERPLAYERPORTALOWNER',
+        'WLD_GETFORMERPLAYERPORTALGUILD',
+        'NPC_ISPLAYERINMYROOM',
+        'NPC_WASPLAYERINMYROOM',
+        'HLP_CUTSCENEPLAYED',
     ],
     MENU: [
-        'Update_ChoiceBox',
-        'Apply_Options_Performance',
-        'Apply_Options_Video',
-        'Apply_Options_Audio',
-        'Apply_Options_Game',
-        'Apply_Options_Controls',
-        'PlayVideo',
+        'UPDATE_CHOICEBOX',
+        'APPLY_OPTIONS_PERFORMANCE',
+        'APPLY_OPTIONS_VIDEO',
+        'APPLY_OPTIONS_AUDIO',
+        'APPLY_OPTIONS_GAME',
+        'APPLY_OPTIONS_CONTROLS',
+        'PLAYVIDEO',
     ],
 };
 const G1 = {
     ...basic,
+    CONTENT: basic['CONTENT'].concat(['AI_LOOKFORITEM']),
 };
 const G112 = {
     ...basic,
+    CONTENT: basic['CONTENT'].concat([
+        'PRINTSCREENCOLORED',
+        'AI_PRINTSCREEN',
+        'WLD_ISFPAVAILINRANGE',
+        'WLD_ISNEXTFPAVAILINRANGE',
+        'NPC_CLEARINVENTORY',
+        'NPC_CANSEEITEMFREELOS',
+        'NPC_GETWALKMODE',
+        'NPC_ISINTERACTINGWITH',
+        'WLD_GETINTERACTMOBSTATE',
+        'AI_LOOKFORITEM',
+        'AI_SND_PLAY',
+        'AI_SND_PLAY3D',
+        'WLD_INSERTITEMS',
+        'NPC_GETMOBGUILD',
+        'CREATEITEMINSLOT',
+        'REMOVEITEMFROMSLOT',
+        'AI_CREATEITEMINSLOT',
+        'AI_REMOVEITEMFROMSLOT',
+    ]),
 };
 const G130 = {
     ...basic,
+    CONTENT: basic['CONTENT'].concat([
+        'AI_PRINTSCREEN',
+        'EXITSESSION',
+        'PLAYVIDEOEX',
+        'WLD_DETECTNPCEXATT',
+        'NPC_CLEARINVENTORY',
+        'NPC_GETHEIGHTTONPC',
+        'NPC_GETLOOKATTARGET',
+        'NPC_STOPANI',
+        'AI_SND_PLAY',
+        'AI_SND_PLAY3D',
+        'WLD_ISRAINING',
+        'WLD_STOPEFFECT',
+        'AI_PLAYFX',
+        'AI_STOPFX',
+        'DOC_SETLEVELCOORDS',
+        'NPC_ISINPLAYERSROOM',
+        'NPC_GETPORTALOWNER',
+        'NPC_GETPORTALGUILD',
+        'GAME_INITGERMAN',
+        'GAME_INITENGLISH',
+    ]),
 };
 const G2 = {
     ...basic,
+    CONTENT: basic['CONTENT'].concat([
+        'AI_PRINTSCREEN',
+        'EXITSESSION',
+        'PLAYVIDEOEX',
+        'NPC_GETLASTHITSPELLID',
+        'NPC_GETLASTHITSPELLCAT',
+        'NPC_GETACTIVESPELLISSCROLL',
+        'WLD_DETECTNPCEXATT',
+        'NPC_CLEARINVENTORY',
+        'NPC_GETHEIGHTTONPC',
+        'NPC_GETHEIGHTTOITEM',
+        'NPC_GETLOOKATTARGET',
+        'NPC_STOPANI',
+        'AI_SND_PLAY',
+        'AI_SND_PLAY3D',
+        'NPC_ISDRAWINGWEAPON',
+        'NPC_ISDRAWINGSPELL',
+        'WLD_ISRAINING',
+        'WLD_STOPEFFECT',
+        'AI_PLAYFX',
+        'AI_STOPFX',
+        'DOC_SETLEVELCOORDS',
+        'NPC_ISINPLAYERSROOM',
+        'NPC_GETPORTALOWNER',
+        'NPC_GETPORTALGUILD',
+        'GAME_INITGERMAN',
+        'GAME_INITENGLISH',
+        'GAME_INITENGINTL',
+    ]),
 };
 const list = {
     G1,
@@ -63230,11 +70143,18 @@ const list = {
 };
 /* harmony default export */ const externals = (list);
 
+// EXTERNAL MODULE: ./node_modules/@actions/io/lib/io.js
+var io = __nccwpck_require__(7436);
+// EXTERNAL MODULE: ./node_modules/@actions/tool-cache/lib/tool-cache.js
+var tool_cache = __nccwpck_require__(7784);
+// EXTERNAL MODULE: ./node_modules/@actions/glob/lib/glob.js
+var glob = __nccwpck_require__(8090);
 // EXTERNAL MODULE: external "fs"
 var external_fs_ = __nccwpck_require__(7147);
 var external_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_fs_);
 // EXTERNAL MODULE: external "path"
 var external_path_ = __nccwpck_require__(1017);
+var external_path_default = /*#__PURE__*/__nccwpck_require__.n(external_path_);
 ;// CONCATENATED MODULE: ./src/parser.ts
 
 
@@ -63244,7 +70164,10 @@ var external_path_ = __nccwpck_require__(1017);
 
 
 
-const wildcards = /\*|\?/g;
+
+
+
+const wildcards = /\*|\?/;
 /**
  * Parse source files and generate symbol tables.
  */
@@ -63261,6 +70184,7 @@ class parser_Parser {
     referenceTable;
     namingViolations;
     referenceViolations;
+    overwriteViolations;
     filelist;
     /**
      * Represents a Parser object.
@@ -63282,6 +70206,7 @@ class parser_Parser {
         this.referenceTable = [];
         this.namingViolations = [];
         this.referenceViolations = [];
+        this.overwriteViolations = [];
         this.filelist = [];
     }
     /**
@@ -63318,13 +70243,13 @@ class parser_Parser {
     /**
      * Parses the file and fills the symbol table with basic symbols based on the parser type.
      */
-    parse() {
+    async parse() {
         // Fill the symbol table with the externals
         this.parseExternals();
         // Fill symbol table with basic symbols based on the parser
         this.parseRequired();
         // Parse the files
-        this.parseSrc(this.filepath, true);
+        await this.parseSrc(this.filepath, true);
     }
     /**
      * Parses the basic symbols for content and menu parsers.
@@ -63333,13 +70258,21 @@ class parser_Parser {
         let symbols = [];
         switch (this.type) {
             case 'CONTENT':
-                // Add content externs (per game version)
-                // TODO: switch (this.version) ...
-                symbols = [];
+                symbols = ['C_NPC', 'C_ITEM', 'SELF', 'OTHER', 'VICTIM', 'ITEM', 'HERO'];
+                switch (this.version) {
+                    case 130:
+                    case 2:
+                        symbols.push('INIT_GLOBAL');
+                    // eslint-disable-next-line no-fallthrough
+                    case 1:
+                        symbols.push('STARTUP_GLOBAL');
+                }
                 break;
             case 'MENU':
-                // Add menu externals
-                symbols = [];
+                symbols = ['MENU_MAIN'];
+                break;
+            case 'CAMERA':
+                symbols = ['CAMMODNORMAL'];
                 break;
         }
         // Add Ninja helper symbols (to all parser types)
@@ -63375,17 +70308,62 @@ class parser_Parser {
      *
      * @param pattern - The pattern to handle.
      */
-    parseSpecial(pattern) {
+    async parseSpecial(pattern) {
         if (this.type !== 'CONTENT')
             return;
+        let symbols = [];
+        let repoUrl = '';
+        let srcPath = '';
+        const tmpPath = '.patch-validator-special';
         switch (pattern.toLowerCase()) {
-            case 'lego':
-                // TODO: Parse LeGo
-                // this.parseD(..., true)
-                break;
             case 'ikarus':
-            // TODO: Parse Ikarus
-            // this.parseD(..., true)
+                // Download Ikarus from the official repository (caution: not the compatibility version)
+                repoUrl = 'https://github.com/Lehona/Ikarus/archive/refs/heads/gameversions.tar.gz';
+                srcPath = external_path_.posix.join(tmpPath, 'Ikarus-gameversions', `Ikarus_G${this.version}.src`);
+                // Provisionally add Ninja-specific compatibility symbols
+                symbols = [
+                    'DAM_INDEX_MAX',
+                    'PROT_INDEX_MAX',
+                    'ITM_TEXT_MAX',
+                    'ATR_HITPOINTS',
+                    'ATR_HITPOINTS_MAX',
+                    'ATR_MANA',
+                    'ATR_MANA_MAX',
+                    'PERC_ASSESSDAMAGE',
+                    'ITEM_KAT_NF',
+                    'ITEM_KAT_FF',
+                    'TRUE',
+                    'FALSE',
+                    'LOOP_CONTINUE',
+                    'LOOP_END',
+                    'ATT_FRIENDLY',
+                    'ATT_NEUTRAL',
+                    'ATT_ANGRY',
+                    'ATT_HOSTILE',
+                ];
+                break;
+            case 'lego':
+                // Download LeGo from the official repository (caution: not the compatibility version)
+                repoUrl = 'https://github.com/Lehona/LeGo/archive/refs/heads/gameversions.tar.gz';
+                srcPath = external_path_.posix.join(tmpPath, 'LeGo-gameversions', `Header_G${this.version}.src`);
+                // Provisionally add Ninja-specific compatibility symbols
+                symbols = ['LEGO_MERGEFLAGS', 'FOREACHPATCHHNDL'];
+                break;
+            default:
+                return;
+        }
+        // Download the repository and parse its files
+        const archivePath = await tool_cache.downloadTool(repoUrl);
+        await io.mkdirP(tmpPath);
+        await tool_cache.extractTar(archivePath, tmpPath);
+        await io.rmRF(archivePath);
+        await this.parseSrc(srcPath, false, true);
+        await io.rmRF(tmpPath);
+        // Completement the symbol table
+        if (symbols.length > 0) {
+            symbols.forEach((symbol) => {
+                this.symbolTable.push({ name: symbol.toUpperCase(), file: '', line: 0 });
+            });
         }
     }
     /**
@@ -63393,32 +70371,40 @@ class parser_Parser {
      *
      * @param filepath - The path of the source file to parse.
      * @param root - Indicates whether the source file is the root file.
+     * @param exclude - Indicates whether the source file is not part of the patch.
      * @throws An error if wildcards are used in the filepath.
      */
-    parseSrc(filepath, root = false) {
+    async parseSrc(filepath, root = false, exclude = false) {
         const { fullPath } = this.stripPath(filepath);
-        if (wildcards.test(filepath))
-            throw new Error('Wildcards are not supported');
-        if (external_path_.posix.extname(fullPath) !== '.src' || !external_fs_default().existsSync(fullPath))
+        if (!external_fs_default().existsSync(fullPath))
             return;
-        const input = external_fs_default().readFileSync(fullPath, 'ascii');
         const srcRootPath = external_path_.posix.dirname(fullPath);
-        const lines = input.split(/\r?\n/).filter((line) => line.trim() !== '');
-        for (const line of lines) {
-            const lineF = line.trim().toLowerCase();
-            const subfile = normalizePath(lineF);
+        const input = external_fs_default().readFileSync(fullPath, 'ascii');
+        let lines = input.split(/\r?\n/).filter((line) => line.trim() !== '');
+        // Iterate over the lines in the file
+        while (lines.length > 0) {
+            const line = lines.shift().trim();
+            const subfile = normalizePath(line);
             const fullPath = external_path_.posix.join(srcRootPath, subfile);
-            const ext = external_path_.posix.extname(subfile);
+            if (wildcards.test(line)) {
+                if (!exclude)
+                    throw new Error('Wildcards are not supported');
+                const nativeSrcRootPath = external_path_default().resolve(srcRootPath) + (external_path_default()).sep;
+                const resolved = await glob.create(fullPath).then((g) => g.glob().then((f) => f.map((h) => h.replace(nativeSrcRootPath, ''))));
+                lines = resolved.concat(lines);
+                continue;
+            }
+            const ext = external_path_.posix.extname(subfile).toLowerCase();
             switch (ext) {
                 case '.d':
-                    this.parseD(fullPath);
+                    this.parseD(fullPath, exclude);
                     break;
                 case '.src':
-                    this.parseSrc(fullPath);
+                    await this.parseSrc(fullPath, false, exclude);
                     break;
                 default:
                     if (root)
-                        this.parseSpecial(lineF);
+                        await this.parseSpecial(line.toLowerCase());
             }
         }
     }
@@ -63429,9 +70415,7 @@ class parser_Parser {
      */
     parseD(filepath, exclude = false) {
         const { fullPath, relPath } = this.stripPath(filepath);
-        if (wildcards.test(filepath))
-            throw new Error('Wildcards are not supported');
-        if (external_path_.posix.extname(fullPath) !== '.d' || !external_fs_default().existsSync(fullPath))
+        if (!external_fs_default().existsSync(fullPath))
             return;
         if (this.filelist.includes(relPath))
             return;
@@ -63447,7 +70431,8 @@ class parser_Parser {
         const visitor = new SymbolVisitor(exclude ? '' : relPath);
         const { symbols, references } = visitor.visit(tree);
         this.symbolTable.push(...symbols);
-        this.referenceTable.push(...references);
+        if (!exclude)
+            this.referenceTable.push(...references);
     }
     /**
      * Validates the names of symbols in the symbol table.
@@ -63469,8 +70454,66 @@ class parser_Parser {
      */
     validateReferences() {
         this.referenceViolations = this.referenceTable.filter((symbol) => {
+            const fromPatch = symbol.file !== '';
             const isDefined = this.symbolTable.some((s) => s.name === symbol.name);
-            return !isDefined;
+            return fromPatch && !isDefined;
+        });
+    }
+    /**
+     * Validates the symbol tables for illegal overwrites.
+     */
+    validateOverwrites() {
+        if (this.type !== 'CONTENT')
+            return;
+        // See: https://ninja.szapp.de/s/src/data/symbols.asm
+        const illegal = [
+            'INIT_GLOBAL',
+            'INITPERCEPTIONS',
+            'REPEAT',
+            'WHILE',
+            'MEM_LABEL',
+            'MEM_GOTO',
+            'ALLOWSAVING',
+            'ONALLOWSAVING',
+            'ONDISALLOWSAVING',
+            'FOCUSNAMES_COLOR_FRIENDLY',
+            'FOCUSNAMES_COLOR_NEUTRAL',
+            'FOCUSNAMES_COLOR_ANGRY',
+            'FOCUSNAMES_COLOR_HOSTILE',
+            '_FOCUSNAMES',
+            'BW_SAVEGAME',
+            'BR_SAVEGAME',
+            'CURSOR_TEXTURE',
+            'PF_FONT',
+            'PRINT_LINESEPERATOR',
+            'DIAG_PREFIX',
+            'DIAG_SUFFIX',
+            'BLOODSPLAT_NUM',
+            'BLOODSPLAT_TEX',
+            'BLOODSPLAT_DAM',
+            'BUFFS_DISPLAYFORHERO',
+            'BUFF_FADEOUT',
+            'PF_PRINTX',
+            'PF_PRINTY',
+            'PF_TEXTHEIGHT',
+            'PF_FADEINTIME',
+            'PF_FADEOUTTIME',
+            'PF_MOVEYTIME',
+            'PF_WAITTIME',
+            'AIV_TALENT_INDEX',
+            'AIV_TALENT',
+            'NINJA_SYMBOLS_START',
+            'NINJA_SYMBOLS_END',
+            'NINJA_VERSION',
+            'NINJA_PATCHES',
+            'NINJA_MODNAME',
+            `NINJA_SYMBOLS_START_${this.patchName}`,
+            `NINJA_SYMBOLS_END_${this.patchName}`,
+        ];
+        this.overwriteViolations = this.symbolTable.filter((symbol) => {
+            const fromPatch = symbol.file !== '';
+            const isIllegal = illegal.some((p) => symbol.name === p);
+            return fromPatch && isIllegal;
         });
     }
 }

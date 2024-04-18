@@ -11,8 +11,6 @@ let runMock: jest.SpiedFunction<typeof main.run>
 
 describe('run', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
-
     jest.spyOn(inputs, 'loadInputs').mockReturnValue({ relPath: '', basePath: '', patchName: '', prefix: [], ignore: [] })
     jest.spyOn(Parser, 'from').mockReturnValue([{ symbolTable: [] as SymbolTable } as Parser])
     jest.spyOn(validate, 'formatFilters').mockReturnValue({ prefix: [], ignore: [] })
@@ -22,6 +20,7 @@ describe('run', () => {
     jest.spyOn(write, 'summary').mockImplementation()
     jest.spyOn(cleanup, 'workflow').mockResolvedValue(false)
     jest.spyOn(core, 'setFailed').mockImplementation()
+    jest.spyOn(core, 'error').mockImplementation()
     runMock = jest.spyOn(main, 'run')
   })
 

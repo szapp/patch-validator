@@ -4,7 +4,7 @@ let runMock: jest.SpiedFunction<typeof main.run>
 
 describe('index', () => {
   beforeEach(() => {
-    runMock = jest.spyOn(main, 'run')
+    runMock = jest.spyOn(main, 'run').mockImplementation()
   })
 
   it('calls run when imported', async () => {

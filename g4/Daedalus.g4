@@ -1,123 +1,247 @@
 grammar Daedalus;
 
 // lexer
-Const : 'const' | 'CONST';
-Var: 'var' | 'VAR';
-If : 'if' | 'IF';
-Int: 'int' | 'INT';
-Else: 'else' | 'ELSE';
-Func: 'func' | 'FUNC';
-String: 'string' | 'STRING';
-Class: 'class' | 'CLASS';
-Void: 'void' | 'VOID';
-Return: 'return' | 'RETURN';
-Float: 'float' | 'FLOAT';
-Prototype: 'prototype' | 'PROTOTYPE';
-Instance: 'instance' | 'INSTANCE';
-Null: 'null' | 'Null' | 'NULL' ;
-NoFunc: 'nofunc' | 'NoFunc' | 'NOFUNC';
+IntegerLiteral: Digit+;
+FloatLiteral: PointFloat | ExponentFloat;
+StringLiteral: '"' (~["\r\n])* '"';
 
-Identifier : IdStart IdContinue*;
-IntegerLiteral : Digit+;
-FloatLiteral : PointFloat | ExponentFloat;
-StringLiteral : '"' (~["\\\r\n] | '\\' (. | EOF))* '"';
+Const: C O N S T;
+Var: V A R;
+If: I F;
+Int: I N T;
+Else: E L S E;
+Func: F U N C;
+StringKeyword: S T R I N G;
+Class: C L A S S;
+Void: V O I D;
+Return: R E T U R N;
+Float: F L O A T;
+Prototype: P R O T O T Y P E;
+Instance: I N S T A N C E;
+Null: N U L L;
 
-Whitespace : [ \t]+ -> skip;
-Newline : ('\r''\n'?| '\n') -> skip;
-BlockComment :   '/*' .*? '*/' -> skip;
-LineComment :   '//' ~[\r\n]* -> skip ;
+LeftParen: '(';
+RightParen: ')';
 
-UnexpectedCharacter : . ;
+LeftBracket: '[';
+RightBracket: ']';
+
+LeftBrace: '{';
+RightBrace: '}';
+
+BitAnd: '&';
+And: '&&';
+BitOr: '|';
+Or: '||';
+Plus: '+';
+Minus: '-';
+Div: '/';
+Star: '*';
+Tilde: '~';
+Not: '!';
+Assign: '=';
+Less: '<';
+Greater: '>';
+
+PlusAssign: '+=';
+MinusAssign: '-=';
+StarAssign: '*=';
+DivAssign: '/=';
+AndAssign: '&=';
+OrAssign: '|=';
+
+Dot: '.';
+Semi: ';';
+
+Identifier: (NonDigit | Digit) IdContinue*;
+
+Whitespace: [ \t]+ -> skip;
+Newline: ('\r' '\n'? | '\n') -> skip;
+BlockComment: '/*' .*? '*/' -> skip;
+LineComment: '//' ~[\r\n]* -> skip;
 
 // fragments
-fragment IdStart : GermanCharacter | [a-zA-Z_];
-fragment IdContinue : IdStart | Digit | SpecialCharacter;
-fragment SpecialCharacter : [@^];
-fragment GermanCharacter : [\u00DF\u00E4\u00F6\u00FC];
-fragment Digit : [0-9];
-fragment PointFloat : Digit* '.' Digit+ | Digit+ '.';
-fragment ExponentFloat : (Digit+ | PointFloat) Exponent;
-fragment Exponent : [eE] [+-]? Digit+;
+fragment NonDigit: GermanCharacter | [a-zA-Z_];
+fragment IdContinue: NonDigit | IdSpecial | Digit;
+fragment IdSpecial: [@^];
+fragment GermanCharacter:
+	//   ß     Ä     ä     Ö     ö     Ü     ü
+	[\u00DF\u00C4\u00E4\u00D6\u00F6\u00DC\u00FC];
+fragment Digit: [0-9];
+fragment PointFloat: Digit* '.' Digit+ | Digit+ '.';
+fragment ExponentFloat: (Digit+ | PointFloat) Exponent;
+fragment Exponent: [eE] [+-]? Digit+;
 
+fragment A: [Aa];
+fragment B: [Bb];
+fragment C: [Cc];
+fragment D: [Dd];
+fragment E: [Ee];
+fragment F: [Ff];
+fragment G: [Gg];
+fragment H: [Hh];
+fragment I: [Ii];
+fragment J: [Jj];
+fragment K: [Kk];
+fragment L: [Ll];
+fragment M: [Mm];
+fragment N: [Nn];
+fragment O: [Oo];
+fragment P: [Pp];
+fragment Q: [Qq];
+fragment R: [Rr];
+fragment S: [Ss];
+fragment T: [Tt];
+fragment U: [Uu];
+fragment V: [Vv];
+fragment W: [Ww];
+fragment X: [Xx];
+fragment Y: [Yy];
+fragment Z: [Zz];
 
 //parser
-daedalusFile:  (blockDef | inlineDef)*? EOF;
-blockDef : (functionDef | classDef | prototypeDef | instanceDef)';'?;
-inlineDef :  (constDef | varDecl | instanceDecl)';'; 
+daedalusFile: mainBlock? EOF;
+blockDef:
+	(
+		functionDef
+		| classDef
+		| prototypeDef
+		| instanceDef
+	) Semi;
+inlineDef: (constDef | varDecl | instanceDecl) Semi;
 
-functionDef: Func dataType nameNode parameterList statementBlock;
-constDef: Const dataType (constValueDef | constArrayDef) (',' (constValueDef | constArrayDef) )*;
-classDef: Class nameNode '{' ( varDecl ';' )*? '}';
-prototypeDef: Prototype nameNode '(' parentReference ')' statementBlock;
-instanceDef: Instance nameNode '(' parentReference ')' statementBlock;
-instanceDecl: Instance nameNode ( ',' nameNode )*? '(' parentReference ')';
-varDecl: Var dataType (varValueDecl | varArrayDecl) (',' (varValueDecl | varArrayDecl) )* ;
+functionDef:
+	Func typeReference nameNode parameterList statementBlock;
+constDef:
+	Const typeReference (constValueDef | constArrayDef) (
+		',' (constValueDef | constArrayDef)
+	)*;
+classDef: Class nameNode LeftBrace (varDecl Semi)*? RightBrace;
+prototypeDef:
+	Prototype nameNode LeftParen parentReference RightParen statementBlock;
+instanceDef:
+	Instance nameNode LeftParen parentReference RightParen statementBlock;
+instanceDecl:
+	Instance nameNode (',' nameNode)*? LeftParen parentReference RightParen;
+mainBlock: contentBlock+;
+contentBlock: (blockDef | inlineDef);
+varDecl:
+	Var typeReference (varValueDecl | varArrayDecl) (
+		',' (varDecl | varValueDecl | varArrayDecl)
+	)*;
 
-constArrayDef: nameNode '[' arraySize ']' constArrayAssignment;
-constArrayAssignment: '=' '{' ( expression (',' expression)*? ) '}';
+constArrayDef:
+	nameNode LeftBracket arraySize RightBracket constArrayAssignment;
+constArrayAssignment:
+	Assign LeftBrace (expressionBlock (',' expressionBlock)*?) RightBrace;
 
 constValueDef: nameNode constValueAssignment;
-constValueAssignment: '=' expression;
+constValueAssignment: Assign expressionBlock;
 
-varArrayDecl: nameNode '[' arraySize ']';
-
+varArrayDecl: nameNode LeftBracket arraySize RightBracket;
 varValueDecl: nameNode;
 
-parameterList: '(' (parameterDecl (',' parameterDecl)*? )? ')';
-parameterDecl: Var dataType nameNode ('[' arraySize ']')?;
-statementBlock: '{' ( ( (statement ';')  | ( ifBlockStatement ';'? ) ) )*? '}';
-statement: assignment | returnStatement | constDef | varDecl | expression;
-functionCall: nameNode '(' ( expression ( ',' expression )*? )? ')';
-assignment: reference assignmentOperator expression;
+parameterList:
+	LeftParen (parameterDecl (',' parameterDecl)*?)? RightParen;
+parameterDecl:
+	Var typeReference nameNode (
+		LeftBracket arraySize RightBracket
+	)?;
+statementBlock:
+	LeftBrace ((statement Semi) | ( ifBlockStatement Semi?))*? RightBrace;
+statement:
+	assignment
+	| returnStatement
+	| constDef
+	| varDecl
+	| expression;
+funcCall:
+	nameNode LeftParen (
+		funcArgExpression (',' funcArgExpression)*?
+	)? RightParen;
+assignment: reference assignmentOperator expressionBlock;
+ifCondition: expressionBlock;
 elseBlock: Else statementBlock;
-elseIfBlock: Else If expression statementBlock;
-ifBlock: If expression statementBlock;
-ifBlockStatement: ifBlock ( elseIfBlock )*? ( elseBlock )?;
-returnStatement: Return ( expression )?;
+elseIfBlock: Else If ifCondition statementBlock;
+ifBlock: If ifCondition statementBlock;
+ifBlockStatement: ifBlock ( elseIfBlock)*? ( elseBlock)?;
+returnStatement: Return ( expressionBlock)?;
 
-expression
-    : '(' expression ')' #bracketExpression
-    | (oper=unaryOperator) expression #unaryExpression
-    | expression (oper=multOperator) expression #multExpression
-    | expression (oper=addOperator) expression #addExpression
-    | expression (oper=bitMoveOperator) expression #bitMoveExpression
-    | expression (oper=compOperator) expression #compExpression
-    | expression (oper=eqOperator) expression #eqExpression
-    | expression (oper=binAndOperator) expression #binAndExpression
-    | expression (oper=binOrOperator) expression #binOrExpression
-    | expression (oper=logAndOperator) expression #logAndExpression
-    | expression (oper=logOrOperator) expression #logOrExpression
-    | value #valueExpression
-    ;
+funcArgExpression:
+	expressionBlock; // we use that to detect func call args
+expressionBlock:
+	expression; // we use that expression to force parser threat expression as a block
 
-arrayIndex : IntegerLiteral | reference;
-arraySize : IntegerLiteral | reference;
+expression:
+	LeftParen expression RightParen			# bracketExpression
+	| unaryOperator expression				# unaryOperation
+	| expression multOperator expression	# multExpression
+	| expression addOperator expression		# addExpression
+	| expression bitMoveOperator expression	# bitMoveExpression
+	| expression compOperator expression	# compExpression
+	| expression eqOperator expression		# eqExpression
+	| expression binAndOperator expression	# binAndExpression
+	| expression binOrOperator expression	# binOrExpression
+	| expression logAndOperator expression	# logAndExpression
+	| expression logOrOperator expression	# logOrExpression
+	| value									# valExpression;
 
-value
-    : IntegerLiteral #integerLiteralValue
-    | FloatLiteral #floatLiteralValue
-    | StringLiteral #stringLiteralValue
-    | Null #nullLiteralValue
-    | NoFunc #noFuncLiteralValue
-    | functionCall #functionCallValue
-    | reference #referenceValue
-    ;
-    
-referenceAtom: nameNode ( '[' arrayIndex ']')?;
-reference: referenceAtom ( '.' referenceAtom )*;
+arrayIndex: IntegerLiteral | referenceAtom;
+arraySize: IntegerLiteral | referenceAtom;
 
-dataType: Identifier | Void | Int | Float | String | Func;
+value:
+	IntegerLiteral	# integerLiteralValue
+	| FloatLiteral	# floatLiteralValue
+	| StringLiteral	# stringLiteralValue
+	| Null			# nullLiteralValue
+	| funcCall		# funcCallValue
+	| reference		# referenceValue;
 
-nameNode: Identifier;
+referenceAtom: nameNode ( LeftBracket arrayIndex RightBracket)?;
+reference: referenceAtom ( Dot referenceAtom)?;
+
+typeReference: (
+		Identifier
+		| Void
+		| Int
+		| Float
+		| StringKeyword
+		| Func
+		| Instance
+	);
+anyIdentifier: (
+		Void
+		| Var
+		| Int
+		| Float
+		| StringKeyword
+		| Func
+		| Instance
+		| Class
+		| Prototype
+		| Null
+		| Identifier
+	);
+
+nameNode: anyIdentifier;
 
 parentReference: Identifier;
 
-assignmentOperator:  '=' | '+=' | '-=' | '*=' | '/=';
+assignmentOperator:
+	Assign
+	| StarAssign
+	| DivAssign
+	| PlusAssign
+	| MinusAssign
+	| AndAssign
+	| OrAssign;
+
+unaryOperator: Plus | Tilde | Minus | Not;
+
 addOperator: '+' | '-';
 bitMoveOperator: '<<' | '>>';
 compOperator: '<' | '>' | '<=' | '>=';
 eqOperator: '==' | '!=';
-unaryOperator: '-' | '!' | '~' | '+';
 multOperator: '*' | '/' | '%';
 binAndOperator: '&';
 binOrOperator: '|';

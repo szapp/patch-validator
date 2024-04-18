@@ -1,10 +1,28 @@
-import { Parser } from '../src/parser.ts'
-import fs from 'fs'
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
-jest.mock('fs')
+// Avoid some console outputs during tests
+jest.mock('@actions/core', () => {
+  const core = jest.requireActual('@actions/core')
+  return {
+    ...core,
+    debug: jest.fn(),
+    error: jest.fn(),
+  }
+})
+
+import { Parser } from '../src/parser.js'
+import fs from 'fs'
+import * as io from '@actions/io'
+import * as tc from '@actions/tool-cache'
+import * as glob from '@actions/glob'
+import { posix } from 'path'
 
 let fsExistsSyncMock: jest.SpiedFunction<typeof fs.existsSync>
 let fsReadFileSyncMock: jest.SpiedFunction<typeof fs.readFileSync>
+let ioMkdirPMock: jest.SpiedFunction<typeof io.mkdirP>
+let ioRmRFMock: jest.SpiedFunction<typeof io.rmRF>
+let tcDownloadToolMock: jest.SpiedFunction<typeof tc.downloadTool>
+let tcExtractTarMock: jest.SpiedFunction<typeof tc.extractTar>
 
 describe('Parser', () => {
   beforeEach(() => {
@@ -145,85 +163,126 @@ describe('Parser', () => {
   })
 
   describe('parse', () => {
-    it('should parse the file and fill the symbol table', () => {
+    it('should parse the file and fill the symbol table', async () => {
       const patchName = 'test'
       const filepath = '/path/to/file.src'
 
       const parser = new Parser(patchName, filepath)
 
-      parser['parseExternals'] = jest.fn()
-      parser['parseRequired'] = jest.fn()
-      parser['parseSrc'] = jest.fn()
+      const parseExternals = jest.spyOn(parser as any, 'parseExternals').mockImplementation()
+      const parseRequired = jest.spyOn(parser as any, 'parseRequired').mockImplementation()
+      const parseSrc = jest.spyOn(parser as any, 'parseSrc').mockImplementation()
 
-      parser.parse()
+      await parser.parse()
 
-      expect(parser['parseExternals']).toHaveBeenCalled()
-      expect(parser['parseRequired']).toHaveBeenCalled()
-      expect(parser['parseSrc']).toHaveBeenCalledWith(filepath, true)
+      expect(parseExternals).toHaveBeenCalled()
+      expect(parseRequired).toHaveBeenCalled()
+      expect(parseSrc).toHaveBeenCalledWith(filepath, true)
     })
   })
 
   describe('parseSrc', () => {
-    it('should parse the source file and call parseD or parseSrc recursively', () => {
+    it('should parse the source file and call parseD or parseSrc recursively', async () => {
       const patchName = 'test'
       const filepath = '/path/to/file.src'
       const parser = new Parser(patchName, filepath)
 
-      parser['stripPath'] = jest.fn().mockReturnValue({ fullPath: '/path/to/file.src', relPath: 'file.src' })
-      parser['parseD'] = jest.fn()
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const stripPath = jest.spyOn(parser as any, 'stripPath').mockReturnValue({ fullPath: '/path/to/file.src', relPath: 'file.src' })
+      const parseD = jest.spyOn(parser as any, 'parseD').mockImplementation()
       const parseSrc = jest.spyOn(parser as any, 'parseSrc')
 
       fsExistsSyncMock.mockReturnValue(false).mockReturnValueOnce(true)
       fsReadFileSyncMock.mockReturnValue('sub\\file.d\nrecurse.src\n')
 
-      parser['parseSrc'](filepath, true)
+      await parser['parseSrc'](filepath)
 
-      expect(parser['stripPath']).toHaveBeenCalledWith(filepath)
-      expect(parser['parseD']).toHaveBeenCalledWith('/path/to/sub/file.d')
-      expect(parseSrc).toHaveBeenCalledWith('/path/to/recurse.src')
+      expect(stripPath).toHaveBeenCalledWith(filepath)
+      expect(parseD).toHaveBeenCalledWith('/path/to/sub/file.d', false)
+      expect(parseSrc).toHaveBeenCalledWith('/path/to/recurse.src', false, false)
     })
 
-    it('should not parse the source file if it has an invalid extension', () => {
+    it('should not parse the source file if it has an invalid extension', async () => {
       const patchName = 'test'
       const filepath = '/path/to/file.src'
       const parser = new Parser(patchName, filepath)
 
-      parser['parseD'] = jest.fn()
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const parseD = jest.spyOn(parser as any, 'parseD')
       const parseSrc = jest.spyOn(parser as any, 'parseSrc')
 
       fsExistsSyncMock.mockReturnValue(true)
       fsReadFileSyncMock.mockReturnValue('sub\\file.txt\n')
 
-      parser['parseSrc'](filepath, true)
+      await parser['parseSrc'](filepath, true)
 
-      expect(parser['parseD']).not.toHaveBeenCalled()
+      expect(parseD).not.toHaveBeenCalled()
       expect(parseSrc).toHaveBeenCalledTimes(1)
     })
 
-    it('should parse the special line', () => {
+    it('should not parse the source file if it does not exist', async () => {
       const patchName = 'test'
       const filepath = '/path/to/file.src'
       const parser = new Parser(patchName, filepath)
 
-      parser['stripPath'] = jest.fn().mockReturnValue({ fullPath: '/path/to/file.src', relPath: 'file.src' })
-      parser['parseSpecial'] = jest.fn()
+      fsExistsSyncMock.mockReturnValue(false)
+
+      await parser['parseSrc'](filepath, true)
+
+      expect(fsReadFileSyncMock).not.toHaveBeenCalled()
+      expect(parser.filelist).toEqual([])
+      expect(parser.symbolTable).toEqual([])
+      expect(parser.referenceTable).toEqual([])
+    })
+
+    it('should parse the special line', async () => {
+      const patchName = 'test'
+      const filepath = '/path/to/file.src'
+      const parser = new Parser(patchName, filepath)
+
+      jest.spyOn(parser as any, 'stripPath').mockReturnValue({ fullPath: '/path/to/file.src', relPath: 'file.src' })
+      const parseSpecial = jest.spyOn(parser as any, 'parseSpecial').mockImplementation()
 
       fsExistsSyncMock.mockReturnValue(true)
       fsReadFileSyncMock.mockReturnValue('non-path\n')
 
-      parser['parseSrc'](filepath, true)
+      await parser['parseSrc'](filepath, true)
 
-      expect(parser['parseSpecial']).toHaveBeenCalledWith('non-path')
+      expect(parseSpecial).toHaveBeenCalledWith('non-path')
     })
 
-    it('should throw an error if wildcards are used in the filepath', () => {
+    it('should throw an error if source file contains wildcards', async () => {
       const patchName = 'test'
-      const filepath = '/path/to/*.src'
+      const filepath = '/path/to/file.src'
       const parser = new Parser(patchName, filepath)
 
-      expect(() => parser['parseSrc'](filepath, true)).toThrow('Wildcards are not supported')
+      fsExistsSyncMock.mockReturnValue(true)
+      fsReadFileSyncMock.mockReturnValue('some/path/*\n')
+
+      await expect(parser['parseSrc'](filepath, true)).rejects.toThrow('Wildcards are not supported')
+
+      expect(fsReadFileSyncMock).toHaveBeenCalledWith(filepath, 'ascii')
+      expect(fsReadFileSyncMock).toHaveReturnedWith('some/path/*\n')
+    })
+
+    it('should resolve wildcards when for excluded sources', async () => {
+      const patchName = 'test'
+      const filepath = 'path/to/file.src'
+      const parser = new Parser(patchName, filepath)
+
+      fsExistsSyncMock.mockReturnValue(true)
+      fsReadFileSyncMock.mockReturnValue('some/path/*\n')
+      jest.spyOn(posix, 'join')
+      jest.spyOn(glob, 'create').mockResolvedValue({ glob: async () => ['some/path/glob.ext'] } as glob.Globber)
+
+      await parser['parseSrc'](filepath, false, true)
+
+      expect(posix.join).toHaveBeenCalledWith('path/to', 'some/path/*')
+      expect(fsExistsSyncMock).toHaveBeenCalledWith(filepath)
+      expect(fsReadFileSyncMock).toHaveBeenCalledWith(filepath, 'ascii')
+      expect(glob.create).toHaveBeenCalledWith('path/to/some/path/*')
+      expect(posix.join).toHaveBeenCalledWith('path/to', 'some/path/glob.ext')
+      expect(parser.filelist).toEqual([])
+      expect(parser.symbolTable).toEqual([])
+      expect(parser.referenceTable).toEqual([])
     })
   })
 
@@ -235,18 +294,17 @@ describe('Parser', () => {
       const relPath = 'to/file.d'
       const parser = new Parser(patchName, filepath, workingDir)
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const stripPath = jest.spyOn(parser as any, 'stripPath')
       fsExistsSyncMock.mockReturnValue(true)
       fsReadFileSyncMock.mockReturnValueOnce('const int Symbol1 = 0;')
 
-      parser['parseD'](filepath)
+      parser['parseD'](filepath, true)
 
       expect(stripPath).toHaveBeenCalledWith(filepath)
       expect(fsReadFileSyncMock).toHaveBeenCalledTimes(1)
       expect(fsReadFileSyncMock).toHaveBeenCalledWith('/path/to/file.d', 'ascii')
       expect(parser.filelist).toEqual([relPath])
-      expect(parser.symbolTable).toEqual([{ name: 'SYMBOL1', file: relPath, line: 1 }])
+      expect(parser.symbolTable).toEqual([{ name: 'SYMBOL1', file: '', line: 1 }])
       expect(parser.referenceTable).toEqual([])
     })
 
@@ -284,10 +342,8 @@ describe('Parser', () => {
       const relPath = 'path/to/file.d'
       const parser = new Parser(patchName, filepath)
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const stripPath = jest.spyOn(parser as any, 'stripPath')
       fsExistsSyncMock.mockReturnValue(true)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ;(parser as any).filelist = [relPath]
 
       parser['parseD'](filepath)
@@ -298,14 +354,6 @@ describe('Parser', () => {
       expect(parser.filelist).toEqual([relPath])
       expect(parser.symbolTable).toEqual([])
       expect(parser.referenceTable).toEqual([])
-    })
-
-    it('should throw an error if wildcards are used in the filepath', () => {
-      const patchName = 'test'
-      const filepath = '/path/to/*.d'
-      const parser = new Parser(patchName, filepath)
-
-      expect(() => parser['parseD'](filepath)).toThrow('Wildcards are not supported')
     })
 
     it('should parse a complete grammar to cover all cases', () => {
@@ -349,7 +397,6 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
 };
 `
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const stripPath = jest.spyOn(parser as any, 'stripPath')
       fsExistsSyncMock.mockReturnValueOnce(true)
       fsReadFileSyncMock.mockReturnValueOnce(content)
@@ -409,11 +456,18 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
   })
 
   describe('parseRequired', () => {
-    it('should parse content symbols if type is "CONTENT"', () => {
+    it('should parse content symbols if type is "CONTENT" and version = 112', () => {
       const patchName = 'test'
       const filepath = '/path/to/file.src'
       const parser = new Parser(patchName, filepath)
       const expected = [
+        { name: 'C_NPC', file: '', line: 0 },
+        { name: 'C_ITEM', file: '', line: 0 },
+        { name: 'SELF', file: '', line: 0 },
+        { name: 'OTHER', file: '', line: 0 },
+        { name: 'VICTIM', file: '', line: 0 },
+        { name: 'ITEM', file: '', line: 0 },
+        { name: 'HERO', file: '', line: 0 },
         { name: 'NINJA_SYMBOLS_START', file: '', line: 0 },
         { name: 'NINJA_SYMBOLS_START_TEST', file: '', line: 0 },
         { name: 'NINJA_VERSION', file: '', line: 0 },
@@ -422,8 +476,38 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
         { name: 'NINJA_MODNAME', file: '', line: 0 },
       ]
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ;(parser as any)['type'] = 'CONTENT'
+      ;(parser as any)['version'] = 112
+      parser['parseRequired']()
+
+      expect(parser.symbolTable).toEqual(expected)
+      expect(parser.referenceTable).toEqual([])
+    })
+
+    it('should parse content symbols if type is "CONTENT" and version = 130', () => {
+      const patchName = 'test'
+      const filepath = '/path/to/file.src'
+      const parser = new Parser(patchName, filepath)
+      const expected = [
+        { name: 'C_NPC', file: '', line: 0 },
+        { name: 'C_ITEM', file: '', line: 0 },
+        { name: 'SELF', file: '', line: 0 },
+        { name: 'OTHER', file: '', line: 0 },
+        { name: 'VICTIM', file: '', line: 0 },
+        { name: 'ITEM', file: '', line: 0 },
+        { name: 'HERO', file: '', line: 0 },
+        { name: 'INIT_GLOBAL', file: '', line: 0 },
+        { name: 'STARTUP_GLOBAL', file: '', line: 0 },
+        { name: 'NINJA_SYMBOLS_START', file: '', line: 0 },
+        { name: 'NINJA_SYMBOLS_START_TEST', file: '', line: 0 },
+        { name: 'NINJA_VERSION', file: '', line: 0 },
+        { name: 'NINJA_PATCHES', file: '', line: 0 },
+        { name: 'NINJA_ID_TEST', file: '', line: 0 },
+        { name: 'NINJA_MODNAME', file: '', line: 0 },
+      ]
+
+      ;(parser as any)['type'] = 'CONTENT'
+      ;(parser as any)['version'] = 130
       parser['parseRequired']()
 
       expect(parser.symbolTable).toEqual(expected)
@@ -435,6 +519,7 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
       const filepath = '/path/to/file.src'
       const parser = new Parser(patchName, filepath)
       const expected = [
+        { name: 'MENU_MAIN', file: '', line: 0 },
         { name: 'NINJA_SYMBOLS_START', file: '', line: 0 },
         { name: 'NINJA_SYMBOLS_START_TEST', file: '', line: 0 },
         { name: 'NINJA_VERSION', file: '', line: 0 },
@@ -443,16 +528,35 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
         { name: 'NINJA_MODNAME', file: '', line: 0 },
       ]
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ;(parser as any)['type'] = 'MENU'
       parser['parseRequired']()
 
-      // TODO:
       expect(parser.symbolTable).toEqual(expected)
       expect(parser.referenceTable).toEqual([])
     })
 
-    it('should not parse any symbols if type is neither "CONTENT" nor "MENU"', () => {
+    it('should parse menu symbols if type is "CAMERA"', () => {
+      const patchName = 'test'
+      const filepath = '/path/to/file.src'
+      const parser = new Parser(patchName, filepath)
+      const expected = [
+        { name: 'CAMMODNORMAL', file: '', line: 0 },
+        { name: 'NINJA_SYMBOLS_START', file: '', line: 0 },
+        { name: 'NINJA_SYMBOLS_START_TEST', file: '', line: 0 },
+        { name: 'NINJA_VERSION', file: '', line: 0 },
+        { name: 'NINJA_PATCHES', file: '', line: 0 },
+        { name: 'NINJA_ID_TEST', file: '', line: 0 },
+        { name: 'NINJA_MODNAME', file: '', line: 0 },
+      ]
+
+      ;(parser as any)['type'] = 'CAMERA'
+      parser['parseRequired']()
+
+      expect(parser.symbolTable).toEqual(expected)
+      expect(parser.referenceTable).toEqual([])
+    })
+
+    it('should only parse helper symbols if type is any other', () => {
       const patchName = 'test'
       const filepath = '/path/to/file.src'
       const parser = new Parser(patchName, filepath)
@@ -465,11 +569,9 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
         { name: 'NINJA_MODNAME', file: '', line: 0 },
       ]
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ;(parser as any)['type'] = 'OTHER'
       parser['parseRequired']()
 
-      // TODO:
       expect(parser.symbolTable).toEqual(expected)
       expect(parser.referenceTable).toEqual([])
     })
@@ -496,54 +598,208 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
 
       expect(parser.type).toBe('CONTENT')
       expect(parser.version).toBe(1)
-      expect(parser.symbolTable).toHaveLength(256)
-      expect(parser.symbolTable).toContainEqual({ name: 'WLD_ASSIGNROOMTONPC', file: '', line: 0 })
+      expect(parser.symbolTable).toHaveLength(290 + 1)
+      expect(parser.symbolTable).toContainEqual({ name: 'AI_LOOKFORITEM', file: '', line: 0 })
+      expect(parser.referenceTable).toEqual([])
+    })
+
+    it('should parse G112 content external', () => {
+      const patchName = 'test'
+      const filepath = '/path/to/Content_G112.src'
+      const parser = new Parser(patchName, filepath)
+
+      parser['parseExternals']()
+
+      expect(parser.type).toBe('CONTENT')
+      expect(parser.version).toBe(112)
+      expect(parser.symbolTable).toHaveLength(290 + 18)
+      expect(parser.symbolTable).toContainEqual({ name: 'PRINTSCREENCOLORED', file: '', line: 0 })
+      expect(parser.referenceTable).toEqual([])
+    })
+
+    it('should parse G130 content external', () => {
+      const patchName = 'test'
+      const filepath = '/path/to/Content_G130.src'
+      const parser = new Parser(patchName, filepath)
+
+      parser['parseExternals']()
+
+      expect(parser.type).toBe('CONTENT')
+      expect(parser.version).toBe(130)
+      expect(parser.symbolTable).toHaveLength(290 + 20)
+      expect(parser.symbolTable).toContainEqual({ name: 'EXITSESSION', file: '', line: 0 })
+      expect(parser.referenceTable).toEqual([])
+    })
+
+    it('should parse G2 content external', () => {
+      const patchName = 'test'
+      const filepath = '/path/to/Content_G2.src'
+      const parser = new Parser(patchName, filepath)
+
+      parser['parseExternals']()
+
+      expect(parser.type).toBe('CONTENT')
+      expect(parser.version).toBe(2)
+      expect(parser.symbolTable).toHaveLength(290 + 27)
+      expect(parser.symbolTable).toContainEqual({ name: 'NPC_GETLASTHITSPELLID', file: '', line: 0 })
       expect(parser.referenceTable).toEqual([])
     })
   })
 
   describe('parseSpecial', () => {
-    it('should parse ikarus if type is "CONTENT"', () => {
+    beforeEach(() => {
+      ioMkdirPMock = jest.spyOn(io, 'mkdirP').mockResolvedValue()
+      ioRmRFMock = jest.spyOn(io, 'rmRF').mockResolvedValue()
+      tcDownloadToolMock = jest.spyOn(tc, 'downloadTool')
+      tcExtractTarMock = jest.spyOn(tc, 'extractTar')
+
+      // Fix path in environment variables
+      if (!('PATH' in process.env) && 'Path' in process.env) {
+        jest.replaceProperty(process, 'env', { ...process.env, PATH: process.env['Path'] })
+      }
+    })
+
+    afterAll(() => {
+      io.rmRF('.patch-validator-special')
+      io.rmRF('.patch-validator-tmp')
+    })
+
+    it('should parse ikarus if type is "CONTENT"', async () => {
       const patchName = 'test'
       const filepath = '/path/to/file.src'
       const parser = new Parser(patchName, filepath)
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      tcDownloadToolMock.mockResolvedValue('/path/to/ikarus.tar.gz')
+      tcExtractTarMock.mockResolvedValue('/path/to/ikarus')
+      const posixJoin = jest.spyOn(posix, 'join')
+      const parseSrc = jest.spyOn(parser as any, 'parseSrc').mockImplementation()
       ;(parser as any)['type'] = 'CONTENT'
-      parser['parseSpecial']('Ikarus')
+      ;(parser as any)['version'] = 1
+      await parser['parseSpecial']('Ikarus')
 
-      // TODO:
+      expect(posixJoin).toHaveBeenCalledWith('.patch-validator-special', 'Ikarus-gameversions', 'Ikarus_G1.src')
+      expect(tcDownloadToolMock).toHaveBeenCalledWith('https://github.com/Lehona/Ikarus/archive/refs/heads/gameversions.tar.gz')
+      expect(ioMkdirPMock).toHaveBeenCalledWith('.patch-validator-special')
+      expect(tcExtractTarMock).toHaveBeenCalledWith('/path/to/ikarus.tar.gz', '.patch-validator-special')
+      expect(ioRmRFMock).toHaveBeenCalledWith('/path/to/ikarus.tar.gz')
+      expect(parseSrc).toHaveBeenCalledWith('.patch-validator-special/Ikarus-gameversions/Ikarus_G1.src', false, true)
+      expect(ioRmRFMock).toHaveBeenCalledWith('.patch-validator-special')
+
+      expect(parser.symbolTable).toEqual([
+        { name: 'DAM_INDEX_MAX', file: '', line: 0 },
+        { name: 'PROT_INDEX_MAX', file: '', line: 0 },
+        { name: 'ITM_TEXT_MAX', file: '', line: 0 },
+        { name: 'ATR_HITPOINTS', file: '', line: 0 },
+        { name: 'ATR_HITPOINTS_MAX', file: '', line: 0 },
+        { name: 'ATR_MANA', file: '', line: 0 },
+        { name: 'ATR_MANA_MAX', file: '', line: 0 },
+        { name: 'PERC_ASSESSDAMAGE', file: '', line: 0 },
+        { name: 'ITEM_KAT_NF', file: '', line: 0 },
+        { name: 'ITEM_KAT_FF', file: '', line: 0 },
+        { name: 'TRUE', file: '', line: 0 },
+        { name: 'FALSE', file: '', line: 0 },
+        { name: 'LOOP_CONTINUE', file: '', line: 0 },
+        { name: 'LOOP_END', file: '', line: 0 },
+        { name: 'ATT_FRIENDLY', file: '', line: 0 },
+        { name: 'ATT_NEUTRAL', file: '', line: 0 },
+        { name: 'ATT_ANGRY', file: '', line: 0 },
+        { name: 'ATT_HOSTILE', file: '', line: 0 },
+      ])
+      expect(parser.referenceTable).toEqual([])
+    })
+
+    it('should parse lego if type is "CONTENT"', async () => {
+      const patchName = 'test'
+      const filepath = '/path/to/file.src'
+      const parser = new Parser(patchName, filepath)
+
+      const posixJoin = jest.spyOn(posix, 'join')
+      const parseSrc = jest.spyOn(parser as any, 'parseSrc').mockImplementation()
+      tcDownloadToolMock.mockResolvedValue('/path/to/lego.tar.gz')
+      tcExtractTarMock.mockResolvedValue('/path/to/lego')
+      ;(parser as any)['type'] = 'CONTENT'
+      ;(parser as any)['version'] = 2
+      await parser['parseSpecial']('LeGo')
+
+      expect(posixJoin).toHaveBeenCalledWith('.patch-validator-special', 'LeGo-gameversions', 'Header_G2.src')
+      expect(tcDownloadToolMock).toHaveBeenCalledWith('https://github.com/Lehona/LeGo/archive/refs/heads/gameversions.tar.gz')
+      expect(ioMkdirPMock).toHaveBeenCalledWith('.patch-validator-special')
+      expect(tcExtractTarMock).toHaveBeenCalledWith('/path/to/lego.tar.gz', '.patch-validator-special')
+      expect(ioRmRFMock).toHaveBeenCalledWith('/path/to/lego.tar.gz')
+      expect(parseSrc).toHaveBeenCalledWith('.patch-validator-special/LeGo-gameversions/Header_G2.src', false, true)
+      expect(ioRmRFMock).toHaveBeenCalledWith('.patch-validator-special')
+
+      expect(parser.symbolTable).toEqual([
+        { name: 'LEGO_MERGEFLAGS', file: '', line: 0 },
+        { name: 'FOREACHPATCHHNDL', file: '', line: 0 },
+      ])
+      expect(parser.referenceTable).toEqual([])
+    })
+
+    it('should not parse anything if pattern is neither ikarus nor lego', async () => {
+      const patchName = 'test'
+      const filepath = '/path/to/file.src'
+      const parser = new Parser(patchName, filepath)
+
+      ;(parser as any)['type'] = 'CONTENT'
+      await parser['parseSpecial']('something')
+
       expect(parser.symbolTable).toEqual([])
       expect(parser.referenceTable).toEqual([])
     })
 
-    it('should parse lego if type is "CONTENT"', () => {
+    it('should not parse lego if type is not "CONTENT"', async () => {
       const patchName = 'test'
       const filepath = '/path/to/file.src'
       const parser = new Parser(patchName, filepath)
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ;(parser as any)['type'] = 'CONTENT'
-      parser['parseSpecial']('LeGo')
-
-      // TODO:
-      expect(parser.symbolTable).toEqual([])
-      expect(parser.referenceTable).toEqual([])
-    })
-
-    it('should not parse lego if type is not "CONTENT"', () => {
-      const patchName = 'test'
-      const filepath = '/path/to/file.src'
-      const parser = new Parser(patchName, filepath)
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ;(parser as any)['type'] = 'MENU'
-      parser['parseSpecial']('LeGo')
+      await parser['parseSpecial']('LeGo')
 
-      // TODO:
       expect(parser.symbolTable).toEqual([])
       expect(parser.referenceTable).toEqual([])
     })
+
+    it('should download, extract and actually parse ikarus', async () => {
+      const patchName = 'test'
+      const filepath = '/path/to/Content_G130.src'
+      const parser = new Parser(patchName, filepath)
+
+      ioMkdirPMock.mockRestore()
+      ioRmRFMock.mockRestore()
+      tcDownloadToolMock.mockRestore()
+      tcExtractTarMock.mockRestore()
+
+      jest.replaceProperty(process, 'env', { ...process.env, RUNNER_TEMP: './.patch-validator-tmp/' })
+
+      await parser['parseSpecial']('Ikarus')
+
+      expect(parser.symbolTable.length).toBeGreaterThan(5000)
+      expect(parser.symbolTable).toContainEqual({ name: 'LOOP_CONTINUE', file: '', line: 0 })
+      expect(parser.symbolTable).toContainEqual(expect.objectContaining({ name: 'ZCTREE', file: '' }))
+      expect(parser.symbolTable).toContainEqual(expect.objectContaining({ name: 'MEM_INITALL', file: '' }))
+      expect(parser.referenceTable).toEqual([])
+    }, 60000)
+
+    it('should download, extract and actually parse lego', async () => {
+      const patchName = 'test'
+      const filepath = '/path/to/Content_G112.src'
+      const parser = new Parser(patchName, filepath)
+
+      ioMkdirPMock.mockRestore()
+      ioRmRFMock.mockRestore()
+      tcDownloadToolMock.mockRestore()
+      tcExtractTarMock.mockRestore()
+
+      jest.replaceProperty(process, 'env', { ...process.env, RUNNER_TEMP: './.patch-validator-tmp/' })
+
+      await parser['parseSpecial']('LeGo')
+
+      expect(parser.symbolTable.length).toBeGreaterThan(5000)
+      expect(parser.symbolTable).toContainEqual({ name: 'LEGO_MERGEFLAGS', file: '', line: 0 })
+      expect(parser.symbolTable).toContainEqual(expect.objectContaining({ name: '_LEGO_FLAGS', file: '' }))
+      expect(parser.referenceTable).toEqual([])
+    }, 60000)
   })
 
   describe('validateNames', () => {
@@ -552,7 +808,6 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
       const filepath = '/path/to/file.src'
       const parser = new Parser(patchName, filepath)
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ;(parser as any).symbolTable = [
         { name: 'SYMBOL1', file: 'path/to/file.d', line: 1 }, // Violation
         { name: 'SYMBOL1.LOCAL', file: 'path/to/file.d', line: 1 }, // Non-global
@@ -573,20 +828,18 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
       const filepath = '/path/to/file.src'
       const parser = new Parser(patchName, filepath)
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ;(parser as any).symbolTable = [
         { name: 'Symbol1', file: 'path/to/file1.d', line: 1 },
         { name: 'Symbol1.local', file: 'path/to/file1.d', line: 2 },
         { name: 'Symbol2', file: 'path/to/file1.d', line: 3 },
         { name: 'Symbol3', file: 'path/to/file1.d', line: 4 },
       ]
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ;(parser as any).referenceTable = [
         { name: 'Symbol1', file: 'path/to/file2.d', line: 3 },
         { name: 'Symbol1.local', file: 'path/to/file2.d', line: 10 },
         { name: 'Symbol3.local', file: 'path/to/file2.d', line: 15 },
         { name: 'Symbol4', file: 'path/to/file2.d', line: 22 },
+        { name: 'Symbol4', file: '', line: 23 },
       ]
 
       parser.validateReferences()
@@ -595,6 +848,39 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
         { name: 'Symbol3.local', file: 'path/to/file2.d', line: 15 },
         { name: 'Symbol4', file: 'path/to/file2.d', line: 22 },
       ])
+    })
+  })
+
+  describe('validateOverwrites', () => {
+    it('should filter symbol table for overwrite violations for type "CONTENT"', () => {
+      const parser = new Parser('test', '/path/to/Content.src')
+      ;(parser as any)['symbolTable'] = [
+        { name: 'INITPERCEPTIONS', file: 'file1', line: 1 },
+        { name: 'INIT_GLOBAL', file: '', line: 2 },
+        { name: 'NINJA_MODNAME', file: 'file3', line: 3 },
+        { name: 'SYMBOL4', file: 'file4', line: 4 },
+      ]
+
+      parser.validateOverwrites()
+
+      expect(parser.overwriteViolations).toEqual([
+        { name: 'INITPERCEPTIONS', file: 'file1', line: 1 },
+        { name: 'NINJA_MODNAME', file: 'file3', line: 3 },
+      ])
+    })
+
+    it('should not filter symbols for another type', () => {
+      const parser = new Parser('test', '/path/to/Menu.src')
+      ;(parser as any)['symbolTable'] = [
+        { name: 'INITPERCEPTIONS', file: 'file1', line: 1 },
+        { name: 'INIT_GLOBAL', file: '', line: 2 },
+        { name: 'NINJA_MODNAME', file: 'file3', line: 3 },
+        { name: 'SYMBOL4', file: 'file4', line: 4 },
+      ]
+
+      parser.validateOverwrites()
+
+      expect(parser.overwriteViolations).toEqual([])
     })
   })
 })

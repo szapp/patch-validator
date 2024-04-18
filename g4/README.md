@@ -1,3 +1,3 @@
-Source: https://github.com/dzieje-khorinis/DaedalusCompiler/blob/master/src/Common/Grammars/
+Source: https://github.com/kirides/DaedalusLanguageServer/tree/master/antlr_parser/
 
-Adjusted to conform to pure Daedalus (removed `extern`, `while`, `continue`, `break`, as well as variable declaration assignments and instance variables).
+Adjusted to conform to pure Daedalus (removed `meta` and `namespace`, as well as the comment channel).
