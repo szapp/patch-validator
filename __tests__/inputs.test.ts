@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import fs from 'fs'
 import YAML from 'yaml'
-import { loadInputs } from '../src/inputs.ts'
+import { loadInputs, formatFilters } from '../src/inputs.ts'
 
 let getInputMock: jest.SpiedFunction<typeof core.getInput>
 let fsExistsSyncMock: jest.SpiedFunction<typeof fs.existsSync>
@@ -41,8 +41,9 @@ describe('loadInputs', () => {
       relPath: 'Ninja/patchname',
       basePath: '/path/to/workspace/Ninja/patchname',
       patchName: 'patchname',
-      prefix: ['prefix-value1', 'prefix-value2'],
-      ignore: [],
+      prefixList: ['prefix-value1', 'prefix-value2'],
+      ignoreList: [],
+      workingDir: '/path/to/workspace',
     })
     expect(getInputMock).toHaveBeenCalledWith('patchName')
     expect(getInputMock).toHaveBeenCalledWith('rootPath')
@@ -75,8 +76,9 @@ describe('loadInputs', () => {
       relPath: 'Ninja/my-repo',
       basePath: '/path/to/workspace/Ninja/my-repo',
       patchName: 'my-repo',
-      prefix: [],
-      ignore: ['ignore-value'],
+      prefixList: [],
+      ignoreList: ['ignore-value'],
+      workingDir: '/path/to/workspace',
     })
     expect(getInputMock).toHaveBeenCalledWith('patchName')
     expect(getInputMock).toHaveBeenCalledWith('rootPath')
@@ -159,5 +161,24 @@ describe('loadInputs', () => {
     expect(fsExistsSyncMock).toHaveBeenCalledWith('Ninja/my-repo')
     expect(fsReadFileSyncMock).toHaveBeenCalledWith('.validator.yml', 'utf8')
     expect(yamlParseMock).toHaveBeenCalledWith('prefix:\n  - prefix-value1\n  - ab')
+  })
+})
+
+describe('formatFilters', () => {
+  beforeEach(() => {
+    jest.spyOn(core, 'info').mockImplementation()
+  })
+
+  it('formats and extends filters', () => {
+    const patchName = 'Patch1'
+    const prefix = ['pre1', 'PRE2']
+    const ignore = ['Symbol1', 'Symbol2']
+
+    const result = formatFilters(patchName, prefix, ignore)
+
+    expect(core.info).toHaveBeenCalledWith('Ignore:   SYMBOL1, SYMBOL2, NINJA_PATCH1_INIT, NINJA_PATCH1_MENU')
+    expect(core.info).toHaveBeenCalledWith('Prefixes: PRE1_, PRE2_, PATCH_PRE1_, PATCH_PRE2_, PATCH1_, PATCH_PATCH1_')
+    expect(result.prefix).toEqual(['PRE1_', 'PRE2_', 'PATCH_PRE1_', 'PATCH_PRE2_', 'PATCH1_', 'PATCH_PATCH1_'])
+    expect(result.ignore).toEqual(['SYMBOL1', 'SYMBOL2', 'NINJA_PATCH1_INIT', 'NINJA_PATCH1_MENU'])
   })
 })

@@ -75,7 +75,7 @@ describe('Parser', () => {
   })
 
   describe('from', () => {
-    it('parses all candidate SRC files', () => {
+    it('parses all candidate SRC files', async () => {
       const patchName = 'test'
       const basePath = '/path/to/base'
       const workingDir = ''
@@ -138,7 +138,7 @@ describe('Parser', () => {
       fsExistsSyncMock.mockReturnValue(false).mockReturnValueOnce(true)
       fsReadFileSyncMock.mockReturnValue('').mockReturnValueOnce('test.d\n')
 
-      const result = Parser.from(patchName, basePath, workingDir)
+      const result = await Parser.from(patchName, basePath, workingDir)
       expect(result).toHaveLength(1)
       expect(result[0]).toMatchObject(oneParser)
       expect(fsExistsSyncMock).toHaveBeenCalledTimes(candidates.length + 1)
@@ -683,7 +683,6 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
       expect(tcExtractTarMock).toHaveBeenCalledWith('/path/to/ikarus.tar.gz', '.patch-validator-special')
       expect(ioRmRFMock).toHaveBeenCalledWith('/path/to/ikarus.tar.gz')
       expect(parseSrc).toHaveBeenCalledWith('.patch-validator-special/Ikarus-gameversions/Ikarus_G1.src', false, true)
-      expect(ioRmRFMock).toHaveBeenCalledWith('.patch-validator-special')
 
       expect(parser.symbolTable).toEqual([
         { name: 'DAM_INDEX_MAX', file: '', line: 0 },
@@ -727,7 +726,6 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
       expect(tcExtractTarMock).toHaveBeenCalledWith('/path/to/lego.tar.gz', '.patch-validator-special')
       expect(ioRmRFMock).toHaveBeenCalledWith('/path/to/lego.tar.gz')
       expect(parseSrc).toHaveBeenCalledWith('.patch-validator-special/LeGo-gameversions/Header_G2.src', false, true)
-      expect(ioRmRFMock).toHaveBeenCalledWith('.patch-validator-special')
 
       expect(parser.symbolTable).toEqual([
         { name: 'LEGO_MERGEFLAGS', file: '', line: 0 },

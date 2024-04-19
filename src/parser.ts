@@ -30,6 +30,8 @@ export class Parser {
   public referenceViolations: SymbolTable
   public overwriteViolations: SymbolTable
   public readonly filelist: string[]
+  public duration: number
+  public numSymbols: number
 
   /**
    * Represents a Parser object.
@@ -53,16 +55,19 @@ export class Parser {
     this.referenceViolations = []
     this.overwriteViolations = []
     this.filelist = []
+    this.duration = 0
+    this.numSymbols = 0
   }
 
   /**
    * Creates an array of Parser instances based on the provided base path and working directory.
    *
+   * @param patchName - The name of the patch.
    * @param basePath - The base path for the Parser instances.
    * @param workingDir - The working directory for the Parser instances.
    * @returns An array of Parser instances.
    */
-  public static from(patchName: string, basePath: string, workingDir: string): Parser[] {
+  public static async from(patchName: string, basePath: string, workingDir: string): Promise<Parser[]> {
     const candidateNames = ['Content', 'Menu', 'PFX', 'SFX', 'VFX', 'Music', 'Camera', 'Fight']
     const suffixes = ['_G1', '_G112', '_G130', '_G2']
     const candidates = candidateNames
@@ -72,7 +77,7 @@ export class Parser {
       })
       .flat()
     const parsers = candidates.map((candidate) => new Parser(patchName, candidate, workingDir)).filter((parser) => parser.exists)
-    parsers.forEach((parser) => parser.parse())
+    await Promise.all(parsers.map((parser) => parser.parse()))
     return parsers
   }
 
@@ -92,6 +97,8 @@ export class Parser {
    * Parses the file and fills the symbol table with basic symbols based on the parser type.
    */
   public async parse(): Promise<void> {
+    const startTime = performance.now()
+
     // Fill the symbol table with the externals
     this.parseExternals()
 
@@ -100,6 +107,10 @@ export class Parser {
 
     // Parse the files
     await this.parseSrc(this.filepath, true)
+
+    // Record statistics
+    this.duration = performance.now() - startTime
+    this.numSymbols = this.symbolTable.filter((s) => s.file !== '').length
   }
 
   /**
@@ -211,13 +222,16 @@ export class Parser {
         return
     }
 
-    // Download the repository and parse its files
-    const archivePath = await tc.downloadTool(repoUrl)
-    await io.mkdirP(tmpPath)
-    await tc.extractTar(archivePath, tmpPath)
-    await io.rmRF(archivePath)
+    // Download the repository
+    if (!fs.existsSync(srcPath)) {
+      const archivePath = await tc.downloadTool(repoUrl)
+      await io.mkdirP(tmpPath)
+      await tc.extractTar(archivePath, tmpPath)
+      await io.rmRF(archivePath)
+    }
+
+    // Parse the files
     await this.parseSrc(srcPath, false, true)
-    await io.rmRF(tmpPath)
 
     // Completement the symbol table
     if (symbols.length > 0) {

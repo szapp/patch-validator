@@ -69741,10 +69741,17 @@ class SymbolVisitor extends DaedalusVisitor {
     };
 }
 
+// EXTERNAL MODULE: ./node_modules/humanize-duration/humanize-duration.js
+var humanize_duration = __nccwpck_require__(1369);
+var humanize_duration_default = /*#__PURE__*/__nccwpck_require__.n(humanize_duration);
 ;// CONCATENATED MODULE: ./src/utils.ts
+
 const winRE = /[\\]/g;
 function normalizePath(filepath) {
     return filepath.replace(winRE, '/');
+}
+function formatDuration(duration) {
+    return humanize_duration_default()(duration, { round: true, largest: 2, units: ['m', 's', 'ms'] });
 }
 
 ;// CONCATENATED MODULE: ./src/externals.ts
@@ -70186,6 +70193,8 @@ class parser_Parser {
     referenceViolations;
     overwriteViolations;
     filelist;
+    duration;
+    numSymbols;
     /**
      * Represents a Parser object.
      * @constructor
@@ -70208,15 +70217,18 @@ class parser_Parser {
         this.referenceViolations = [];
         this.overwriteViolations = [];
         this.filelist = [];
+        this.duration = 0;
+        this.numSymbols = 0;
     }
     /**
      * Creates an array of Parser instances based on the provided base path and working directory.
      *
+     * @param patchName - The name of the patch.
      * @param basePath - The base path for the Parser instances.
      * @param workingDir - The working directory for the Parser instances.
      * @returns An array of Parser instances.
      */
-    static from(patchName, basePath, workingDir) {
+    static async from(patchName, basePath, workingDir) {
         const candidateNames = ['Content', 'Menu', 'PFX', 'SFX', 'VFX', 'Music', 'Camera', 'Fight'];
         const suffixes = ['_G1', '_G112', '_G130', '_G2'];
         const candidates = candidateNames
@@ -70226,7 +70238,7 @@ class parser_Parser {
         })
             .flat();
         const parsers = candidates.map((candidate) => new parser_Parser(patchName, candidate, workingDir)).filter((parser) => parser.exists);
-        parsers.forEach((parser) => parser.parse());
+        await Promise.all(parsers.map((parser) => parser.parse()));
         return parsers;
     }
     /**
@@ -70244,12 +70256,16 @@ class parser_Parser {
      * Parses the file and fills the symbol table with basic symbols based on the parser type.
      */
     async parse() {
+        const startTime = performance.now();
         // Fill the symbol table with the externals
         this.parseExternals();
         // Fill symbol table with basic symbols based on the parser
         this.parseRequired();
         // Parse the files
         await this.parseSrc(this.filepath, true);
+        // Record statistics
+        this.duration = performance.now() - startTime;
+        this.numSymbols = this.symbolTable.filter((s) => s.file !== '').length;
     }
     /**
      * Parses the basic symbols for content and menu parsers.
@@ -70352,13 +70368,15 @@ class parser_Parser {
             default:
                 return;
         }
-        // Download the repository and parse its files
-        const archivePath = await tool_cache.downloadTool(repoUrl);
-        await io.mkdirP(tmpPath);
-        await tool_cache.extractTar(archivePath, tmpPath);
-        await io.rmRF(archivePath);
+        // Download the repository
+        if (!external_fs_default().existsSync(srcPath)) {
+            const archivePath = await tool_cache.downloadTool(repoUrl);
+            await io.mkdirP(tmpPath);
+            await tool_cache.extractTar(archivePath, tmpPath);
+            await io.rmRF(archivePath);
+        }
+        // Parse the files
         await this.parseSrc(srcPath, false, true);
-        await io.rmRF(tmpPath);
         // Completement the symbol table
         if (symbols.length > 0) {
             symbols.forEach((symbol) => {
@@ -70518,8 +70536,40 @@ class parser_Parser {
     }
 }
 
-;// CONCATENATED MODULE: ./src/validate.ts
+// EXTERNAL MODULE: ./node_modules/yaml/dist/index.js
+var dist = __nccwpck_require__(4083);
+;// CONCATENATED MODULE: ./src/inputs.ts
 
+
+
+
+
+function loadInputs() {
+    const workingDir = core.toPosixPath(process.env['GITHUB_WORKSPACE'] ?? '');
+    const patchName = core.getInput('patchName') || github.context.payload.repository?.name;
+    if (!patchName)
+        throw new Error('Patch name is not available. Please provide it as an input to the action');
+    // Make paths
+    const relRootPath = external_path_.posix.normalize(core.toPosixPath(core.getInput('rootPath'))); // Relative path to patch root
+    const relBasePath = external_path_.posix.join(relRootPath, 'Ninja', patchName); // Relative path to src files
+    const rootPath = external_path_.posix.join(workingDir, relRootPath); // Absolute path to patch root
+    const basePath = external_path_.posix.join(workingDir, relBasePath); // Aboslute path to src files
+    if (!external_fs_default().existsSync(basePath))
+        throw new Error(`Base path '${relBasePath}' not found`);
+    // Read config file
+    const configPath = external_path_.posix.join(rootPath, '.validator.yml');
+    if (!external_fs_default().existsSync(configPath))
+        throw new Error(`Configuration file '${configPath}' not found`);
+    const configStr = external_fs_default().readFileSync(configPath, 'utf8');
+    const config = dist.parse(configStr);
+    // Populate configuration
+    const prefixList = (config.prefix ? [config.prefix] : []).flat();
+    const ignoreList = (config['ignore-declaration'] ? [config['ignore-declaration']] : []).flat();
+    // Validate configuration
+    if (prefixList.some((p) => p.length < 3))
+        throw new Error('Prefix must be at least three characters long');
+    return { workingDir, relPath: relBasePath, basePath, patchName, prefixList, ignoreList };
+}
 function formatFilters(patchName, prefix, ignore) {
     const patchNameU = patchName.toUpperCase();
     // Format and extend prefixes
@@ -70534,160 +70584,188 @@ function formatFilters(patchName, prefix, ignore) {
     core.info(`Prefixes: ${prefix.join(', ')}`);
     return { prefix, ignore };
 }
-function validate(symbols, prefix, ignore) {
-    const invalidSymbols = symbols.filter((symbol) => {
-        const name = symbol.name.toUpperCase();
-        const fromPatch = symbol.file !== '';
-        const isGlobal = symbol.name.indexOf('.') === -1;
-        const hasPrefix = prefix.some((p) => name.includes(p));
-        const isIgnored = ignore.includes(name);
-        return fromPatch && isGlobal && !hasPrefix && !isIgnored;
-    });
-    return invalidSymbols;
-}
-
-// EXTERNAL MODULE: ./node_modules/yaml/dist/index.js
-var dist = __nccwpck_require__(4083);
-;// CONCATENATED MODULE: ./src/inputs.ts
-
-
-
-
-
-function loadInputs() {
-    const wd = core.toPosixPath(process.env['GITHUB_WORKSPACE'] ?? '');
-    const patchName = core.getInput('patchName') || github.context.payload.repository?.name;
-    if (!patchName)
-        throw new Error('Patch name is not available. Please provide it as an input to the action');
-    // Make paths
-    const relRootPath = external_path_.posix.normalize(core.toPosixPath(core.getInput('rootPath'))); // Relative path to patch root
-    const relBasePath = external_path_.posix.join(relRootPath, 'Ninja', patchName); // Relative path to src files
-    const rootPath = external_path_.posix.join(wd, relRootPath); // Absolute path to patch root
-    const basePath = external_path_.posix.join(wd, relBasePath); // Aboslute path to src files
-    if (!external_fs_default().existsSync(basePath))
-        throw new Error(`Base path '${relBasePath}' not found`);
-    // Read config file
-    const configPath = external_path_.posix.join(rootPath, '.validator.yml');
-    if (!external_fs_default().existsSync(configPath))
-        throw new Error(`Configuration file '${configPath}' not found`);
-    const configStr = external_fs_default().readFileSync(configPath, 'utf8');
-    const config = dist.parse(configStr);
-    // Populate configuration
-    const prefix = (config.prefix ? [config.prefix] : []).flat();
-    const ignore = (config['ignore-declaration'] ? [config['ignore-declaration']] : []).flat();
-    // Validate configuration
-    if (prefix.some((p) => p.length < 3))
-        throw new Error('Prefix must be at least three characters long');
-    return { relPath: relBasePath, basePath, patchName, prefix, ignore };
-}
 
 ;// CONCATENATED MODULE: ./src/write.ts
 
 
-function symbols(symbolTable, symbolTableInvalid) {
-    core.startGroup('Global Symbols');
-    const symbolNamesInvalid = symbolTableInvalid.map((s) => s.name);
-    symbolTable.map((s) => {
-        const colorPrefix = symbolNamesInvalid.includes(s.name) ? '\u001b[31m' : '\u001b[32m';
-        core.info(colorPrefix + s.name + '\u001b[0m');
-    });
-    core.endGroup();
-}
-async function annotations(symbolTableInvalid, numSymbols, prefix, startedAt, duration) {
-    const numErr = symbolTableInvalid.length;
-    const details = `The patch validator checked ${numSymbols} global symbol name${numSymbols !== 1 ? 's' : ''}.
 
-For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/Inject-Changes#naming-conventions).`;
-    const prefixes = prefix.slice(0, 3).join(', ');
-    const annotations = symbolTableInvalid.map((s) => ({
-        path: s.file,
-        start_line: s.line,
-        end_line: s.line,
-        annotation_level: 'failure',
-        message: `The symbol "${s.name}" poses a compatibility risk. Add a prefix to its name (e.g. ${prefixes}). If overwriting this symbol is intended, add it to the ignore list.`,
-        title: `Naming convention violation: ${s.name}`,
-    }));
+async function createCheckRun(startedAt, write = true) {
+    // Return empty details if writing is disabled
+    if (!write)
+        return { details_url: null, check_id: 0 };
+    // Create checkrun on GitHub
     const octokit = github.getOctokit(core.getInput('token'));
-    const { data: { html_url: details_url }, } = await octokit.rest.checks.create({
+    const { data: { html_url: details_url, id: check_id }, } = await octokit.rest.checks.create({
         ...github.context.repo,
         name: 'Patch Validator',
         head_sha: github.context.sha,
         external_id: github.context.workflow,
         started_at: startedAt.toISOString(),
-        completed_at: new Date().toISOString(),
-        conclusion: numErr ? 'failure' : 'success',
-        output: {
-            title: `${numErr || 'No'} violation${numErr !== 1 ? 's' : ''}`,
-            summary: `The patch validator found ${numErr || 'no'} invalid symbol name${numErr !== 1 ? 's' : ''} (${duration})`,
-            text: details,
-            annotations,
-        },
+        status: 'in_progress',
     });
-    return details_url;
+    return { details_url, check_id };
 }
-async function summary(symbolTableInvalid, numSymbols, relPath, details_url, duration) {
-    const relPathRE = RegExp(`^${relPath}${relPath.length > 1 && !relPath.endsWith('/') ? '/' : ''}`);
-    const rows = symbolTableInvalid.length > 0
-        ? symbolTableInvalid.map((s) => ['🔴 Fail', s.name, `${s.file.replace(relPathRE, '')}:${s.line}`])
-        : [['🟢 Pass', '-', '-']];
-    await core.summary.addHeading('Validation Results')
-        .addTable([
+async function annotations(parsers, prefix, check_id, summary, write = true) {
+    // List first few prefixes
+    const prefixes = prefix.slice(0, 3).join(', ');
+    // Make a list of annotations
+    const annotations = parsers
+        .map((p) => {
+        // Naming violations
+        const nameVio = p.namingViolations.map((v) => ({
+            path: v.file,
+            start_line: v.line,
+            end_line: v.line,
+            annotation_level: 'failure',
+            message: `The symbol "${v.name}" poses a compatibility risk. Add a prefix to its name (e.g. ${prefixes}). If overwriting this symbol is intended, add it to the ignore list.`,
+            title: `Naming convention violation: ${v.name}`,
+        }));
+        // Reference violations
+        const refVio = p.referenceViolations.map((v) => ({
+            path: v.file,
+            start_line: v.line,
+            end_line: v.line,
+            annotation_level: 'failure',
+            message: `The symbol "${v.name}" might not exist ("Unknown identifier"). Reference only symbols that are declared in the patch.`,
+            title: `Reference violation: ${v.name}`,
+        }));
+        // Overwrite violations
+        const overVio = p.overwriteViolations.map((v) => ({
+            path: v.file,
+            start_line: v.line,
+            end_line: v.line,
+            annotation_level: 'failure',
+            message: `The symbol "${v.name}" is not allowed to be re-declared / defined.`,
+            title: `Overwrite violation: ${v.name}`,
+        }));
+        // Concatenate and return
+        return [...nameVio, ...refVio, ...overVio];
+    })
+        .flat();
+    // Write to GitHub check run if enabled
+    if (write) {
+        // Collect details
+        const numViolations = parsers.reduce((acc, p) => acc + p.namingViolations.length + p.referenceViolations.length + p.overwriteViolations.length, 0);
+        const numSymbols = parsers.reduce((acc, p) => acc + p.numSymbols, 0);
+        const text = `The patch validator checked ${numSymbols} symbol${numSymbols !== 1 ? 's' : ''}.\n<br>\n<br>` +
+            'For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/Inject-Changes).';
+        const octokit = github.getOctokit(core.getInput('token'));
+        await octokit.rest.checks.update({
+            ...github.context.repo,
+            check_run_id: check_id,
+            completed_at: new Date().toISOString(),
+            conclusion: numViolations ? 'failure' : 'success',
+            output: {
+                title: `${numViolations || 'No'} violation${numViolations !== 1 ? 's' : ''}`,
+                summary,
+                text,
+                annotations,
+            },
+        });
+    }
+    // Return unformatted annotation list
+    return annotations;
+}
+async function summary(parsers, prefixes, duration, details_url, write = true) {
+    const rows = parsers.map((p) => [
+        p.namingViolations.length + p.referenceViolations.length + p.overwriteViolations.length > 0 ? '🔴 Fail' : '🟢 Pass',
+        p.filename,
+        String(p.namingViolations.length),
+        String(p.referenceViolations.length),
+        String(p.overwriteViolations.length),
+        String(p.numSymbols),
+        formatDuration(p.duration),
+    ]);
+    const numViolations = parsers.reduce((acc, p) => acc + p.namingViolations.length + p.referenceViolations.length + p.overwriteViolations.length, 0);
+    const numSymbols = parsers.reduce((acc, p) => acc + p.numSymbols, 0);
+    const prefixList = prefixes.map((p) => `<code>${p}</code>`);
+    // Construct summary
+    core.summary.addTable([
         [
-            { data: 'Test result 🔬', header: true },
-            { data: 'Symbol 📇', header: true },
-            { data: 'File 📁', header: true },
+            { data: 'Result 🔬', header: true, colspan: '1', rowspan: '2' },
+            { data: 'Source 📝', header: true, colspan: '1', rowspan: '2' },
+            { data: 'Violations 🛑', header: true, colspan: '3', rowspan: '1' },
+            { data: 'Symbols 📇', header: true, colspan: '1', rowspan: '2' },
+            { data: 'Duration ⏰', header: true, colspan: '1', rowspan: '2' },
+        ],
+        [
+            { data: 'Naming 🚫', header: true, colspan: '1', rowspan: '1' },
+            { data: 'Reference ❌', header: true, colspan: '1', rowspan: '1' },
+            { data: 'Overwrite ⛔', header: true, colspan: '1', rowspan: '1' },
         ],
         ...rows,
-    ])
-        .addEOL()
-        .addRaw(`Violations: ${symbolTableInvalid.length}/${numSymbols}. Duration: ${duration}.`, true)
-        .addEOL()
-        .addRaw(details_url !== null ? `<a href="${details_url}">Details</a>.` : '', true)
-        .write({ overwrite: false });
+    ]);
+    // Details on results
+    core.summary.addRaw(`Violations: ${numViolations}/${numSymbols}. Duration: ${formatDuration(duration)}.`, true);
+    core.summary.addEOL();
+    core.summary.addRaw(details_url !== null ? `See the <a href="${details_url}">check run for details</a>.` : '', true);
+    // Legend on violations
+    core.summary.addHeading('Types of violations', 3);
+    core.summary.addList([
+        '<b>Naming violations</b> occur when global Daedalus symbols are declared without a <a href="https://github.com/szapp/Ninja/wiki/Inject-Changes#naming-conventions">patch-specific prefix</a> in their name (e.g. <code>Patch_Name_*</code>, see below). This is important to ensure cross-mod compatibility.',
+        '<b>Reference violations</b> occur when Daedalus symbols are referenced that may not exist (i.e. "Unknown Identifier"). A patch cannot presuppose <a href="https://github.com/szapp/Ninja/wiki/Inject-Changes#common-symbols">common symbols</a>.',
+        '<b>Overwrite violations</b> occur when Daedalus symbols are declared that are <a href="https://github.com/szapp/Ninja/wiki/Inject-Changes#preserved-symbols">not allowed to be overwritten</a>. This is important to ensure proper function across mods.',
+    ]);
+    core.summary.addRaw('Naming violations can be corrected by prefixing the names of all global symbols (i.e. symbols declared outside of functions, classes, instances, and prototypes) with one of the following prefixes (add more in the <a href="https://github.com/szapp/patch-validator/#configuration">configuration</a>).', true);
+    core.summary.addList(prefixList);
+    // Format the summary as a string
+    const result = core.summary.stringify();
+    // Write summary to GitHub if enabled and clear buffer
+    if (write)
+        await core.summary.write({ overwrite: false });
+    core.summary.clear();
+    return result;
 }
-/* harmony default export */ const write = ({ symbols, annotations, summary });
+/* harmony default export */ const write = ({ createCheckRun, annotations, summary });
 
-// EXTERNAL MODULE: ./node_modules/humanize-duration/humanize-duration.js
-var humanize_duration = __nccwpck_require__(1369);
-var humanize_duration_default = /*#__PURE__*/__nccwpck_require__.n(humanize_duration);
 ;// CONCATENATED MODULE: ./src/main.ts
 
 
 
 
 
-
-
-async function run() {
+async function run(github = false) {
     try {
         // Clean up
-        if (await workflow())
-            return;
+        if (github) {
+            if (await workflow())
+                return;
+        }
         // Start timer
         const startedAt = new Date();
         const startTime = performance.now();
         // Format inputs
-        const { relPath, basePath, patchName, prefix: prefixList, ignore: ignoreList } = loadInputs();
-        // Collect global symbols
-        const symbolTable = parser_Parser.from(patchName, basePath, '')[0].symbolTable;
-        // Validate symbols by naming convention
+        const { workingDir, basePath, patchName, prefixList, ignoreList } = loadInputs();
         const { prefix, ignore } = formatFilters(patchName, prefixList, ignoreList);
-        const symbolTableInvalid = validate(symbolTable, prefix, ignore);
-        // Write outputs
-        write.symbols(symbolTable, symbolTableInvalid);
-        const duration = humanize_duration_default()(performance.now() - startTime, { round: true, largest: 2, units: ['m', 's', 'ms'] });
-        const details_url = await write.annotations(symbolTableInvalid, symbolTable.length, prefix, startedAt, duration);
-        await write.summary(symbolTableInvalid, symbolTable.length, relPath, details_url, duration);
+        // Collect symbol tables
+        const parsers = await parser_Parser.from(patchName, basePath, workingDir);
+        // Validate symbol tables
+        for (const parser of parsers) {
+            parser.validateNames(prefix, ignore);
+            parser.validateReferences();
+            parser.validateOverwrites();
+        }
+        // Initialize check run
+        const { details_url, check_id } = await write.createCheckRun(startedAt, github);
+        // Collect results and write them to GitHub (github === true)
+        const duration = performance.now() - startTime;
+        const summary = await write.summary(parsers, prefix, duration, details_url, github);
+        const annotations = await write.annotations(parsers, prefix, check_id, summary, github);
+        // Return results
+        return { summary, annotations };
     }
     catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        core.setFailed(msg);
+        if (github)
+            core.setFailed(msg);
+        else
+            console.error(msg);
     }
 }
 
 ;// CONCATENATED MODULE: ./src/index.ts
 
-run();
+run(true);
 
 })();
 

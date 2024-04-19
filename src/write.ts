@@ -1,93 +1,189 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import { SymbolTable } from './class.js'
+import { Parser } from './parser.js'
+import { formatDuration } from './utils.js'
 
-export function symbols(symbolTable: SymbolTable, symbolTableInvalid: SymbolTable): void {
-  core.startGroup('Global Symbols')
-  const symbolNamesInvalid = symbolTableInvalid.map((s) => s.name)
-  symbolTable.map((s) => {
-    const colorPrefix = symbolNamesInvalid.includes(s.name) ? '\u001b[31m' : '\u001b[32m'
-    core.info(colorPrefix + s.name + '\u001b[0m')
-  })
-  core.endGroup()
+export type Annotation = {
+  path: string
+  start_line: number
+  end_line: number
+  annotation_level: 'failure' | 'notice' | 'warning'
+  message: string
+  title: string
 }
 
-export async function annotations(
-  symbolTableInvalid: SymbolTable,
-  numSymbols: number,
-  prefix: string[],
-  startedAt: Date,
-  duration: string
-): Promise<string | null> {
-  const numErr = symbolTableInvalid.length
-  const details = `The patch validator checked ${numSymbols} global symbol name${numSymbols !== 1 ? 's' : ''}.
+export async function createCheckRun(startedAt: Date, write: boolean = true): Promise<{ details_url: string | null; check_id: number }> {
+  // Return empty details if writing is disabled
+  if (!write) return { details_url: null, check_id: 0 }
 
-For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/Inject-Changes#naming-conventions).`
-
-  const prefixes = prefix.slice(0, 3).join(', ')
-  const annotations: {
-    path: string
-    start_line: number
-    end_line: number
-    annotation_level: 'failure' | 'notice' | 'warning'
-    message: string
-    title: string
-  }[] = symbolTableInvalid.map((s) => ({
-    path: s.file,
-    start_line: s.line,
-    end_line: s.line,
-    annotation_level: 'failure',
-    message: `The symbol "${s.name}" poses a compatibility risk. Add a prefix to its name (e.g. ${prefixes}). If overwriting this symbol is intended, add it to the ignore list.`,
-    title: `Naming convention violation: ${s.name}`,
-  }))
+  // Create checkrun on GitHub
   const octokit = github.getOctokit(core.getInput('token'))
   const {
-    data: { html_url: details_url },
+    data: { html_url: details_url, id: check_id },
   } = await octokit.rest.checks.create({
     ...github.context.repo,
     name: 'Patch Validator',
     head_sha: github.context.sha,
     external_id: github.context.workflow,
     started_at: startedAt.toISOString(),
-    completed_at: new Date().toISOString(),
-    conclusion: numErr ? 'failure' : 'success',
-    output: {
-      title: `${numErr || 'No'} violation${numErr !== 1 ? 's' : ''}`,
-      summary: `The patch validator found ${numErr || 'no'} invalid symbol name${numErr !== 1 ? 's' : ''} (${duration})`,
-      text: details,
-      annotations,
-    },
+    status: 'in_progress',
   })
-  return details_url
+  return { details_url, check_id }
+}
+
+export async function annotations(
+  parsers: Parser[],
+  prefix: string[],
+  check_id: number,
+  summary: string,
+  write: boolean = true
+): Promise<Annotation[]> {
+  // List first few prefixes
+  const prefixes = prefix.slice(0, 3).join(', ')
+
+  // Make a list of annotations
+  const annotations = parsers
+    .map((p) => {
+      // Naming violations
+      const nameVio = p.namingViolations.map(
+        (v) =>
+          ({
+            path: v.file,
+            start_line: v.line,
+            end_line: v.line,
+            annotation_level: 'failure',
+            message: `The symbol "${v.name}" poses a compatibility risk. Add a prefix to its name (e.g. ${prefixes}). If overwriting this symbol is intended, add it to the ignore list.`,
+            title: `Naming convention violation: ${v.name}`,
+          }) as Annotation
+      )
+
+      // Reference violations
+      const refVio = p.referenceViolations.map(
+        (v) =>
+          ({
+            path: v.file,
+            start_line: v.line,
+            end_line: v.line,
+            annotation_level: 'failure',
+            message: `The symbol "${v.name}" might not exist ("Unknown identifier"). Reference only symbols that are declared in the patch.`,
+            title: `Reference violation: ${v.name}`,
+          }) as Annotation
+      )
+
+      // Overwrite violations
+      const overVio = p.overwriteViolations.map(
+        (v) =>
+          ({
+            path: v.file,
+            start_line: v.line,
+            end_line: v.line,
+            annotation_level: 'failure',
+            message: `The symbol "${v.name}" is not allowed to be re-declared / defined.`,
+            title: `Overwrite violation: ${v.name}`,
+          }) as Annotation
+      )
+
+      // Concatenate and return
+      return [...nameVio, ...refVio, ...overVio]
+    })
+    .flat()
+
+  // Write to GitHub check run if enabled
+  if (write) {
+    // Collect details
+    const numViolations = parsers.reduce(
+      (acc, p) => acc + p.namingViolations.length + p.referenceViolations.length + p.overwriteViolations.length,
+      0
+    )
+    const numSymbols = parsers.reduce((acc, p) => acc + p.numSymbols, 0)
+    const text =
+      `The patch validator checked ${numSymbols} symbol${numSymbols !== 1 ? 's' : ''}.\n<br>\n<br>` +
+      'For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/Inject-Changes).'
+
+    const octokit = github.getOctokit(core.getInput('token'))
+    await octokit.rest.checks.update({
+      ...github.context.repo,
+      check_run_id: check_id,
+      completed_at: new Date().toISOString(),
+      conclusion: numViolations ? 'failure' : 'success',
+      output: {
+        title: `${numViolations || 'No'} violation${numViolations !== 1 ? 's' : ''}`,
+        summary,
+        text,
+        annotations,
+      },
+    })
+  }
+
+  // Return unformatted annotation list
+  return annotations
 }
 
 export async function summary(
-  symbolTableInvalid: SymbolTable,
-  numSymbols: number,
-  relPath: string,
+  parsers: Parser[],
+  prefixes: string[],
+  duration: number,
   details_url: string | null,
-  duration: string
-): Promise<void> {
-  const relPathRE = RegExp(`^${relPath}${relPath.length > 1 && !relPath.endsWith('/') ? '/' : ''}`)
-  const rows =
-    symbolTableInvalid.length > 0
-      ? symbolTableInvalid.map((s) => ['🔴 Fail', s.name, `${s.file.replace(relPathRE, '')}:${s.line}`])
-      : [['🟢 Pass', '-', '-']]
-  await core.summary
-    .addHeading('Validation Results')
-    .addTable([
-      [
-        { data: 'Test result 🔬', header: true },
-        { data: 'Symbol 📇', header: true },
-        { data: 'File 📁', header: true },
-      ],
-      ...rows,
-    ])
-    .addEOL()
-    .addRaw(`Violations: ${symbolTableInvalid.length}/${numSymbols}. Duration: ${duration}.`, true)
-    .addEOL()
-    .addRaw(details_url !== null ? `<a href="${details_url}">Details</a>.` : '', true)
-    .write({ overwrite: false })
+  write: boolean = true
+): Promise<string> {
+  const rows = parsers.map((p) => [
+    p.namingViolations.length + p.referenceViolations.length + p.overwriteViolations.length > 0 ? '🔴 Fail' : '🟢 Pass',
+    p.filename,
+    String(p.namingViolations.length),
+    String(p.referenceViolations.length),
+    String(p.overwriteViolations.length),
+    String(p.numSymbols),
+    formatDuration(p.duration),
+  ])
+  const numViolations = parsers.reduce(
+    (acc, p) => acc + p.namingViolations.length + p.referenceViolations.length + p.overwriteViolations.length,
+    0
+  )
+  const numSymbols = parsers.reduce((acc, p) => acc + p.numSymbols, 0)
+  const prefixList = prefixes.map((p) => `<code>${p}</code>`)
+
+  // Construct summary
+  core.summary.addTable([
+    [
+      { data: 'Result 🔬', header: true, colspan: '1', rowspan: '2' },
+      { data: 'Source 📝', header: true, colspan: '1', rowspan: '2' },
+      { data: 'Violations 🛑', header: true, colspan: '3', rowspan: '1' },
+      { data: 'Symbols 📇', header: true, colspan: '1', rowspan: '2' },
+      { data: 'Duration ⏰', header: true, colspan: '1', rowspan: '2' },
+    ],
+    [
+      { data: 'Naming 🚫', header: true, colspan: '1', rowspan: '1' },
+      { data: 'Reference ❌', header: true, colspan: '1', rowspan: '1' },
+      { data: 'Overwrite ⛔', header: true, colspan: '1', rowspan: '1' },
+    ],
+    ...rows,
+  ])
+
+  // Details on results
+  core.summary.addRaw(`Violations: ${numViolations}/${numSymbols}. Duration: ${formatDuration(duration)}.`, true)
+  core.summary.addEOL()
+  core.summary.addRaw(details_url !== null ? `See the <a href="${details_url}">check run for details</a>.` : '', true)
+
+  // Legend on violations
+  core.summary.addHeading('Types of violations', 3)
+  core.summary.addList([
+    '<b>Naming violations</b> occur when global Daedalus symbols are declared without a <a href="https://github.com/szapp/Ninja/wiki/Inject-Changes#naming-conventions">patch-specific prefix</a> in their name (e.g. <code>Patch_Name_*</code>, see below). This is important to ensure cross-mod compatibility.',
+    '<b>Reference violations</b> occur when Daedalus symbols are referenced that may not exist (i.e. "Unknown Identifier"). A patch cannot presuppose <a href="https://github.com/szapp/Ninja/wiki/Inject-Changes#common-symbols">common symbols</a>.',
+    '<b>Overwrite violations</b> occur when Daedalus symbols are declared that are <a href="https://github.com/szapp/Ninja/wiki/Inject-Changes#preserved-symbols">not allowed to be overwritten</a>. This is important to ensure proper function across mods.',
+  ])
+  core.summary.addRaw(
+    'Naming violations can be corrected by prefixing the names of all global symbols (i.e. symbols declared outside of functions, classes, instances, and prototypes) with one of the following prefixes (add more in the <a href="https://github.com/szapp/patch-validator/#configuration">configuration</a>).',
+    true
+  )
+  core.summary.addList(prefixList)
+
+  // Format the summary as a string
+  const result = core.summary.stringify()
+
+  // Write summary to GitHub if enabled and clear buffer
+  if (write) await core.summary.write({ overwrite: false })
+  core.summary.clear()
+  return result
 }
 
-export default { symbols, annotations, summary }
+export default { createCheckRun, annotations, summary }
