@@ -70659,7 +70659,7 @@ async function annotations(parsers, prefix, check_id, summary, write = true) {
                 title: `${numViolations || 'No'} violation${numViolations !== 1 ? 's' : ''}`,
                 summary,
                 text,
-                annotations,
+                annotations: annotations.slice(0, 50), // Limit to 50 annotations, see https://docs.github.com/en/rest/reference/checks#create-a-check-run
             },
         });
     }

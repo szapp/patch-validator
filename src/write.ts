@@ -110,7 +110,7 @@ export async function annotations(
         title: `${numViolations || 'No'} violation${numViolations !== 1 ? 's' : ''}`,
         summary,
         text,
-        annotations,
+        annotations: annotations.slice(0, 50), // Limit to 50 annotations, see https://docs.github.com/en/rest/reference/checks#create-a-check-run
       },
     })
   }
