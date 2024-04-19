@@ -41,7 +41,7 @@ export async function run(github: boolean = false): Promise<{ summary: string; a
         artifactFiles.push(`./${parser.filename}-reference-table.json`)
       }
       const artifact = new DefaultArtifactClient()
-      await artifact.uploadArtifact('symbol-tables', artifactFiles, '', { retentionDays: 3 })
+      await artifact.uploadArtifact('symbol-tables', artifactFiles, '.', { retentionDays: 3 })
       artifactFiles.forEach((file) => fs.unlinkSync(file))
     }
 
