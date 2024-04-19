@@ -3,6 +3,8 @@ import { workflow } from './cleanup.js'
 import { Parser } from './parser.js'
 import { loadInputs, formatFilters } from './inputs.js'
 import write, { Annotation } from './write.js'
+import { DefaultArtifactClient } from '@actions/artifact'
+import fs from 'fs'
 
 export async function run(github: boolean = false): Promise<{ summary: string; annotations: Annotation[] } | void> {
   try {
@@ -27,6 +29,20 @@ export async function run(github: boolean = false): Promise<{ summary: string; a
       parser.validateNames(prefix, ignore)
       parser.validateReferences()
       parser.validateOverwrites()
+    }
+
+    // Save symbol table and reference table as workflow artifacts
+    if (github) {
+      const artifactFiles: string[] = []
+      for (const parser of parsers) {
+        fs.writeFileSync(`./${parser.filename}-symbol-table.json`, JSON.stringify(parser.symbolTable, null, 2))
+        fs.writeFileSync(`./${parser.filename}-reference-table.json`, JSON.stringify(parser.referenceTable, null, 2))
+        artifactFiles.push(`./${parser.filename}-symbol-table.json`)
+        artifactFiles.push(`./${parser.filename}-reference-table.json`)
+      }
+      const artifact = new DefaultArtifactClient()
+      await artifact.uploadArtifact('symbol-tables', artifactFiles, '', { retentionDays: 3 })
+      artifactFiles.forEach((file) => fs.unlinkSync(file))
     }
 
     // Initialize check run
