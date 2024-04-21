@@ -97,7 +97,7 @@ export async function annotations(
     )
     const numSymbols = parsers.reduce((acc, p) => acc + p.numSymbols, 0)
     const text =
-      `The patch validator checked ${numSymbols} symbol${numSymbols !== 1 ? 's' : ''}.\n<br>\n<br>` +
+      `The patch validator checked ${numSymbols} symbol${numSymbols !== 1 ? 's' : ''}.\n\n` +
       'For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/Inject-Changes).'
 
     const octokit = github.getOctokit(core.getInput('token'))
@@ -182,7 +182,7 @@ export async function summary(
 
   // Write summary to GitHub if enabled and clear buffer
   if (write) await core.summary.write({ overwrite: false })
-  core.summary.clear()
+  core.summary.emptyBuffer()
   return result
 }
 

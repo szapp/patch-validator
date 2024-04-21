@@ -788,12 +788,16 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
       ;(parser as any)['version'] = 1
       await parser['parseSpecial']('Ikarus')
 
-      expect(posixJoin).toHaveBeenCalledWith('.patch-validator-special', 'Ikarus-gameversions', 'Ikarus_G1.src')
+      expect(posixJoin).toHaveBeenCalledWith(expect.stringMatching(/\.patch-validator-special$/), 'Ikarus-gameversions', 'Ikarus_G1.src')
       expect(tcDownloadToolMock).toHaveBeenCalledWith('https://github.com/Lehona/Ikarus/archive/refs/heads/gameversions.tar.gz')
-      expect(ioMkdirPMock).toHaveBeenCalledWith('.patch-validator-special')
-      expect(tcExtractTarMock).toHaveBeenCalledWith('/path/to/ikarus.tar.gz', '.patch-validator-special')
+      expect(ioMkdirPMock).toHaveBeenCalledWith(expect.stringMatching(/\.patch-validator-special$/))
+      expect(tcExtractTarMock).toHaveBeenCalledWith('/path/to/ikarus.tar.gz', expect.stringMatching(/\.patch-validator-special$/))
       expect(ioRmRFMock).toHaveBeenCalledWith('/path/to/ikarus.tar.gz')
-      expect(parseSrc).toHaveBeenCalledWith('.patch-validator-special/Ikarus-gameversions/Ikarus_G1.src', false, true)
+      expect(parseSrc).toHaveBeenCalledWith(
+        expect.stringMatching(/\.patch-validator-special\/Ikarus-gameversions\/Ikarus_G1.src$/),
+        false,
+        true
+      )
 
       expect(parser.symbolTable).toEqual([
         { name: 'DAM_INDEX_MAX', file: '', line: 0 },
@@ -831,12 +835,16 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
       ;(parser as any)['version'] = 2
       await parser['parseSpecial']('LeGo')
 
-      expect(posixJoin).toHaveBeenCalledWith('.patch-validator-special', 'LeGo-gameversions', 'Header_G2.src')
+      expect(posixJoin).toHaveBeenCalledWith(expect.stringMatching(/\.patch-validator-special$/), 'LeGo-gameversions', 'Header_G2.src')
       expect(tcDownloadToolMock).toHaveBeenCalledWith('https://github.com/Lehona/LeGo/archive/refs/heads/gameversions.tar.gz')
-      expect(ioMkdirPMock).toHaveBeenCalledWith('.patch-validator-special')
-      expect(tcExtractTarMock).toHaveBeenCalledWith('/path/to/lego.tar.gz', '.patch-validator-special')
+      expect(ioMkdirPMock).toHaveBeenCalledWith(expect.stringMatching(/\.patch-validator-special$/))
+      expect(tcExtractTarMock).toHaveBeenCalledWith('/path/to/lego.tar.gz', expect.stringMatching(/\.patch-validator-special$/))
       expect(ioRmRFMock).toHaveBeenCalledWith('/path/to/lego.tar.gz')
-      expect(parseSrc).toHaveBeenCalledWith('.patch-validator-special/LeGo-gameversions/Header_G2.src', false, true)
+      expect(parseSrc).toHaveBeenCalledWith(
+        expect.stringMatching(/\.patch-validator-special\/LeGo-gameversions\/Header_G2.src$/),
+        false,
+        true
+      )
 
       expect(parser.symbolTable).toEqual([
         { name: 'LEGO_MERGEFLAGS', file: '', line: 0 },

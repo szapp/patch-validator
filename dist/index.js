@@ -70873,7 +70873,7 @@ async function annotations(parsers, prefix, check_id, summary, write = true) {
         // Collect details
         const numViolations = parsers.reduce((acc, p) => acc + p.namingViolations.length + p.referenceViolations.length + p.overwriteViolations.length, 0);
         const numSymbols = parsers.reduce((acc, p) => acc + p.numSymbols, 0);
-        const text = `The patch validator checked ${numSymbols} symbol${numSymbols !== 1 ? 's' : ''}.\n<br>\n<br>` +
+        const text = `The patch validator checked ${numSymbols} symbol${numSymbols !== 1 ? 's' : ''}.\n\n` +
             'For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/Inject-Changes).';
         const octokit = github.getOctokit(core.getInput('token'));
         await octokit.rest.checks.update({
@@ -70939,7 +70939,7 @@ async function summary(parsers, prefixes, duration, details_url, write = true) {
     // Write summary to GitHub if enabled and clear buffer
     if (write)
         await core.summary.write({ overwrite: false });
-    core.summary.clear();
+    core.summary.emptyBuffer();
     return result;
 }
 /* harmony default export */ const write = ({ createCheckRun, annotations, summary });

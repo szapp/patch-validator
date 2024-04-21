@@ -122,7 +122,7 @@ describe('annotations', () => {
       title: '3 violations',
       summary,
       text:
-        'The patch validator checked 4 symbols.\n<br>\n<br>' +
+        'The patch validator checked 4 symbols.\n\n' +
         'For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/Inject-Changes).',
       annotations: expectedAnnotations,
     }
@@ -172,7 +172,7 @@ describe('annotations', () => {
       title: '1 violation',
       summary,
       text:
-        'The patch validator checked 1 symbol.\n<br>\n<br>' +
+        'The patch validator checked 1 symbol.\n\n' +
         'For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/Inject-Changes).',
       annotations: expectedAnnotations,
     }
@@ -211,7 +211,7 @@ describe('annotations', () => {
       title: 'No violations',
       summary,
       text:
-        'The patch validator checked 1 symbol.\n<br>\n<br>' +
+        'The patch validator checked 1 symbol.\n\n' +
         'For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/Inject-Changes).',
       annotations: expectedAnnotations,
     }
@@ -271,7 +271,7 @@ describe('summary', () => {
     jest.spyOn(core.summary, 'addEOL').mockImplementation(() => core.summary)
     jest.spyOn(core.summary, 'addList').mockImplementation(() => core.summary)
     jest.spyOn(core.summary, 'stringify').mockImplementation(() => 'summary text')
-    jest.spyOn(core.summary, 'clear').mockImplementation()
+    jest.spyOn(core.summary, 'emptyBuffer').mockImplementation()
     jest.spyOn(core.summary, 'write').mockImplementation()
   })
 
@@ -321,7 +321,7 @@ describe('summary', () => {
     expect(core.summary.addList).toHaveBeenCalledWith(['<code>PATCH_</code>', '<code>FOO_</code>', '<code>BAR_</code>'])
     expect(core.summary.stringify).toHaveBeenCalled()
     expect(core.summary.write).toHaveBeenCalledWith({ overwrite: false })
-    expect(core.summary.clear).toHaveBeenCalled()
+    expect(core.summary.emptyBuffer).toHaveBeenCalled()
     expect(result).toBe('summary text')
   })
 
@@ -363,7 +363,7 @@ describe('summary', () => {
     expect(core.summary.addList).toHaveBeenCalledWith([])
     expect(core.summary.stringify).toHaveBeenCalled()
     expect(core.summary.write).not.toHaveBeenCalled()
-    expect(core.summary.clear).toHaveBeenCalled()
+    expect(core.summary.emptyBuffer).toHaveBeenCalled()
     expect(result).toBe('summary text')
   })
 })
