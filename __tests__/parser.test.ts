@@ -16,6 +16,7 @@ import * as io from '@actions/io'
 import * as tc from '@actions/tool-cache'
 import * as glob from '@actions/glob'
 import { posix } from 'path'
+import os from 'os'
 
 let fsExistsSyncMock: jest.SpiedFunction<typeof fs.existsSync>
 let fsReadFileSyncMock: jest.SpiedFunction<typeof fs.readFileSync>
@@ -308,6 +309,27 @@ describe('Parser', () => {
       expect(parser.referenceTable).toEqual([])
     })
 
+    it('should parse the specified file and collect symbol tables and exclude file name', () => {
+      const patchName = 'test'
+      const filepath = '/path/to/file.d'
+      const workingDir = '/path/'
+      const relPath = 'to/file.d'
+      const parser = new Parser(patchName, filepath, workingDir)
+
+      const stripPath = jest.spyOn(parser as any, 'stripPath')
+      fsExistsSyncMock.mockReturnValue(true)
+      fsReadFileSyncMock.mockReturnValueOnce('const int Symbol1 = 0;')
+
+      parser['parseD'](filepath, false)
+
+      expect(stripPath).toHaveBeenCalledWith(filepath)
+      expect(fsReadFileSyncMock).toHaveBeenCalledTimes(1)
+      expect(fsReadFileSyncMock).toHaveBeenCalledWith('/path/to/file.d', 'ascii')
+      expect(parser.filelist).toEqual([relPath])
+      expect(parser.symbolTable).toEqual([{ name: 'SYMBOL1', file: relPath, line: 1 }])
+      expect(parser.referenceTable).toEqual([])
+    })
+
     it('should not parse the file if it has an invalid extension', () => {
       const patchName = 'test'
       const filepath = '/path/to/file.txt'
@@ -355,6 +377,21 @@ describe('Parser', () => {
       expect(parser.symbolTable).toEqual([])
       expect(parser.referenceTable).toEqual([])
     })
+  })
+
+  describe('parseStr', () => {
+    it('should parse the input string without file name', () => {
+      const patchName = 'test'
+      const filepath = '/path/to/file.d'
+      const workingDir = '/path/to'
+      const parser = new Parser(patchName, filepath, workingDir)
+      const input = 'const int Symbol1 = 0;'
+
+      parser['parseStr'](input)
+
+      expect(parser.symbolTable).toEqual([{ name: 'SYMBOL1', file: '', line: 1 }])
+      expect(parser.referenceTable).toEqual([])
+    })
 
     it('should parse a complete grammar to cover all cases', () => {
       const patchName = 'test'
@@ -362,7 +399,7 @@ describe('Parser', () => {
       const workingDir = '/path/to'
       const relPath = 'file.d'
       const parser = new Parser(patchName, filepath, workingDir)
-      const content = `// Some example code covering all relevant grammar rules
+      const input = `// Some example code covering all relevant grammar rules
 
 const int Symbol1 = 0;
 const int Symbol2[2] = {0, 0};
@@ -396,16 +433,8 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
   Symbol21.Symbol6 = 0; // Member assignment
 };
 `
+      parser['parseStr'](input, relPath)
 
-      const stripPath = jest.spyOn(parser as any, 'stripPath')
-      fsExistsSyncMock.mockReturnValueOnce(true)
-      fsReadFileSyncMock.mockReturnValueOnce(content)
-
-      parser['parseD'](filepath)
-
-      expect(stripPath).toHaveBeenCalledWith(filepath)
-      expect(fsReadFileSyncMock).toHaveBeenCalledWith('/path/to/file.d', 'ascii')
-      expect(parser.filelist).toEqual([relPath])
       expect(parser.symbolTable).toEqual([
         { name: 'SYMBOL1', file: 'file.d', line: 3 },
         { name: 'SYMBOL2', file: 'file.d', line: 4 },
@@ -441,46 +470,83 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
         { name: 'SYMBOL11.SYMBOL21.SYMBOL7', file: 'file.d', line: 31 },
       ])
       expect(parser.referenceTable).toEqual([
+        { name: 'SYMBOL5', file: 'file.d', line: 11 },
         { name: 'SYMBOL8.SYMBOL6', file: 'file.d', line: 12 },
         { name: 'SYMBOL8.SYMBOL7', file: 'file.d', line: 13 },
+        { name: 'SYMBOL5', file: 'file.d', line: 15 },
         { name: 'SYMBOL9.SYMBOL6', file: 'file.d', line: 16 },
         { name: 'SYMBOL9.SYMBOL7', file: 'file.d', line: 17 },
+        { name: 'SYMBOL5', file: 'file.d', line: 19 },
         { name: 'SYMBOL11.SYMBOL1', file: 'file.d', line: 28 },
-        { name: 'SYMBOL3', file: 'file.d', line: 29 },
+        { name: 'SYMBOL11.SYMBOL3', file: 'file.d', line: 29 },
         { name: 'SYMBOL11.SYMBOL1', file: 'file.d', line: 29 },
-        { name: 'SYMBOL3', file: 'file.d', line: 29 },
-        { name: 'SYMBOL4', file: 'file.d', line: 30 },
+        { name: 'SYMBOL11.SYMBOL3', file: 'file.d', line: 29 },
+        { name: 'SYMBOL11.SYMBOL4', file: 'file.d', line: 30 },
         { name: 'SYMBOL11.SYMBOL21.SYMBOL6', file: 'file.d', line: 32 },
       ])
     })
   })
 
   describe('parseRequired', () => {
+    it('should parse content symbols if type is "CONTENT" and version = 1', () => {
+      const patchName = 'test'
+      const filepath = '/path/to/file.src'
+      const parser = new Parser(patchName, filepath)
+      const expected = [
+        { name: 'C_NPC', file: '', line: expect.any(Number) },
+        { name: 'C_NPC.ID', file: '', line: expect.any(Number) },
+        { name: 'C_ITEM', file: '', line: expect.any(Number) },
+        { name: 'C_ITEM.NAME', file: '', line: expect.any(Number) },
+        { name: 'SELF', file: '', line: expect.any(Number) },
+        { name: 'OTHER', file: '', line: expect.any(Number) },
+        { name: 'VICTIM', file: '', line: expect.any(Number) },
+        { name: 'ITEM', file: '', line: expect.any(Number) },
+        { name: 'HERO', file: '', line: expect.any(Number) },
+        { name: 'NINJA_SYMBOLS_START', file: '', line: expect.any(Number) },
+        { name: 'NINJA_SYMBOLS_START_TEST', file: '', line: expect.any(Number) },
+        { name: 'NINJA_VERSION', file: '', line: expect.any(Number) },
+        { name: 'NINJA_PATCHES', file: '', line: expect.any(Number) },
+        { name: 'NINJA_ID_TEST', file: '', line: expect.any(Number) },
+        { name: 'NINJA_MODNAME', file: '', line: expect.any(Number) },
+      ]
+
+      ;(parser as any)['type'] = 'CONTENT'
+      ;(parser as any)['version'] = 1
+      parser['parseRequired']()
+
+      expect(parser.symbolTable).toHaveLength(239)
+      expect(parser.symbolTable).toEqual(expect.arrayContaining(expected))
+      expect(parser.referenceTable).toEqual([])
+    })
+
     it('should parse content symbols if type is "CONTENT" and version = 112', () => {
       const patchName = 'test'
       const filepath = '/path/to/file.src'
       const parser = new Parser(patchName, filepath)
       const expected = [
-        { name: 'C_NPC', file: '', line: 0 },
-        { name: 'C_ITEM', file: '', line: 0 },
-        { name: 'SELF', file: '', line: 0 },
-        { name: 'OTHER', file: '', line: 0 },
-        { name: 'VICTIM', file: '', line: 0 },
-        { name: 'ITEM', file: '', line: 0 },
-        { name: 'HERO', file: '', line: 0 },
-        { name: 'NINJA_SYMBOLS_START', file: '', line: 0 },
-        { name: 'NINJA_SYMBOLS_START_TEST', file: '', line: 0 },
-        { name: 'NINJA_VERSION', file: '', line: 0 },
-        { name: 'NINJA_PATCHES', file: '', line: 0 },
-        { name: 'NINJA_ID_TEST', file: '', line: 0 },
-        { name: 'NINJA_MODNAME', file: '', line: 0 },
+        { name: 'C_NPC', file: '', line: expect.any(Number) },
+        { name: 'C_NPC.ID', file: '', line: expect.any(Number) },
+        { name: 'C_ITEM', file: '', line: expect.any(Number) },
+        { name: 'C_ITEM.NAME', file: '', line: expect.any(Number) },
+        { name: 'SELF', file: '', line: expect.any(Number) },
+        { name: 'OTHER', file: '', line: expect.any(Number) },
+        { name: 'VICTIM', file: '', line: expect.any(Number) },
+        { name: 'ITEM', file: '', line: expect.any(Number) },
+        { name: 'HERO', file: '', line: expect.any(Number) },
+        { name: 'NINJA_SYMBOLS_START', file: '', line: expect.any(Number) },
+        { name: 'NINJA_SYMBOLS_START_TEST', file: '', line: expect.any(Number) },
+        { name: 'NINJA_VERSION', file: '', line: expect.any(Number) },
+        { name: 'NINJA_PATCHES', file: '', line: expect.any(Number) },
+        { name: 'NINJA_ID_TEST', file: '', line: expect.any(Number) },
+        { name: 'NINJA_MODNAME', file: '', line: expect.any(Number) },
       ]
 
       ;(parser as any)['type'] = 'CONTENT'
       ;(parser as any)['version'] = 112
       parser['parseRequired']()
 
-      expect(parser.symbolTable).toEqual(expected)
+      expect(parser.symbolTable).toHaveLength(238)
+      expect(parser.symbolTable).toEqual(expect.arrayContaining(expected))
       expect(parser.referenceTable).toEqual([])
     })
 
@@ -489,37 +555,74 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
       const filepath = '/path/to/file.src'
       const parser = new Parser(patchName, filepath)
       const expected = [
-        { name: 'C_NPC', file: '', line: 0 },
-        { name: 'C_ITEM', file: '', line: 0 },
-        { name: 'SELF', file: '', line: 0 },
-        { name: 'OTHER', file: '', line: 0 },
-        { name: 'VICTIM', file: '', line: 0 },
-        { name: 'ITEM', file: '', line: 0 },
-        { name: 'HERO', file: '', line: 0 },
-        { name: 'INIT_GLOBAL', file: '', line: 0 },
-        { name: 'STARTUP_GLOBAL', file: '', line: 0 },
-        { name: 'NINJA_SYMBOLS_START', file: '', line: 0 },
-        { name: 'NINJA_SYMBOLS_START_TEST', file: '', line: 0 },
-        { name: 'NINJA_VERSION', file: '', line: 0 },
-        { name: 'NINJA_PATCHES', file: '', line: 0 },
-        { name: 'NINJA_ID_TEST', file: '', line: 0 },
-        { name: 'NINJA_MODNAME', file: '', line: 0 },
+        { name: 'C_NPC', file: '', line: expect.any(Number) },
+        { name: 'C_NPC.ID', file: '', line: expect.any(Number) },
+        { name: 'C_ITEM', file: '', line: expect.any(Number) },
+        { name: 'C_ITEM.NAME', file: '', line: expect.any(Number) },
+        { name: 'SELF', file: '', line: expect.any(Number) },
+        { name: 'OTHER', file: '', line: expect.any(Number) },
+        { name: 'VICTIM', file: '', line: expect.any(Number) },
+        { name: 'ITEM', file: '', line: expect.any(Number) },
+        { name: 'HERO', file: '', line: expect.any(Number) },
+        { name: 'INIT_GLOBAL', file: '', line: expect.any(Number) },
+        { name: 'STARTUP_GLOBAL', file: '', line: expect.any(Number) },
+        { name: 'NINJA_SYMBOLS_START', file: '', line: expect.any(Number) },
+        { name: 'NINJA_SYMBOLS_START_TEST', file: '', line: expect.any(Number) },
+        { name: 'NINJA_VERSION', file: '', line: expect.any(Number) },
+        { name: 'NINJA_PATCHES', file: '', line: expect.any(Number) },
+        { name: 'NINJA_ID_TEST', file: '', line: expect.any(Number) },
+        { name: 'NINJA_MODNAME', file: '', line: expect.any(Number) },
       ]
 
       ;(parser as any)['type'] = 'CONTENT'
       ;(parser as any)['version'] = 130
       parser['parseRequired']()
 
-      expect(parser.symbolTable).toEqual(expected)
+      expect(parser.symbolTable).toHaveLength(265)
+      expect(parser.symbolTable).toEqual(expect.arrayContaining(expected))
       expect(parser.referenceTable).toEqual([])
     })
 
-    it('should parse menu symbols if type is "MENU"', () => {
+    it('should parse content symbols if type is "CONTENT" and version = 2', () => {
       const patchName = 'test'
       const filepath = '/path/to/file.src'
       const parser = new Parser(patchName, filepath)
       const expected = [
-        { name: 'MENU_MAIN', file: '', line: 0 },
+        { name: 'C_NPC', file: '', line: expect.any(Number) },
+        { name: 'C_NPC.ID', file: '', line: expect.any(Number) },
+        { name: 'C_ITEM', file: '', line: expect.any(Number) },
+        { name: 'C_ITEM.NAME', file: '', line: expect.any(Number) },
+        { name: 'SELF', file: '', line: expect.any(Number) },
+        { name: 'OTHER', file: '', line: expect.any(Number) },
+        { name: 'VICTIM', file: '', line: expect.any(Number) },
+        { name: 'ITEM', file: '', line: expect.any(Number) },
+        { name: 'HERO', file: '', line: expect.any(Number) },
+        { name: 'INIT_GLOBAL', file: '', line: expect.any(Number) },
+        { name: 'STARTUP_GLOBAL', file: '', line: expect.any(Number) },
+        { name: 'NINJA_VERSION', file: '', line: 0 },
+        { name: 'NINJA_PATCHES', file: '', line: 0 },
+        { name: 'NINJA_MODNAME', file: '', line: 0 },
+        { name: 'NINJA_ID_TEST', file: '', line: 0 },
+        { name: 'NINJA_SYMBOLS_START', file: '', line: 0 },
+        { name: 'NINJA_SYMBOLS_START_TEST', file: '', line: 0 },
+      ]
+
+      ;(parser as any)['type'] = 'CONTENT'
+      ;(parser as any)['version'] = 2
+      parser['parseRequired']()
+
+      expect(parser.symbolTable).toHaveLength(272)
+      expect(parser.symbolTable).toEqual(expect.arrayContaining(expected))
+      expect(parser.referenceTable).toEqual([])
+    })
+
+    it('should parse menu symbols if type is "PFX" and version = 1', () => {
+      const patchName = 'test'
+      const filepath = '/path/to/file.src'
+      const parser = new Parser(patchName, filepath)
+      const expected = [
+        { name: 'C_PARTICLEFX', file: '', line: expect.any(Number) },
+        { name: 'C_PARTICLEFX.PPSVALUE', file: '', line: expect.any(Number) },
         { name: 'NINJA_SYMBOLS_START', file: '', line: 0 },
         { name: 'NINJA_SYMBOLS_START_TEST', file: '', line: 0 },
         { name: 'NINJA_VERSION', file: '', line: 0 },
@@ -528,31 +631,36 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
         { name: 'NINJA_MODNAME', file: '', line: 0 },
       ]
 
-      ;(parser as any)['type'] = 'MENU'
+      ;(parser as any)['type'] = 'PFX'
+      ;(parser as any)['version'] = 1
       parser['parseRequired']()
 
-      expect(parser.symbolTable).toEqual(expected)
+      expect(parser.symbolTable).toHaveLength(58)
+      expect(parser.symbolTable).toEqual(expect.arrayContaining(expected))
       expect(parser.referenceTable).toEqual([])
     })
 
-    it('should parse menu symbols if type is "CAMERA"', () => {
+    it('should parse menu symbols if type is "PFX" and version = 2', () => {
       const patchName = 'test'
       const filepath = '/path/to/file.src'
       const parser = new Parser(patchName, filepath)
       const expected = [
-        { name: 'CAMMODNORMAL', file: '', line: 0 },
-        { name: 'NINJA_SYMBOLS_START', file: '', line: 0 },
-        { name: 'NINJA_SYMBOLS_START_TEST', file: '', line: 0 },
+        { name: 'C_PARTICLEFX', file: '', line: expect.any(Number) },
+        { name: 'C_PARTICLEFX.M_BISAMBIENTPFX', file: '', line: expect.any(Number) },
         { name: 'NINJA_VERSION', file: '', line: 0 },
         { name: 'NINJA_PATCHES', file: '', line: 0 },
-        { name: 'NINJA_ID_TEST', file: '', line: 0 },
         { name: 'NINJA_MODNAME', file: '', line: 0 },
+        { name: 'NINJA_ID_TEST', file: '', line: 0 },
+        { name: 'NINJA_SYMBOLS_START', file: '', line: 0 },
+        { name: 'NINJA_SYMBOLS_START_TEST', file: '', line: 0 },
       ]
 
-      ;(parser as any)['type'] = 'CAMERA'
+      ;(parser as any)['type'] = 'PFX'
+      ;(parser as any)['version'] = 2
       parser['parseRequired']()
 
-      expect(parser.symbolTable).toEqual(expected)
+      expect(parser.symbolTable).toHaveLength(63)
+      expect(parser.symbolTable).toEqual(expect.arrayContaining(expected))
       expect(parser.referenceTable).toEqual([])
     })
 
@@ -561,12 +669,12 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
       const filepath = '/path/to/file.src'
       const parser = new Parser(patchName, filepath)
       const expected = [
-        { name: 'NINJA_SYMBOLS_START', file: '', line: 0 },
-        { name: 'NINJA_SYMBOLS_START_TEST', file: '', line: 0 },
         { name: 'NINJA_VERSION', file: '', line: 0 },
         { name: 'NINJA_PATCHES', file: '', line: 0 },
-        { name: 'NINJA_ID_TEST', file: '', line: 0 },
         { name: 'NINJA_MODNAME', file: '', line: 0 },
+        { name: 'NINJA_ID_TEST', file: '', line: 0 },
+        { name: 'NINJA_SYMBOLS_START', file: '', line: 0 },
+        { name: 'NINJA_SYMBOLS_START_TEST', file: '', line: 0 },
       ]
 
       ;(parser as any)['type'] = 'OTHER'
@@ -599,7 +707,7 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
       expect(parser.type).toBe('CONTENT')
       expect(parser.version).toBe(1)
       expect(parser.symbolTable).toHaveLength(290 + 1)
-      expect(parser.symbolTable).toContainEqual({ name: 'AI_LOOKFORITEM', file: '', line: 0 })
+      expect(parser.symbolTable).toContainEqual(expect.objectContaining({ name: 'AI_LOOKFORITEM', file: '', line: expect.any(Number) }))
       expect(parser.referenceTable).toEqual([])
     })
 
@@ -613,7 +721,7 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
       expect(parser.type).toBe('CONTENT')
       expect(parser.version).toBe(112)
       expect(parser.symbolTable).toHaveLength(290 + 18)
-      expect(parser.symbolTable).toContainEqual({ name: 'PRINTSCREENCOLORED', file: '', line: 0 })
+      expect(parser.symbolTable).toContainEqual(expect.objectContaining({ name: 'PRINTSCREENCOLORED', file: '', line: expect.any(Number) }))
       expect(parser.referenceTable).toEqual([])
     })
 
@@ -627,7 +735,7 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
       expect(parser.type).toBe('CONTENT')
       expect(parser.version).toBe(130)
       expect(parser.symbolTable).toHaveLength(290 + 20)
-      expect(parser.symbolTable).toContainEqual({ name: 'EXITSESSION', file: '', line: 0 })
+      expect(parser.symbolTable).toContainEqual(expect.objectContaining({ name: 'EXITSESSION', file: '', line: expect.any(Number) }))
       expect(parser.referenceTable).toEqual([])
     })
 
@@ -641,7 +749,9 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
       expect(parser.type).toBe('CONTENT')
       expect(parser.version).toBe(2)
       expect(parser.symbolTable).toHaveLength(290 + 27)
-      expect(parser.symbolTable).toContainEqual({ name: 'NPC_GETLASTHITSPELLID', file: '', line: 0 })
+      expect(parser.symbolTable).toContainEqual(
+        expect.objectContaining({ name: 'NPC_GETLASTHITSPELLID', file: '', line: expect.any(Number) })
+      )
       expect(parser.referenceTable).toEqual([])
     })
   })
@@ -659,9 +769,10 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
       }
     })
 
-    afterAll(() => {
-      io.rmRF('.patch-validator-special')
-      io.rmRF('.patch-validator-tmp')
+    afterAll(async () => {
+      await Parser.clearTmpDir()
+      const tmpDir = posix.join(os.tmpdir(), '.patch-validator-tmp')
+      await io.rmRF(tmpDir)
     })
 
     it('should parse ikarus if type is "CONTENT"', async () => {
@@ -768,7 +879,8 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
       tcDownloadToolMock.mockRestore()
       tcExtractTarMock.mockRestore()
 
-      jest.replaceProperty(process, 'env', { ...process.env, RUNNER_TEMP: './.patch-validator-tmp/' })
+      const tmpDir = posix.join(os.tmpdir(), '.patch-validator-tmp')
+      jest.replaceProperty(process, 'env', { ...process.env, RUNNER_TEMP: tmpDir })
 
       await parser['parseSpecial']('Ikarus')
 
@@ -789,7 +901,8 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
       tcDownloadToolMock.mockRestore()
       tcExtractTarMock.mockRestore()
 
-      jest.replaceProperty(process, 'env', { ...process.env, RUNNER_TEMP: './.patch-validator-tmp/' })
+      const tmpDir = posix.join(os.tmpdir(), '.patch-validator-tmp')
+      jest.replaceProperty(process, 'env', { ...process.env, RUNNER_TEMP: tmpDir })
 
       await parser['parseSpecial']('LeGo')
 
@@ -831,20 +944,24 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
         { name: 'Symbol1.local', file: 'path/to/file1.d', line: 2 },
         { name: 'Symbol2', file: 'path/to/file1.d', line: 3 },
         { name: 'Symbol3', file: 'path/to/file1.d', line: 4 },
+        { name: 'Symbol4.inst.var', file: 'path/to/file1.d', line: 5 },
+        { name: 'inst.global', file: 'path/to/file1.d', line: 6 },
       ]
       ;(parser as any).referenceTable = [
         { name: 'Symbol1', file: 'path/to/file2.d', line: 3 },
         { name: 'Symbol1.local', file: 'path/to/file2.d', line: 10 },
-        { name: 'Symbol3.local', file: 'path/to/file2.d', line: 15 },
-        { name: 'Symbol4', file: 'path/to/file2.d', line: 22 },
-        { name: 'Symbol4', file: '', line: 23 },
+        { name: 'Symbol3.global', file: 'path/to/file2.d', line: 15 },
+        { name: 'Symbol4.inst.var', file: 'path/to/file2.d', line: 20 },
+        { name: 'Symbol4.inst.global', file: 'path/to/file2.d', line: 21 },
+        { name: 'Symbol6', file: 'path/to/file2.d', line: 22 },
+        { name: 'Symbol6', file: '', line: 23 },
       ]
 
       parser.validateReferences()
 
       expect(parser.referenceViolations).toEqual([
-        { name: 'Symbol3.local', file: 'path/to/file2.d', line: 15 },
-        { name: 'Symbol4', file: 'path/to/file2.d', line: 22 },
+        { name: 'global', file: 'path/to/file2.d', line: 15 },
+        { name: 'Symbol6', file: 'path/to/file2.d', line: 22 },
       ])
     })
   })

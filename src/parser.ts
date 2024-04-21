@@ -4,6 +4,7 @@ import { DaedalusParser } from './generated/DaedalusParser.js'
 import { SymbolVisitor, SymbolTable } from './class.js'
 import { normalizePath } from './utils.js'
 import externals from './externals.js'
+import symbols from './symbols.js'
 import * as io from '@actions/io'
 import * as tc from '@actions/tool-cache'
 import * as glob from '@actions/glob'
@@ -117,40 +118,25 @@ export class Parser {
    * Parses the basic symbols for content and menu parsers.
    */
   protected parseRequired(): void {
-    let symbols: string[] = []
-    switch (this.type) {
-      case 'CONTENT':
-        symbols = ['C_NPC', 'C_ITEM', 'SELF', 'OTHER', 'VICTIM', 'ITEM', 'HERO']
-        switch (this.version) {
-          case 130:
-          case 2:
-            symbols.push('INIT_GLOBAL')
-          // eslint-disable-next-line no-fallthrough
-          case 1:
-            symbols.push('STARTUP_GLOBAL')
-        }
-        break
-      case 'MENU':
-        symbols = ['MENU_MAIN']
-        break
-      case 'CAMERA':
-        symbols = ['CAMMODNORMAL']
-        break
-    }
+    let basicSymbols: string[] = []
+
+    // Add minimal symbols for all parser types
+    const requiredSymbols = symbols?.[`G${this.version}`]?.[this.type]
+    if (requiredSymbols) basicSymbols = requiredSymbols
 
     // Add Ninja helper symbols (to all parser types)
-    symbols = symbols.concat([
-      'NINJA_SYMBOLS_START',
-      `NINJA_SYMBOLS_START_${this.patchName}`,
+    basicSymbols = basicSymbols.concat([
       'NINJA_VERSION',
       'NINJA_PATCHES',
-      `NINJA_ID_${this.patchName}`,
       'NINJA_MODNAME',
+      `NINJA_ID_${this.patchName}`,
+      'NINJA_SYMBOLS_START',
+      `NINJA_SYMBOLS_START_${this.patchName}`,
     ])
 
-    // Add symbols to the symbol table
-    if (symbols.length > 0) {
-      symbols.forEach((symbol) => {
+    // Add symbols to the symbol table(helperSymbols)
+    if (basicSymbols.length > 0) {
+      basicSymbols.forEach((symbol) => {
         this.symbolTable.push({ name: symbol.toUpperCase(), file: '', line: 0 })
       })
     }
@@ -180,7 +166,7 @@ export class Parser {
     let symbols: string[] = []
     let repoUrl: string = ''
     let srcPath: string = ''
-    const tmpPath = '.patch-validator-special'
+    const tmpPath = posix.join(process.env['RUNNER_TEMP'] ?? '', '.patch-validator-special')
 
     switch (pattern.toLowerCase()) {
       case 'ikarus':
@@ -287,7 +273,9 @@ export class Parser {
 
   /**
    * Parses the specified file and collects symbol tables.
+   *
    * @param filepath - The path of the file to parse.
+   * @param exclude - Indicates whether the file is not part of the patch.
    * @throws Error if wildcards are used in the filepath.
    */
   protected parseD(filepath: string, exclude: boolean = false): void {
@@ -297,8 +285,17 @@ export class Parser {
     if (this.filelist.includes(relPath)) return
     this.filelist.push(relPath)
 
-    // Parse file
     const input = fs.readFileSync(fullPath, 'ascii')
+    this.parseStr(input, exclude ? '' : relPath)
+  }
+
+  /**
+   * Parses a string input and collects symbol tables.
+   *
+   * @param input - The string input to parse.
+   * @param filename - The name of the file being parsed (blank for non-patch parsing).
+   */
+  protected parseStr(input: string, filename: string = ''): void {
     const inputStream = CharStream.fromString(input)
     const lexer = new DaedalusLexer(inputStream)
     const tokenStream = new CommonTokenStream(lexer)
@@ -306,10 +303,16 @@ export class Parser {
     const tree = parser.daedalusFile()
 
     // Collect symbol tables
-    const visitor = new SymbolVisitor(exclude ? '' : relPath)
-    const { symbols, references } = visitor.visit(tree) as { symbols: SymbolTable; references: SymbolTable }
-    this.symbolTable.push(...symbols)
-    if (!exclude) this.referenceTable.push(...references)
+    const visitor = new SymbolVisitor(filename, this.symbolTable, filename ? this.referenceTable : undefined)
+    visitor.visit(tree)
+  }
+
+  /**
+   * Clears the temporary directory.
+   */
+  public static async clearTmpDir(): Promise<void> {
+    const tmpPath = posix.join(process.env['RUNNER_TEMP'] ?? '', '.patch-validator-special')
+    await io.rmRF(tmpPath)
   }
 
   /**
@@ -330,12 +333,27 @@ export class Parser {
 
   /**
    * Validates the references in the reference table against the symbol table.
+   * This function also corrects the unscoped names in the reference table.
    */
   public validateReferences(): void {
-    this.referenceViolations = this.referenceTable.filter((symbol) => {
-      const fromPatch = symbol.file !== ''
-      const isDefined = this.symbolTable.some((s) => s.name === symbol.name)
-      return fromPatch && !isDefined
+    this.referenceViolations.length = 0
+    this.referenceTable.forEach((symbol, idx) => {
+      // Skip base symbols
+      if (symbol.file === '') return
+
+      // Check if the symbol is defined
+      let isDefined = this.symbolTable.some((s) => s.name === symbol.name)
+
+      // Check if symbol is defined without scope
+      const scope = symbol.name.indexOf('.')
+      if (!isDefined && scope !== -1) {
+        const unscopedName = symbol.name.substring(scope + 1)
+        isDefined = this.symbolTable.some((s) => s.name === unscopedName)
+        this.referenceTable[idx].name = unscopedName // Fix name
+      }
+
+      // Add violation
+      if (!isDefined) this.referenceViolations.push(symbol)
     })
   }
 

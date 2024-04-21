@@ -19,6 +19,7 @@ Float: F L O A T;
 Prototype: P R O T O T Y P E;
 Instance: I N S T A N C E;
 Null: N U L L;
+NoFunc: N O F U N C;
 
 LeftParen: '(';
 RightParen: ')';
@@ -194,6 +195,7 @@ value:
 	| FloatLiteral	# floatLiteralValue
 	| StringLiteral	# stringLiteralValue
 	| Null			# nullLiteralValue
+	| NoFunc		# nofuncLiteralValue
 	| funcCall		# funcCallValue
 	| reference		# referenceValue;
 
@@ -220,6 +222,7 @@ anyIdentifier: (
 		| Class
 		| Prototype
 		| Null
+		| NoFunc
 		| Identifier
 	);
 

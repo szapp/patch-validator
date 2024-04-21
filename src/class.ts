@@ -28,7 +28,7 @@ export type Tables = { symbols: SymbolTable; references: SymbolTable }
 export class SymbolVisitor extends DaedalusVisitor<Tables> {
   constructor(
     protected readonly file: string,
-    protected readonly symbolTable: SymbolTable = [],
+    protected readonly symbolTable: SymbolTable,
     protected readonly referenceTable: SymbolTable = [],
     protected scope: string = '',
     protected type: string = ''
@@ -82,8 +82,7 @@ export class SymbolVisitor extends DaedalusVisitor<Tables> {
       .join('.')
       .toUpperCase()
     if (name) {
-      const scopedName = (this.getScope() + name).toUpperCase()
-      if (this.symbolTable.find((s) => s.name === scopedName)) name = scopedName
+      name = this.getScope() + name
       // istanbul ignore next: Unnecessary to test emty line
       this.referenceTable.push({ name, file: this.file, line: ctx.start?.line ?? 0 })
     }
@@ -95,6 +94,7 @@ export class SymbolVisitor extends DaedalusVisitor<Tables> {
     const symbol = ctx.Identifier().getSymbol()
     const refName = symbol.text?.toUpperCase()
     if (refName) {
+      this.referenceTable.push({ name: refName, file: this.file, line: symbol.line })
       this.symbolTable
         .filter((s) => s.name.startsWith(refName + '.'))
         .forEach((s) => {

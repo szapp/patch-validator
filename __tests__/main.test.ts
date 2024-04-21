@@ -4,11 +4,8 @@ import { Parser } from '../src/parser.ts'
 import * as inputs from '../src/inputs.ts'
 import write from '../src/write.ts'
 import * as cleanup from '../src/cleanup.ts'
-import { DefaultArtifactClient } from '@actions/artifact'
-import fs from 'fs'
 
 let runMock: jest.SpiedFunction<typeof main.run>
-DefaultArtifactClient.prototype.uploadArtifact = jest.fn()
 
 describe('run', () => {
   beforeEach(() => {
@@ -23,8 +20,6 @@ describe('run', () => {
     jest.spyOn(cleanup, 'workflow').mockResolvedValue(false)
     jest.spyOn(core, 'setFailed').mockImplementation()
     jest.spyOn(core, 'error').mockImplementation()
-    jest.spyOn(fs, 'writeFileSync').mockImplementation()
-    jest.spyOn(fs, 'unlinkSync').mockImplementation()
     runMock = jest.spyOn(main, 'run')
   })
 

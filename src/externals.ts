@@ -1,7 +1,3 @@
-export interface ExternalList {
-  [key: string]: Record<string, string[]>
-}
-
 const basic = {
   CONTENT: [
     'INTTOSTRING',
@@ -307,13 +303,13 @@ const basic = {
 }
 
 const G1 = {
-  ...basic,
-  CONTENT: basic['CONTENT'].concat(['AI_LOOKFORITEM']),
+  CONTENT: [...basic.CONTENT, 'AI_LOOKFORITEM'],
+  MENU: basic.MENU,
 }
 
 const G112 = {
-  ...basic,
-  CONTENT: basic['CONTENT'].concat([
+  CONTENT: [
+    ...basic.CONTENT,
     'PRINTSCREENCOLORED',
     'AI_PRINTSCREEN',
     'WLD_ISFPAVAILINRANGE',
@@ -332,12 +328,13 @@ const G112 = {
     'REMOVEITEMFROMSLOT',
     'AI_CREATEITEMINSLOT',
     'AI_REMOVEITEMFROMSLOT',
-  ]),
+  ],
+  MENU: basic.MENU,
 }
 
 const G130 = {
-  ...basic,
-  CONTENT: basic['CONTENT'].concat([
+  CONTENT: [
+    ...basic.CONTENT,
     'AI_PRINTSCREEN',
     'EXITSESSION',
     'PLAYVIDEOEX',
@@ -358,12 +355,13 @@ const G130 = {
     'NPC_GETPORTALGUILD',
     'GAME_INITGERMAN',
     'GAME_INITENGLISH',
-  ]),
+  ],
+  MENU: basic.MENU,
 }
 
 const G2 = {
-  ...basic,
-  CONTENT: basic['CONTENT'].concat([
+  CONTENT: [
+    ...basic.CONTENT,
     'AI_PRINTSCREEN',
     'EXITSESSION',
     'PLAYVIDEOEX',
@@ -391,14 +389,12 @@ const G2 = {
     'GAME_INITGERMAN',
     'GAME_INITENGLISH',
     'GAME_INITENGINTL',
-  ]),
+  ],
+  MENU: basic.MENU,
 }
 
-const list: ExternalList = {
-  G1,
-  G112,
-  G130,
-  G2,
+export interface ExternalList {
+  [key: string]: Record<string, string[]>
 }
-
+const list: ExternalList = { G1, G112, G130, G2 }
 export default list
