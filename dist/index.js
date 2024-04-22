@@ -70815,6 +70815,7 @@ function formatFilters(patchName, prefix, ignore) {
 
 
 
+
 async function createCheckRun(startedAt, write = true) {
     // Return empty details if writing is disabled
     if (!write)
@@ -70838,22 +70839,33 @@ async function annotations(parsers, prefix, check_id, summary, write = true) {
     const annotations = parsers
         .map((p) => {
         // Naming violations
-        const nameVio = p.namingViolations.map((v) => ({
-            path: v.file,
-            start_line: v.line,
-            end_line: v.line,
-            annotation_level: 'failure',
-            message: `The symbol "${v.name}" poses a compatibility risk. Add a prefix to its name (e.g. ${prefixes}). If overwriting this symbol is intended, add it to the ignore list.`,
-            title: `Naming convention violation: ${v.name}`,
-        }));
+        const nameVio = p.namingViolations.map((v) => {
+            const content = external_fs_default().readFileSync(v.file, 'ascii');
+            const context = content.split('\n')[v.line - 1];
+            return {
+                path: v.file,
+                start_line: v.line,
+                end_line: v.line,
+                annotation_level: 'failure',
+                title: `Naming convention violation: ${v.name}`,
+                message: `The symbol "${v.name}" poses a compatibility risk. Add a prefix to its name (e.g. ${prefixes}). If overwriting this symbol is intended, add it to the ignore list.`,
+                raw_details: context.replace(new RegExp(`(?<![\\d\\w_])(${v.name})(?![\\d\\w_])`, 'gi'), `${prefix[0]}$1`),
+            };
+        });
         // Reference violations
         const refVio = p.referenceViolations.map((v) => ({
             path: v.file,
             start_line: v.line,
             end_line: v.line,
             annotation_level: 'failure',
-            message: `The symbol "${v.name}" might not exist ("Unknown identifier"). Reference only symbols that are declared in the patch.`,
             title: `Reference violation: ${v.name}`,
+            message: `The symbol "${v.name}" might not exist ("Unknown identifier"). Reference only symbols that are declared in the patch or safely search for other symbols by their name.`,
+            raw_details: `if (MEM_FindParserSymbol("${v.name}") != -1) {
+    var zCPar_Symbol symb; symb = _^(MEM_GetSymbol("${v.name}"));
+    // Access content with symb.content
+} else {
+    // Fallback to a default if the symbol does not exist
+};`,
         }));
         // Overwrite violations
         const overVio = p.overwriteViolations.map((v) => ({
@@ -70861,8 +70873,8 @@ async function annotations(parsers, prefix, check_id, summary, write = true) {
             start_line: v.line,
             end_line: v.line,
             annotation_level: 'failure',
-            message: `The symbol "${v.name}" is not allowed to be re-declared / defined.`,
             title: `Overwrite violation: ${v.name}`,
+            message: `The symbol "${v.name}" is not allowed to be re-declared / defined.`,
         }));
         // Concatenate and return
         return [...nameVio, ...refVio, ...overVio];

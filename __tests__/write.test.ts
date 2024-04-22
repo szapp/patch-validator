@@ -2,9 +2,11 @@ import write, { Annotation } from '../src/write.ts'
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import { Parser } from '../src/parser.ts'
+import fs from 'fs'
 
 let createCheckMock: jest.Mock
 let updateCheckMock: jest.Mock
+let fsReadFileSyncMock: jest.SpiedFunction<typeof fs.readFileSync>
 
 describe('createCheckRun', () => {
   beforeEach(() => {
@@ -56,6 +58,7 @@ describe('createCheckRun', () => {
 
 describe('annotations', () => {
   beforeEach(() => {
+    fsReadFileSyncMock = jest.spyOn(fs, 'readFileSync')
     jest.spyOn(core, 'getInput').mockReturnValue('dummy-token')
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -82,9 +85,9 @@ describe('annotations', () => {
     const parsers = [
       {
         numSymbols: 4,
-        namingViolations: [{ name: 'Symbol1', file: 'path/to/file1', line: 10 }],
-        referenceViolations: [{ name: 'Symbol2', file: 'path/to/file2', line: 20 }],
-        overwriteViolations: [{ name: 'Symbol3', file: 'path/to/file3', line: 30 }],
+        namingViolations: [{ name: 'SYMBOL1', file: 'path/to/file1', line: 2 }],
+        referenceViolations: [{ name: 'SYMBOL2', file: 'path/to/file2', line: 3 }],
+        overwriteViolations: [{ name: 'SYMBOL3', file: 'path/to/file3', line: 4 }],
       } as unknown as Parser,
     ]
     const prefix = ['PATCH_']
@@ -94,28 +97,36 @@ describe('annotations', () => {
     const expectedAnnotations = [
       {
         path: 'path/to/file1',
-        start_line: 10,
-        end_line: 10,
+        start_line: 2,
+        end_line: 2,
         annotation_level: 'failure',
+        title: 'Naming convention violation: SYMBOL1',
         message:
-          'The symbol "Symbol1" poses a compatibility risk. Add a prefix to its name (e.g. PATCH_). If overwriting this symbol is intended, add it to the ignore list.',
-        title: 'Naming convention violation: Symbol1',
+          'The symbol "SYMBOL1" poses a compatibility risk. Add a prefix to its name (e.g. PATCH_). If overwriting this symbol is intended, add it to the ignore list.',
+        raw_details: 'const int PATCH_Symbol1 = 0; // The PATCH_Symbol1 is a global symbol',
       },
       {
         path: 'path/to/file2',
-        start_line: 20,
-        end_line: 20,
+        start_line: 3,
+        end_line: 3,
         annotation_level: 'failure',
-        message: 'The symbol "Symbol2" might not exist ("Unknown identifier"). Reference only symbols that are declared in the patch.',
-        title: 'Reference violation: Symbol2',
+        title: 'Reference violation: SYMBOL2',
+        message:
+          'The symbol "SYMBOL2" might not exist ("Unknown identifier"). Reference only symbols that are declared in the patch or safely search for other symbols by their name.',
+        raw_details: `if (MEM_FindParserSymbol("SYMBOL2") != -1) {
+    var zCPar_Symbol symb; symb = _^(MEM_GetSymbol("SYMBOL2"));
+    // Access content with symb.content
+} else {
+    // Fallback to a default if the symbol does not exist
+};`,
       },
       {
         path: 'path/to/file3',
-        start_line: 30,
-        end_line: 30,
+        start_line: 4,
+        end_line: 4,
         annotation_level: 'failure',
-        message: 'The symbol "Symbol3" is not allowed to be re-declared / defined.',
-        title: 'Overwrite violation: Symbol3',
+        title: 'Overwrite violation: SYMBOL3',
+        message: 'The symbol "SYMBOL3" is not allowed to be re-declared / defined.',
       },
     ]
     const expectedOutput = {
@@ -126,6 +137,12 @@ describe('annotations', () => {
         'For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/Inject-Changes).',
       annotations: expectedAnnotations,
     }
+
+    fsReadFileSyncMock.mockReturnValue(`
+const int Symbol1 = 0; // The Symbol1 is a global symbol
+const int Symbol2 = 0;
+const int Symbol3 = 0;
+`)
 
     const result = await write.annotations(parsers, prefix, check_id, summary)
 
@@ -146,7 +163,7 @@ describe('annotations', () => {
     const parsers = [
       {
         numSymbols: 1,
-        namingViolations: [{ name: 'Symbol2', file: 'path/to/file2', line: 10 }],
+        namingViolations: [{ name: 'SYMBOL2', file: 'path/to/file2', line: 3 }],
         referenceViolations: [],
         overwriteViolations: [],
       } as unknown as Parser,
@@ -159,12 +176,13 @@ describe('annotations', () => {
     const expectedAnnotations = [
       {
         path: 'path/to/file2',
-        start_line: 10,
-        end_line: 10,
+        start_line: 3,
+        end_line: 3,
         annotation_level: 'failure',
+        title: 'Naming convention violation: SYMBOL2',
         message:
-          'The symbol "Symbol2" poses a compatibility risk. Add a prefix to its name (e.g. PATCH_, FOO_, BAR_). If overwriting this symbol is intended, add it to the ignore list.',
-        title: 'Naming convention violation: Symbol2',
+          'The symbol "SYMBOL2" poses a compatibility risk. Add a prefix to its name (e.g. PATCH_, FOO_, BAR_). If overwriting this symbol is intended, add it to the ignore list.',
+        raw_details: 'var int Symbol21; var int PATCH_Symbol2;',
       },
     ]
 
@@ -176,6 +194,11 @@ describe('annotations', () => {
         'For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/Inject-Changes).',
       annotations: expectedAnnotations,
     }
+
+    fsReadFileSyncMock.mockReturnValue(`
+var int Symbol1;
+var int Symbol21; var int Symbol2;
+`)
 
     const result = await write.annotations(parsers, prefix, check_id, summary, writeVal)
 
@@ -234,7 +257,7 @@ describe('annotations', () => {
     const parsers = [
       {
         numSymbols: 1,
-        namingViolations: [{ name: 'Symbol2', file: 'path/to/file2', line: 10 }],
+        namingViolations: [{ name: 'SYMBOL2', file: 'path/to/file2', line: 2 }],
         referenceViolations: [],
         overwriteViolations: [],
       } as unknown as Parser,
@@ -247,14 +270,19 @@ describe('annotations', () => {
     const expectedAnnotations = [
       {
         path: 'path/to/file2',
-        start_line: 10,
-        end_line: 10,
+        start_line: 2,
+        end_line: 2,
         annotation_level: 'failure',
+        title: 'Naming convention violation: SYMBOL2',
         message:
-          'The symbol "Symbol2" poses a compatibility risk. Add a prefix to its name (e.g. ). If overwriting this symbol is intended, add it to the ignore list.',
-        title: 'Naming convention violation: Symbol2',
+          'The symbol "SYMBOL2" poses a compatibility risk. Add a prefix to its name (e.g. ). If overwriting this symbol is intended, add it to the ignore list.',
+        raw_details: 'var int Symbol21; var int undefinedSymbol2;',
       },
     ]
+
+    fsReadFileSyncMock.mockReturnValue(`
+var int Symbol21; var int Symbol2;
+`)
 
     const result = await write.annotations(parsers, prefix, check_id, summary, writeVal)
 

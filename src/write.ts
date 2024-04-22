@@ -2,14 +2,16 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import { Parser } from './parser.js'
 import { formatDuration } from './utils.js'
+import fs from 'fs'
 
 export type Annotation = {
   path: string
   start_line: number
   end_line: number
   annotation_level: 'failure' | 'notice' | 'warning'
-  message: string
   title: string
+  message: string
+  raw_details?: string
 }
 
 export async function createCheckRun(startedAt: Date, write: boolean = true): Promise<{ details_url: string | null; check_id: number }> {
@@ -45,17 +47,19 @@ export async function annotations(
   const annotations = parsers
     .map((p) => {
       // Naming violations
-      const nameVio = p.namingViolations.map(
-        (v) =>
-          ({
-            path: v.file,
-            start_line: v.line,
-            end_line: v.line,
-            annotation_level: 'failure',
-            message: `The symbol "${v.name}" poses a compatibility risk. Add a prefix to its name (e.g. ${prefixes}). If overwriting this symbol is intended, add it to the ignore list.`,
-            title: `Naming convention violation: ${v.name}`,
-          }) as Annotation
-      )
+      const nameVio = p.namingViolations.map((v) => {
+        const content = fs.readFileSync(v.file, 'ascii')
+        const context = content.split('\n')[v.line - 1]
+        return {
+          path: v.file,
+          start_line: v.line,
+          end_line: v.line,
+          annotation_level: 'failure',
+          title: `Naming convention violation: ${v.name}`,
+          message: `The symbol "${v.name}" poses a compatibility risk. Add a prefix to its name (e.g. ${prefixes}). If overwriting this symbol is intended, add it to the ignore list.`,
+          raw_details: context.replace(new RegExp(`(?<![\\d\\w_])(${v.name})(?![\\d\\w_])`, 'gi'), `${prefix[0]}$1`),
+        } as Annotation
+      })
 
       // Reference violations
       const refVio = p.referenceViolations.map(
@@ -65,8 +69,14 @@ export async function annotations(
             start_line: v.line,
             end_line: v.line,
             annotation_level: 'failure',
-            message: `The symbol "${v.name}" might not exist ("Unknown identifier"). Reference only symbols that are declared in the patch.`,
             title: `Reference violation: ${v.name}`,
+            message: `The symbol "${v.name}" might not exist ("Unknown identifier"). Reference only symbols that are declared in the patch or safely search for other symbols by their name.`,
+            raw_details: `if (MEM_FindParserSymbol("${v.name}") != -1) {
+    var zCPar_Symbol symb; symb = _^(MEM_GetSymbol("${v.name}"));
+    // Access content with symb.content
+} else {
+    // Fallback to a default if the symbol does not exist
+};`,
           }) as Annotation
       )
 
@@ -78,8 +88,8 @@ export async function annotations(
             start_line: v.line,
             end_line: v.line,
             annotation_level: 'failure',
-            message: `The symbol "${v.name}" is not allowed to be re-declared / defined.`,
             title: `Overwrite violation: ${v.name}`,
+            message: `The symbol "${v.name}" is not allowed to be re-declared / defined.`,
           }) as Annotation
       )
 
