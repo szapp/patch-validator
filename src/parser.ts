@@ -24,7 +24,6 @@ export class Parser {
   public readonly type: string
   public readonly version: number
   public readonly workingDir: string
-  public readonly packageDir: string
   public readonly symbolTable: SymbolTable
   public readonly referenceTable: SymbolTable
   public namingViolations: SymbolTable
@@ -37,14 +36,14 @@ export class Parser {
   /**
    * Represents a Parser object.
    * @constructor
+   * @param {string} patchName - The name of the patch.
    * @param {string} filepath - The file path.
    * @param {string} [workingDir=''] - The working directory.
    */
-  constructor(patchName: string, filepath: string, workingDir: string = '', packageDir: string = '') {
+  constructor(patchName: string, filepath: string, workingDir: string = '') {
     this.patchName = patchName.toUpperCase()
     this.filepath = normalizePath(filepath)
     this.workingDir = normalizePath(workingDir)
-    this.packageDir = normalizePath(packageDir)
     this.exists = fs.existsSync(this.filepath)
     this.filename = posix.basename(this.filepath)
     const baseName = posix.basename(this.filepath, posix.extname(this.filepath)).toUpperCase()

@@ -2,6 +2,7 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import { Parser } from './parser.js'
 import { formatDuration } from './utils.js'
+import { Resource } from './resources.js'
 import fs from 'fs'
 
 export type Annotation = {
@@ -35,6 +36,7 @@ export async function createCheckRun(startedAt: Date, write: boolean = true): Pr
 
 export async function annotations(
   parsers: Parser[],
+  resources: Resource[],
   prefix: string[],
   check_id: number,
   summary: string,
@@ -96,18 +98,50 @@ export async function annotations(
       // Concatenate and return
       return [...nameVio, ...refVio, ...overVio]
     })
+    .concat(
+      resources.map((r) => {
+        // Extension violations
+        const extVio = r.extViolations.map(
+          (v) =>
+            ({
+              path: v.file,
+              start_line: v.line,
+              end_line: v.line,
+              annotation_level: 'failure',
+              title: `Invalid file extension: ${v.name}`,
+              message: `The file extension "${v.name}" is not allowed for ${r.name} resources. Use one of the following: ${r.extensions.join(', ')}.`,
+            }) as Annotation
+        )
+
+        // Naming violations
+        const nameVio = r.nameViolations.map(
+          (v) =>
+            ({
+              path: v.file,
+              start_line: v.line,
+              end_line: v.line,
+              annotation_level: 'failure',
+              title: `Naming convention violation: ${v.name}`,
+              message: `The resource file "${v.name}" poses a compatibility risk. Add a prefix to its name (e.g. ${prefixes}).`,
+            }) as Annotation
+        )
+
+        // Concatenate and return
+        return [...extVio, ...nameVio]
+      })
+    )
     .flat()
 
   // Write to GitHub check run if enabled
   if (write) {
     // Collect details
-    const numViolations = parsers.reduce(
-      (acc, p) => acc + p.namingViolations.length + p.referenceViolations.length + p.overwriteViolations.length,
-      0
-    )
+    const numViolations =
+      parsers.reduce((acc, p) => acc + p.namingViolations.length + p.referenceViolations.length + p.overwriteViolations.length, 0) +
+      resources.reduce((acc, r) => acc + r.extViolations.length + r.nameViolations.length, 0)
     const numSymbols = parsers.reduce((acc, p) => acc + p.numSymbols, 0)
+    const numFiles = resources.reduce((acc, r) => acc + r.numFiles, 0)
     const text =
-      `The patch validator checked ${numSymbols} symbol${numSymbols !== 1 ? 's' : ''}.\n\n` +
+      `The patch validator checked ${numSymbols} script symbol${numSymbols !== 1 ? 's' : ''} and ${numFiles} resource file${numFiles !== 1 ? 's' : ''}.\n\n` +
       'For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/Inject-Changes).'
 
     const octokit = github.getOctokit(core.getInput('token'))
@@ -131,25 +165,38 @@ export async function annotations(
 
 export async function summary(
   parsers: Parser[],
+  resources: Resource[],
   prefixes: string[],
   duration: number,
   details_url: string | null,
   write: boolean = true
 ): Promise<string> {
-  const rows = parsers.map((p) => [
-    p.namingViolations.length + p.referenceViolations.length + p.overwriteViolations.length > 0 ? '🔴 Fail' : '🟢 Pass',
-    p.filename,
-    String(p.namingViolations.length),
-    String(p.referenceViolations.length),
-    String(p.overwriteViolations.length),
-    String(p.numSymbols),
-    formatDuration(p.duration),
-  ])
-  const numViolations = parsers.reduce(
-    (acc, p) => acc + p.namingViolations.length + p.referenceViolations.length + p.overwriteViolations.length,
-    0
-  )
-  const numSymbols = parsers.reduce((acc, p) => acc + p.numSymbols, 0)
+  const rows = parsers
+    .map((p) => [
+      p.namingViolations.length + p.referenceViolations.length + p.overwriteViolations.length > 0 ? '🔴 Fail' : '🟢 Pass',
+      p.filename,
+      String(p.namingViolations.length),
+      String(p.referenceViolations.length),
+      String(p.overwriteViolations.length),
+      String(p.numSymbols),
+      formatDuration(p.duration),
+    ])
+    .concat(
+      resources.map((r) => [
+        r.extViolations.length + r.nameViolations.length > 0 ? '🔴 Fail' : '🟢 Pass',
+        r.name,
+        String(r.extViolations.length + r.nameViolations.length),
+        '-',
+        '-',
+        String(r.numFiles),
+        formatDuration(r.duration),
+      ])
+    )
+
+  const numViolations =
+    parsers.reduce((acc, p) => acc + p.namingViolations.length + p.referenceViolations.length + p.overwriteViolations.length, 0) +
+    resources.reduce((acc, r) => acc + r.extViolations.length + r.nameViolations.length, 0)
+  const numSymbolsFiles = parsers.reduce((acc, p) => acc + p.numSymbols, 0) + resources.reduce((acc, r) => acc + r.numFiles, 0)
   const prefixList = prefixes.map((p) => `<code>${p}</code>`)
 
   // Construct summary
@@ -158,7 +205,7 @@ export async function summary(
       { data: 'Result 🔬', header: true, colspan: '1', rowspan: '2' },
       { data: 'Source 📝', header: true, colspan: '1', rowspan: '2' },
       { data: 'Violations 🛑', header: true, colspan: '3', rowspan: '1' },
-      { data: 'Symbols 📇', header: true, colspan: '1', rowspan: '2' },
+      { data: 'Symbols / Files 📇', header: true, colspan: '1', rowspan: '2' },
       { data: 'Duration ⏰', header: true, colspan: '1', rowspan: '2' },
     ],
     [
@@ -170,19 +217,19 @@ export async function summary(
   ])
 
   // Details on results
-  core.summary.addRaw(`Violations: ${numViolations}/${numSymbols}. Duration: ${formatDuration(duration)}.`, true)
+  core.summary.addRaw(`Violations: ${numViolations}/${numSymbolsFiles}. Duration: ${formatDuration(duration)}.`, true)
   core.summary.addEOL()
   core.summary.addRaw(details_url !== null ? `See the <a href="${details_url}">check run for details</a>.` : '', true)
 
   // Legend on violations
   core.summary.addHeading('Types of violations', 3)
   core.summary.addList([
-    '<b>Naming violations</b> occur when global Daedalus symbols are declared without a <a href="https://github.com/szapp/Ninja/wiki/Inject-Changes#naming-conventions">patch-specific prefix</a> in their name (e.g. <code>Patch_Name_*</code>, see below). This is important to ensure cross-mod compatibility.',
+    '<b>Naming violations</b> occur when global Daedalus symbols are declared (or resource files are named) without a <a href="https://github.com/szapp/Ninja/wiki/Inject-Changes#naming-conventions">patch-specific prefix</a> in their name (e.g. <code>Patch_Name_*</code>, see below). This is important to ensure cross-mod compatibility.',
     '<b>Reference violations</b> occur when Daedalus symbols are referenced that may not exist (i.e. "Unknown Identifier"). A patch cannot presuppose <a href="https://github.com/szapp/Ninja/wiki/Inject-Changes#common-symbols">common symbols</a>.',
     '<b>Overwrite violations</b> occur when Daedalus symbols are declared that are <a href="https://github.com/szapp/Ninja/wiki/Inject-Changes#preserved-symbols">not allowed to be overwritten</a>. This is important to ensure proper function across mods.',
   ])
   core.summary.addRaw(
-    'Naming violations can be corrected by prefixing the names of all global symbols (i.e. symbols declared outside of functions, classes, instances, and prototypes) with one of the following prefixes (add more in the <a href="https://github.com/szapp/patch-validator/#configuration">configuration</a>).',
+    'Naming violations can be corrected by prefixing the names of all global symbols (i.e. symbols declared outside of functions, classes, instances, and prototypes) and the names of resource files (i.e. files under "_work/Data/") with one of the following prefixes (add more in the <a href="https://github.com/szapp/patch-validator/#configuration">configuration</a>).',
     true
   )
   core.summary.addList(prefixList)

@@ -1,5 +1,5 @@
-name: Daedalus Patch Validator
-description: Checks if Daedalus script symbols in a Gothic VDF patch adhere to the naming conventions
+name: VDF Patch Validator
+description: Checks Daedalus script symbols and resource file names in a Gothic VDF patch for validity
 
 branding:
   icon: check

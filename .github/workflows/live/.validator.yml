@@ -2,3 +2,6 @@ prefix: FOO
 ignore-declaration:
   - BAR
   - BAZ
+ignore-resource:
+  - _work/data/Textures/_compiled/FO*-C.tex
+  - _work/data/Anims/FOO.mds

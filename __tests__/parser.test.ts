@@ -133,7 +133,6 @@ describe('Parser', () => {
         type: 'CONTENT',
         version: 1,
         workingDir: '',
-        packageDir: '',
       } as unknown as Parser
 
       fsExistsSyncMock.mockReturnValue(false).mockReturnValueOnce(true)

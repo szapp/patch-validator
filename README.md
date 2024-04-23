@@ -3,7 +3,9 @@
 [![CI](https://github.com/szapp/patch-validator/actions/workflows/ci.yml/badge.svg)](https://github.com/szapp/patch-validator/actions/workflows/ci.yml)
 [![Coverage](badges/coverage.svg)](https://github.com/szapp/patch-validator/actions/workflows/ci.yml)
 
-GitHub action for checking if Daedalus script symbols in a Gothic VDF patch adhere to the [naming conventions](https://github.com/szapp/Ninja/wiki/Inject-Changes#naming-conventions). The action collects a table of all global (unscoped) symbols across all Daedalus parsers. For symbol names without the necessary prefix, the action fails with a code annotation. This GitHub action is useful for CI of Gothic VDF patches that include Daedalus code.
+GitHub action for checking if Daedalus script symbols and resource files in a Gothic VDF patch adhere to the [naming conventions](https://github.com/szapp/Ninja/wiki/Inject-Changes#naming-conventions), if all symbol references are valid, and that no vital symbols are overwritten. This allows to determine the general compatibility of a patch.
+
+The action collects symbol tables of all Daedalus parsers (e.g. content, menu, etc.) and walks through the resource file tree (i.e. everything under "\_work/Data"). For symbols, symbol references, and resource file names that violate the compatibility assurances, the action fails with code annotations. This GitHub action is useful for CI of Gothic VDF patches that include Daedalus code and/or resource files.
 
 > [!Important]
 > This action does not check the integrity of the scripts (i.e. no syntax or type checks). Do not mistake valid scripts for sound code. Please refer to additional packages for that, e.g. [Parsiphae](https://github.com/szapp/parsiphae-action).
@@ -57,7 +59,7 @@ jobs:
   The `GITHUB_TOKEN` to [authenticate on behalf of GitHub Actions](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow).  
   Defaults to the GitHub token, i.e. checks are created by the GitHub Actions bot.
 
-Additionally, place a file named `.validator.yml` in the root of your repository with the following content.
+Additionally, place a file named `.validator.yml` in `rootPath` of your repository with the following content.
 All settings are optional, but the file must exist (even if empty).
 
 - `prefix`:
@@ -68,6 +70,10 @@ All settings are optional, but the file must exist (even if empty).
   One or several symbols names that intentionally overwrite common symbols.  
   May either be blank, a string or a YAML list of strings
 
+- `ignore-resource`:
+  One or several resource file paths that intentionally overwrite existing textures, meshes, worlds, animations, sounds, or presets. The paths are case-insensitive and glob pattern wildcards are supported.
+  May either be blank, a string or a YAML list of strings
+
 Example content:
 
 ```yaml
@@ -75,6 +81,9 @@ prefix: FOA # Either a single entry
 ignore-declaration:
   - DIA_NONE_9022_KALIF # Or a YAML list
   - B_SomeFunction
+ignore-resource:
+  - '_work/Data/Textures/_compiled/Overwrite-C.TEX'
+  - '_work/Data/Sounds/SFX/Hero*.WAV'
 ```
 
 ## Remove second commit status check

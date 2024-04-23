@@ -16,7 +16,7 @@ describe('loadInputs', () => {
     yamlParseMock = jest.spyOn(YAML, 'parse')
   })
 
-  it('should load inputs correctly without ignore', () => {
+  it('should load inputs correctly without ignore lists', () => {
     jest.replaceProperty(process, 'env', { GITHUB_WORKSPACE: '/path/to/workspace' })
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const github = require('@actions/github')
@@ -38,12 +38,12 @@ describe('loadInputs', () => {
     const result = loadInputs()
 
     expect(result).toEqual({
-      relPath: 'Ninja/patchname',
+      workingDir: '/path/to/workspace',
       basePath: '/path/to/workspace/Ninja/patchname',
       patchName: 'patchname',
       prefixList: ['prefix-value1', 'prefix-value2'],
-      ignoreList: [],
-      workingDir: '/path/to/workspace',
+      ignoreListDecl: [],
+      ignoreListRsc: [],
     })
     expect(getInputMock).toHaveBeenCalledWith('patchName')
     expect(getInputMock).toHaveBeenCalledWith('rootPath')
@@ -67,24 +67,24 @@ describe('loadInputs', () => {
     getInputMock.mockReturnValue('')
     fsExistsSyncMock.mockReturnValue(true)
     fsExistsSyncMock.mockReturnValue(true)
-    fsReadFileSyncMock.mockReturnValue('ignore: ignore-value')
-    yamlParseMock.mockReturnValue({ 'ignore-declaration': 'ignore-value' })
+    fsReadFileSyncMock.mockReturnValue('ignore-declaration: ignore-value1\nignore-resource: ignore-value2')
+    yamlParseMock.mockReturnValue({ 'ignore-declaration': 'ignore-value1', 'ignore-resource': 'ignore-value2' })
 
     const result = loadInputs()
 
     expect(result).toEqual({
-      relPath: 'Ninja/my-repo',
+      workingDir: '/path/to/workspace',
       basePath: '/path/to/workspace/Ninja/my-repo',
       patchName: 'my-repo',
       prefixList: [],
-      ignoreList: ['ignore-value'],
-      workingDir: '/path/to/workspace',
+      ignoreListDecl: ['ignore-value1'],
+      ignoreListRsc: ['ignore-value2'],
     })
     expect(getInputMock).toHaveBeenCalledWith('patchName')
     expect(getInputMock).toHaveBeenCalledWith('rootPath')
     expect(fsExistsSyncMock).toHaveBeenCalledWith('/path/to/workspace/Ninja/my-repo')
     expect(fsReadFileSyncMock).toHaveBeenCalledWith('/path/to/workspace/.validator.yml', 'utf8')
-    expect(yamlParseMock).toHaveBeenCalledWith('ignore: ignore-value')
+    expect(yamlParseMock).toHaveBeenCalledWith('ignore-declaration: ignore-value1\nignore-resource: ignore-value2')
   })
 
   it('should throw an error if repository name is not available', () => {
@@ -172,13 +172,16 @@ describe('formatFilters', () => {
   it('formats and extends filters', () => {
     const patchName = 'Patch1'
     const prefix = ['pre1', 'PRE2']
-    const ignore = ['Symbol1', 'Symbol2']
+    const ignoreDecl = ['Symbol1', 'Symbol2']
+    const ignoreRsc = ['\\path\\to\\somefile', '/another/path/to/anotherfile']
 
-    const result = formatFilters(patchName, prefix, ignore)
+    const result = formatFilters(patchName, prefix, ignoreDecl, ignoreRsc)
 
-    expect(core.info).toHaveBeenCalledWith('Ignore:   SYMBOL1, SYMBOL2, NINJA_PATCH1_INIT, NINJA_PATCH1_MENU')
-    expect(core.info).toHaveBeenCalledWith('Prefixes: PRE1_, PRE2_, PATCH_PRE1_, PATCH_PRE2_, PATCH1_, PATCH_PATCH1_')
+    expect(core.info).toHaveBeenCalledWith('Prefixes:              PRE1_, PRE2_, PATCH_PRE1_, PATCH_PRE2_, PATCH1_, PATCH_PATCH1_')
+    expect(core.info).toHaveBeenCalledWith('Ignore declarations:   SYMBOL1, SYMBOL2, NINJA_PATCH1_INIT, NINJA_PATCH1_MENU')
+    expect(core.info).toHaveBeenCalledWith('Ignore resource files: /PATH/TO/SOMEFILE, /ANOTHER/PATH/TO/ANOTHERFILE')
     expect(result.prefix).toEqual(['PRE1_', 'PRE2_', 'PATCH_PRE1_', 'PATCH_PRE2_', 'PATCH1_', 'PATCH_PATCH1_'])
-    expect(result.ignore).toEqual(['SYMBOL1', 'SYMBOL2', 'NINJA_PATCH1_INIT', 'NINJA_PATCH1_MENU'])
+    expect(result.ignoreDecl).toEqual(['SYMBOL1', 'SYMBOL2', 'NINJA_PATCH1_INIT', 'NINJA_PATCH1_MENU'])
+    expect(result.ignoreRsc).toEqual(['/PATH/TO/SOMEFILE', '/ANOTHER/PATH/TO/ANOTHERFILE'])
   })
 })

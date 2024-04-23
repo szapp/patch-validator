@@ -11,8 +11,8 @@ describe('run', () => {
   beforeEach(() => {
     jest
       .spyOn(inputs, 'loadInputs')
-      .mockReturnValue({ workingDir: '', relPath: '', basePath: '', patchName: '', prefixList: [], ignoreList: [] })
-    jest.spyOn(inputs, 'formatFilters').mockReturnValue({ prefix: [], ignore: [] })
+      .mockReturnValue({ workingDir: '', basePath: '', patchName: '', prefixList: [], ignoreListDecl: [], ignoreListRsc: [] })
+    jest.spyOn(inputs, 'formatFilters').mockReturnValue({ prefix: [], ignoreDecl: [], ignoreRsc: [] })
     jest.spyOn(Parser, 'from').mockResolvedValue([new Parser('', '')])
     jest.spyOn(write, 'createCheckRun').mockResolvedValue({ details_url: '', check_id: 0 })
     jest.spyOn(write, 'annotations').mockResolvedValue([])

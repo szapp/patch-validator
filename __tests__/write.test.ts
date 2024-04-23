@@ -2,6 +2,7 @@ import write, { Annotation } from '../src/write.ts'
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import { Parser } from '../src/parser.ts'
+import { Resource } from '../src/resources.ts'
 import fs from 'fs'
 
 let createCheckMock: jest.Mock
@@ -81,7 +82,7 @@ describe('annotations', () => {
     } as unknown as typeof github.context)
   })
 
-  it('creates annotations for invalid symbols', async () => {
+  it('creates annotations for invalid symbol and file names', async () => {
     const parsers = [
       {
         numSymbols: 4,
@@ -89,6 +90,15 @@ describe('annotations', () => {
         referenceViolations: [{ name: 'SYMBOL2', file: 'path/to/file2', line: 3 }],
         overwriteViolations: [{ name: 'SYMBOL3', file: 'path/to/file3', line: 4 }],
       } as unknown as Parser,
+    ]
+    const resources = [
+      {
+        name: 'anims',
+        extensions: ['.ext1', '.ext2'],
+        numFiles: 3,
+        extViolations: [{ file: 'path/to/file4', name: '.ext', line: 0 }],
+        nameViolations: [{ file: 'path/to/file5', name: 'file5', line: 0 }],
+      } as unknown as Resource,
     ]
     const prefix = ['PATCH_']
     const check_id = 42
@@ -128,12 +138,28 @@ describe('annotations', () => {
         title: 'Overwrite violation: SYMBOL3',
         message: 'The symbol "SYMBOL3" is not allowed to be re-declared / defined.',
       },
+      {
+        path: 'path/to/file4',
+        start_line: 0,
+        end_line: 0,
+        annotation_level: 'failure',
+        title: 'Invalid file extension: .ext',
+        message: 'The file extension ".ext" is not allowed for anims resources. Use one of the following: .ext1, .ext2.',
+      },
+      {
+        path: 'path/to/file5',
+        start_line: 0,
+        end_line: 0,
+        annotation_level: 'failure',
+        title: 'Naming convention violation: file5',
+        message: 'The resource file "file5" poses a compatibility risk. Add a prefix to its name (e.g. PATCH_).',
+      },
     ]
     const expectedOutput = {
-      title: '3 violations',
+      title: '5 violations',
       summary,
       text:
-        'The patch validator checked 4 symbols.\n\n' +
+        'The patch validator checked 4 script symbols and 3 resource files.\n\n' +
         'For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/Inject-Changes).',
       annotations: expectedAnnotations,
     }
@@ -144,7 +170,7 @@ const int Symbol2 = 0;
 const int Symbol3 = 0;
 `)
 
-    const result = await write.annotations(parsers, prefix, check_id, summary)
+    const result = await write.annotations(parsers, resources, prefix, check_id, summary)
 
     expect(updateCheckMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -168,6 +194,15 @@ const int Symbol3 = 0;
         overwriteViolations: [],
       } as unknown as Parser,
     ]
+    const resources = [
+      {
+        name: 'anims',
+        extensions: ['.ext1', '.ext2'],
+        numFiles: 1,
+        extViolations: [],
+        nameViolations: [],
+      } as unknown as Resource,
+    ]
     const prefix = ['PATCH_', 'FOO_', 'BAR_', 'BAZ_']
     const check_id = 42
     const summary = 'summary text'
@@ -190,7 +225,7 @@ const int Symbol3 = 0;
       title: '1 violation',
       summary,
       text:
-        'The patch validator checked 1 symbol.\n\n' +
+        'The patch validator checked 1 script symbol and 1 resource file.\n\n' +
         'For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/Inject-Changes).',
       annotations: expectedAnnotations,
     }
@@ -200,7 +235,7 @@ var int Symbol1;
 var int Symbol21; var int Symbol2;
 `)
 
-    const result = await write.annotations(parsers, prefix, check_id, summary, writeVal)
+    const result = await write.annotations(parsers, resources, prefix, check_id, summary, writeVal)
 
     expect(updateCheckMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -223,6 +258,15 @@ var int Symbol21; var int Symbol2;
         overwriteViolations: [],
       } as unknown as Parser,
     ]
+    const resources = [
+      {
+        name: 'anims',
+        extensions: [],
+        numFiles: 0,
+        extViolations: [],
+        nameViolations: [],
+      } as unknown as Resource,
+    ]
     const prefix: string[] = []
     const check_id = 42
     const summary = 'summary text'
@@ -234,12 +278,12 @@ var int Symbol21; var int Symbol2;
       title: 'No violations',
       summary,
       text:
-        'The patch validator checked 1 symbol.\n\n' +
+        'The patch validator checked 1 script symbol and 0 resource files.\n\n' +
         'For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/Inject-Changes).',
       annotations: expectedAnnotations,
     }
 
-    const result = await write.annotations(parsers, prefix, check_id, summary, writeVal)
+    const result = await write.annotations(parsers, resources, prefix, check_id, summary, writeVal)
 
     expect(updateCheckMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -261,6 +305,15 @@ var int Symbol21; var int Symbol2;
         referenceViolations: [],
         overwriteViolations: [],
       } as unknown as Parser,
+    ]
+    const resources = [
+      {
+        name: 'anims',
+        extensions: [],
+        numFiles: 1,
+        extViolations: [],
+        nameViolations: [],
+      } as unknown as Resource,
     ]
     const prefix: string[] = []
     const check_id = 42
@@ -284,7 +337,7 @@ var int Symbol21; var int Symbol2;
 var int Symbol21; var int Symbol2;
 `)
 
-    const result = await write.annotations(parsers, prefix, check_id, summary, writeVal)
+    const result = await write.annotations(parsers, resources, prefix, check_id, summary, writeVal)
 
     expect(updateCheckMock).not.toHaveBeenCalled()
     expect(result).toEqual(expectedAnnotations)
@@ -305,6 +358,11 @@ describe('summary', () => {
 
   it('builds summary, writes it to GitHub and returns it', async () => {
     const parsers = [new Parser('', 'path/to/File1.src'), new Parser('', 'File2.src'), new Parser('', 'File3.src')]
+    const resources = [
+      new Resource('Anims', '', '', [], [], []),
+      new Resource('Textures', '', '', [], [], []),
+      new Resource('Worlds', '', '', [], [], []),
+    ]
     const duration = 4035
     const prefixes = ['PATCH_', 'FOO_', 'BAR_']
     const details_url = 'https://example.com/details'
@@ -317,15 +375,23 @@ describe('summary', () => {
     parsers[0].namingViolations = [{ name: 'Symbol1', file: 'path/to/file1', line: 10 }]
     parsers[2].referenceViolations = [{ name: 'Symbol2', file: 'path/to/file2', line: 20 }]
     parsers[2].overwriteViolations = [{ name: 'Symbol3', file: 'path/to/file3', line: 30 }]
+    resources[0].numFiles = 3
+    resources[1].numFiles = 1
+    resources[2].numFiles = 2
+    resources[0].duration = 9
+    resources[1].duration = 3
+    resources[2].duration = 5
+    resources[0].extViolations = [{ name: '.ext', file: 'path/to/file4', line: 0 }]
+    resources[2].nameViolations = [{ name: 'file5', file: 'path/to/file5', line: 0 }]
 
-    const result = await write.summary(parsers, prefixes, duration, details_url)
+    const result = await write.summary(parsers, resources, prefixes, duration, details_url)
 
     expect(core.summary.addTable).toHaveBeenCalledWith([
       [
         { data: 'Result 🔬', header: true, colspan: '1', rowspan: '2' },
         { data: 'Source 📝', header: true, colspan: '1', rowspan: '2' },
         { data: 'Violations 🛑', header: true, colspan: '3', rowspan: '1' },
-        { data: 'Symbols 📇', header: true, colspan: '1', rowspan: '2' },
+        { data: 'Symbols / Files 📇', header: true, colspan: '1', rowspan: '2' },
         { data: 'Duration ⏰', header: true, colspan: '1', rowspan: '2' },
       ],
       [
@@ -336,14 +402,17 @@ describe('summary', () => {
       ['🔴 Fail', 'File1.src', '1', '0', '0', '3', '42 milliseconds'],
       ['🟢 Pass', 'File2.src', '0', '0', '0', '1', '20 milliseconds'],
       ['🔴 Fail', 'File3.src', '0', '1', '1', '5', '2 seconds, 40 milliseconds'],
+      ['🔴 Fail', 'Anims', '1', '-', '-', '3', '9 milliseconds'],
+      ['🟢 Pass', 'Textures', '0', '-', '-', '1', '3 milliseconds'],
+      ['🔴 Fail', 'Worlds', '1', '-', '-', '2', '5 milliseconds'],
     ])
-    expect(core.summary.addRaw).toHaveBeenCalledWith('Violations: 3/9. Duration: 4 seconds, 35 milliseconds.', true)
+    expect(core.summary.addRaw).toHaveBeenCalledWith('Violations: 5/15. Duration: 4 seconds, 35 milliseconds.', true)
     expect(core.summary.addEOL).toHaveBeenCalled()
     expect(core.summary.addRaw).toHaveBeenCalledWith('See the <a href="https://example.com/details">check run for details</a>.', true)
     expect(core.summary.addHeading).toHaveBeenCalledWith('Types of violations', 3)
     expect(core.summary.addList).toHaveBeenCalledWith(expect.arrayContaining([expect.any(String)]))
     expect(core.summary.addRaw).toHaveBeenCalledWith(
-      'Naming violations can be corrected by prefixing the names of all global symbols (i.e. symbols declared outside of functions, classes, instances, and prototypes) with one of the following prefixes (add more in the <a href="https://github.com/szapp/patch-validator/#configuration">configuration</a>).',
+      'Naming violations can be corrected by prefixing the names of all global symbols (i.e. symbols declared outside of functions, classes, instances, and prototypes) and the names of resource files (i.e. files under "_work/Data/") with one of the following prefixes (add more in the <a href="https://github.com/szapp/patch-validator/#configuration">configuration</a>).',
       true
     )
     expect(core.summary.addList).toHaveBeenCalledWith(['<code>PATCH_</code>', '<code>FOO_</code>', '<code>BAR_</code>'])
@@ -355,21 +424,24 @@ describe('summary', () => {
 
   it('builds summary for no violations and no details_url and does not write it to GitHub', async () => {
     const parsers = [new Parser('', 'path/to/File1.src')]
+    const resources = [new Resource('Anims', '', '', [], [], [])]
     const duration = 1024
     const prefixes: string[] = []
     const details_url = null
     const writeVal = false
     parsers[0].numSymbols = 1
     parsers[0].duration = 20
+    resources[0].numFiles = 1
+    resources[0].duration = 9
 
-    const result = await write.summary(parsers, prefixes, duration, details_url, writeVal)
+    const result = await write.summary(parsers, resources, prefixes, duration, details_url, writeVal)
 
     expect(core.summary.addTable).toHaveBeenCalledWith([
       [
         { data: 'Result 🔬', header: true, colspan: '1', rowspan: '2' },
         { data: 'Source 📝', header: true, colspan: '1', rowspan: '2' },
         { data: 'Violations 🛑', header: true, colspan: '3', rowspan: '1' },
-        { data: 'Symbols 📇', header: true, colspan: '1', rowspan: '2' },
+        { data: 'Symbols / Files 📇', header: true, colspan: '1', rowspan: '2' },
         { data: 'Duration ⏰', header: true, colspan: '1', rowspan: '2' },
       ],
       [
@@ -378,14 +450,15 @@ describe('summary', () => {
         { data: 'Overwrite ⛔', header: true, colspan: '1', rowspan: '1' },
       ],
       ['🟢 Pass', 'File1.src', '0', '0', '0', '1', '20 milliseconds'],
+      ['🟢 Pass', 'Anims', '0', '-', '-', '1', '9 milliseconds'],
     ])
-    expect(core.summary.addRaw).toHaveBeenCalledWith('Violations: 0/1. Duration: 1 second, 24 milliseconds.', true)
+    expect(core.summary.addRaw).toHaveBeenCalledWith('Violations: 0/2. Duration: 1 second, 24 milliseconds.', true)
     expect(core.summary.addEOL).toHaveBeenCalled()
     expect(core.summary.addRaw).not.toHaveBeenCalledWith(expect.stringContaining('check run for details'), expect.any(Boolean))
     expect(core.summary.addHeading).toHaveBeenCalledWith('Types of violations', 3)
     expect(core.summary.addList).toHaveBeenCalledWith(expect.arrayContaining([expect.any(String)]))
     expect(core.summary.addRaw).toHaveBeenCalledWith(
-      'Naming violations can be corrected by prefixing the names of all global symbols (i.e. symbols declared outside of functions, classes, instances, and prototypes) with one of the following prefixes (add more in the <a href="https://github.com/szapp/patch-validator/#configuration">configuration</a>).',
+      'Naming violations can be corrected by prefixing the names of all global symbols (i.e. symbols declared outside of functions, classes, instances, and prototypes) and the names of resource files (i.e. files under "_work/Data/") with one of the following prefixes (add more in the <a href="https://github.com/szapp/patch-validator/#configuration">configuration</a>).',
       true
     )
     expect(core.summary.addList).toHaveBeenCalledWith([])
