@@ -1,9 +1,10 @@
-import { posix } from 'path'
+import path, { posix } from 'path'
 import * as glob from 'glob'
 import fs from 'fs'
 import { Resource } from '../src/resources.ts'
 
 let posixResolveMock: jest.SpiedFunction<typeof posix.resolve>
+let pathRelativeMock: jest.SpiedFunction<typeof path.relative>
 let globGlobSyncMock: jest.SpiedFunction<typeof glob.globSync>
 let resourceValidateMock: jest.SpiedFunction<typeof Resource.prototype.validate>
 let fsRealpathSyncNativeMock: jest.SpiedFunction<typeof fs.realpathSync.native>
@@ -11,6 +12,7 @@ let fsRealpathSyncNativeMock: jest.SpiedFunction<typeof fs.realpathSync.native>
 describe('Resource', () => {
   beforeEach(() => {
     posixResolveMock = jest.spyOn(posix, 'resolve')
+    pathRelativeMock = jest.spyOn(path, 'relative').mockImplementation((from, to) => String(to.replace(from, '').replace(/^\//, '')))
     globGlobSyncMock = jest.spyOn(glob, 'globSync')
     fsRealpathSyncNativeMock = jest.spyOn(fs.realpathSync, 'native').mockImplementation((path) => String(path))
   })
@@ -65,6 +67,7 @@ describe('Resource', () => {
 
       expect(globGlobSyncMock).toHaveBeenCalled()
       expect(fsRealpathSyncNativeMock).toHaveBeenCalled()
+      expect(pathRelativeMock).toHaveBeenCalled()
       expect(resource['extViolations']).toEqual([
         { file: '_work/data/Textures/file.wrg', name: '.wrg', line: 1 },
         { file: '_work/data/Textures/_compiled/file.mo', name: '.mo', line: 1 },

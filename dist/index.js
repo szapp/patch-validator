@@ -78627,7 +78627,7 @@ class Resource {
             const allowedExtensions = this.extensions.concat(Resource.ignore);
             const extL = ext.toLowerCase();
             if (extL && !allowedExtensions.includes(extL)) {
-                this.extViolations.push({ file: `Rel "${rel}", file: "${fileCase}", workingDir: "${this.workingDir}"`, name: ext, line: 1 });
+                this.extViolations.push({ file: rel, name: ext, line: 1 });
                 continue;
             }
             // Check for valid file name, exluding animations (they have generated names)
