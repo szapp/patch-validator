@@ -66,12 +66,12 @@ describe('Resource', () => {
       expect(globGlobSyncMock).toHaveBeenCalled()
       expect(fsRealpathSyncNativeMock).toHaveBeenCalled()
       expect(resource['extViolations']).toEqual([
-        { file: '_work/data/Textures/file.wrg', name: '.wrg', line: 0 },
-        { file: '_work/data/Textures/_compiled/file.mo', name: '.mo', line: 0 },
+        { file: '_work/data/Textures/file.wrg', name: '.wrg', line: 1 },
+        { file: '_work/data/Textures/_compiled/file.mo', name: '.mo', line: 1 },
       ])
       expect(resource['nameViolations']).toEqual([
-        { file: '_work/data/Textures/_compiled/file-c.tex', name: 'file-c', line: 0 },
-        { file: '_work/data/Textures/_compiled/file.fnt', name: 'file', line: 0 },
+        { file: '_work/data/Textures/_compiled/file-c.tex', name: 'file-c', line: 1 },
+        { file: '_work/data/Textures/_compiled/file.fnt', name: 'file', line: 1 },
       ])
       expect(resource['numFiles']).toBe(8)
     })
@@ -207,40 +207,40 @@ describe('Resource', () => {
       expect(resources[5].numFiles).toBe(4)
 
       expect(resources[0].extViolations).toEqual([
-        { file: '_work/data/Anims/file.wrg', name: '.wrg', line: 0 },
-        { file: '_work/data/Anims/_compiled/file.mo', name: '.mo', line: 0 },
+        { file: '_work/data/Anims/file.wrg', name: '.wrg', line: 1 },
+        { file: '_work/data/Anims/_compiled/file.mo', name: '.mo', line: 1 },
       ])
       expect(resources[1].extViolations).toEqual([
-        { file: '_work/data/Meshes/file.wrg', name: '.wrg', line: 0 },
-        { file: '_work/data/Meshes/_compiled/file.mo', name: '.mo', line: 0 },
+        { file: '_work/data/Meshes/file.wrg', name: '.wrg', line: 1 },
+        { file: '_work/data/Meshes/_compiled/file.mo', name: '.mo', line: 1 },
       ])
-      expect(resources[2].extViolations).toEqual([{ file: '_work/data/Presets/file.wrg', name: '.wrg', line: 0 }])
+      expect(resources[2].extViolations).toEqual([{ file: '_work/data/Presets/file.wrg', name: '.wrg', line: 1 }])
       expect(resources[3].extViolations).toEqual([
-        { file: '_work/data/Sound/file.wrg', name: '.wrg', line: 0 },
-        { file: '_work/data/Sound/SFX/file.mo', name: '.mo', line: 0 },
+        { file: '_work/data/Sound/file.wrg', name: '.wrg', line: 1 },
+        { file: '_work/data/Sound/SFX/file.mo', name: '.mo', line: 1 },
       ])
       expect(resources[4].extViolations).toEqual([
-        { file: '_work/data/Textures/file.wrg', name: '.wrg', line: 0 },
-        { file: '_work/data/Textures/_compiled/file.mo', name: '.mo', line: 0 },
+        { file: '_work/data/Textures/file.wrg', name: '.wrg', line: 1 },
+        { file: '_work/data/Textures/_compiled/file.mo', name: '.mo', line: 1 },
       ])
-      expect(resources[5].extViolations).toEqual([{ file: '_work/data/Worlds/file.wrg', name: '.wrg', line: 0 }])
+      expect(resources[5].extViolations).toEqual([{ file: '_work/data/Worlds/file.wrg', name: '.wrg', line: 1 }])
 
       expect(resources[0].nameViolations).toEqual([])
       expect(resources[1].nameViolations).toEqual([
-        { file: '_work/data/Meshes/_compiled/file.mrm', name: 'file', line: 0 },
-        { file: '_work/data/Meshes/_compiled/file.msh', name: 'file', line: 0 },
+        { file: '_work/data/Meshes/_compiled/file.mrm', name: 'file', line: 1 },
+        { file: '_work/data/Meshes/_compiled/file.msh', name: 'file', line: 1 },
       ])
-      expect(resources[2].nameViolations).toEqual([{ file: '_work/data/Presets/file.zen', name: 'file', line: 0 }])
+      expect(resources[2].nameViolations).toEqual([{ file: '_work/data/Presets/file.zen', name: 'file', line: 1 }])
       expect(resources[3].nameViolations).toEqual([
-        { file: '_work/data/Sound/SFX/file.wav', name: 'file', line: 0 },
-        { file: '_work/data/Sound/SFX/file.mp3', name: 'file', line: 0 },
-        { file: '_work/data/Sound/Speech/file.ogg', name: 'file', line: 0 },
+        { file: '_work/data/Sound/SFX/file.wav', name: 'file', line: 1 },
+        { file: '_work/data/Sound/SFX/file.mp3', name: 'file', line: 1 },
+        { file: '_work/data/Sound/Speech/file.ogg', name: 'file', line: 1 },
       ])
       expect(resources[4].nameViolations).toEqual([
-        { file: '_work/data/Textures/_compiled/file-c.tex', name: 'file-c', line: 0 },
-        { file: '_work/data/Textures/_compiled/file.fnt', name: 'file', line: 0 },
+        { file: '_work/data/Textures/_compiled/file-c.tex', name: 'file-c', line: 1 },
+        { file: '_work/data/Textures/_compiled/file.fnt', name: 'file', line: 1 },
       ])
-      expect(resources[5].nameViolations).toEqual([{ file: '_work/data/Worlds/file.zen', name: 'file', line: 0 }])
+      expect(resources[5].nameViolations).toEqual([{ file: '_work/data/Worlds/file.zen', name: 'file', line: 1 }])
     })
   })
 })
