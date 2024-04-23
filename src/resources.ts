@@ -58,11 +58,7 @@ export class Resource {
   public static from(workingDir: string, basePath: string, prefix: string[], ignoreList: string[]): Resource[] {
     workingDir = normalizePath(workingDir)
     basePath = normalizePath(basePath)
-    const rscRootPath = posix.resolve(basePath, '..', '..')
-    ignoreList = globSync(
-      ignoreList.map((i) => posix.join(rscRootPath, normalizePath(i))),
-      { nocase: true }
-    ).map((p) => normalizePath(p).toUpperCase())
+    ignoreList = ignoreList.map((i) => normalizePath(i).toUpperCase())
 
     const resources = {
       Anims: ['.man', '.mdh', '.mdl', '.mdm', '.mmb', '.msb'],

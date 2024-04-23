@@ -123,14 +123,11 @@ describe('Resource', () => {
       const workingDir = '/path/to/workspace'
       const basePath = '/path/to/workspace/Ninja/patchname'
       const prefix = ['PATCH_FOO_', 'FOO_']
-      const ignoreList = ['/_WORK/DATA/TEXTURES/_COMPILED/FILEBASE_*-C.TEX']
+      const ignoreList = ['/PATH/TO/WORKSPACE/_WORK/DATA/TEXTURES/_COMPILED/FILEBASE_002-C.TEX']
 
-      posixResolveMock.mockReturnValue('/path/to/workspace/_work/data').mockReturnValueOnce('/path/to/workspace')
+      posixResolveMock.mockReturnValue('/path/to/workspace/_work/data')
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       globGlobSyncMock.mockImplementation((resourcePath, _opt) => {
-        if (Array.isArray(resourcePath) && resourcePath[0] === '/path/to/workspace/_WORK/DATA/TEXTURES/_COMPILED/FILEBASE_*-C.TEX') {
-          return ['/path/to/workspace/_work/data/Textures/_compiled/filebase_002-c.tex']
-        }
         switch (resourcePath) {
           case '/path/to/workspace/_work/data/anims/**/*':
             return [
@@ -191,14 +188,13 @@ describe('Resource', () => {
               '/path/to/workspace/_work/data/Worlds/file.wrg',
             ]
           default:
-            console.log(`This did not match (${typeof resourcePath})`, resourcePath)
             return []
         }
       })
 
       const resources = Resource.from(workingDir, basePath, prefix, ignoreList)
       expect(Resource.prototype.validate).toHaveBeenCalledTimes(6)
-      expect(globGlobSyncMock).toHaveBeenCalledTimes(7)
+      expect(globGlobSyncMock).toHaveBeenCalledTimes(6)
       expect(resources).toHaveLength(6)
 
       expect(resources[0].numFiles).toBe(10)

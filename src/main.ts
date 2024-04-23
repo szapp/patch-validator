@@ -18,7 +18,7 @@ export async function run(github: boolean = false): Promise<{ summary: string; a
 
     // Format inputs
     const { workingDir, basePath, patchName, prefixList, ignoreListDecl, ignoreListRsc } = loadInputs()
-    const { prefix, ignoreDecl, ignoreRsc } = formatFilters(patchName, prefixList, ignoreListDecl, ignoreListRsc)
+    const { prefix, ignoreDecl, ignoreRsc } = formatFilters(patchName, prefixList, ignoreListDecl, ignoreListRsc, basePath)
 
     // Collect symbol tables
     const parsers = await Parser.from(patchName, basePath, workingDir)

@@ -78635,8 +78635,7 @@ class Resource {
     static from(workingDir, basePath, prefix, ignoreList) {
         workingDir = normalizePath(workingDir);
         basePath = normalizePath(basePath);
-        const rscRootPath = external_path_.posix.resolve(basePath, '..', '..');
-        ignoreList = globSync(ignoreList.map((i) => external_path_.posix.join(rscRootPath, normalizePath(i))), { nocase: true }).map((p) => normalizePath(p).toUpperCase());
+        ignoreList = ignoreList.map((i) => normalizePath(i).toUpperCase());
         const resources = {
             Anims: ['.man', '.mdh', '.mdl', '.mdm', '.mmb', '.msb'],
             Meshes: ['.mrm', '.msh'],
@@ -78659,6 +78658,7 @@ class Resource {
 // EXTERNAL MODULE: ./node_modules/yaml/dist/index.js
 var dist = __nccwpck_require__(4083);
 ;// CONCATENATED MODULE: ./src/inputs.ts
+
 
 
 
@@ -78692,7 +78692,7 @@ function loadInputs() {
         throw new Error('Prefix must be at least three characters long');
     return { workingDir, basePath, patchName, prefixList, ignoreListDecl, ignoreListRsc };
 }
-function formatFilters(patchName, prefix, ignoreDecl, ignoreRsc) {
+function formatFilters(patchName, prefix, ignoreDecl, ignoreRsc, basePath) {
     const patchNameU = patchName.toUpperCase();
     // Format and extend prefixes
     const prefixForm = prefix.map((p) => p.replace(/_$/, '').toUpperCase() + '_');
@@ -78701,8 +78701,8 @@ function formatFilters(patchName, prefix, ignoreDecl, ignoreRsc) {
     // Format and extend ignore lists
     const ignoreDForm = ignoreDecl.map((i) => i.toUpperCase());
     ignoreDecl = [...new Set([...ignoreDForm, `NINJA_${patchNameU}_INIT`, `NINJA_${patchNameU}_MENU`])];
-    const ignoreRForm = ignoreRsc.map((i) => normalizePath(i).toUpperCase());
-    ignoreRsc = [...new Set(ignoreRForm)];
+    const rscRootPath = external_path_.posix.resolve(basePath, '..', '..');
+    ignoreRsc = globSync(ignoreRsc.map((i) => external_path_.posix.join(rscRootPath, normalizePath(i))), { nocase: true }).map((p) => normalizePath(p).toUpperCase());
     // Report filters
     core.info(`Prefixes:              ${prefix.join(', ')}`);
     core.info(`Ignore declarations:   ${ignoreDecl.join(', ')}`);
@@ -78909,7 +78909,7 @@ async function run(github = false) {
         const startTime = performance.now();
         // Format inputs
         const { workingDir, basePath, patchName, prefixList, ignoreListDecl, ignoreListRsc } = loadInputs();
-        const { prefix, ignoreDecl, ignoreRsc } = formatFilters(patchName, prefixList, ignoreListDecl, ignoreListRsc);
+        const { prefix, ignoreDecl, ignoreRsc } = formatFilters(patchName, prefixList, ignoreListDecl, ignoreListRsc, basePath);
         // Collect symbol tables
         const parsers = await parser_Parser.from(patchName, basePath, workingDir);
         // Validate symbol tables
