@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/szapp/patch-validator/actions/workflows/ci.yml/badge.svg)](https://github.com/szapp/patch-validator/actions/workflows/ci.yml)
 [![Coverage](badges/coverage.svg)](https://github.com/szapp/patch-validator/actions/workflows/ci.yml)
+[![Marketplace](https://img.shields.io/github/v/release/szapp/patch-validator?logo=githubactions&logoColor=white&label=marketplace)](https://github.com/marketplace/actions/vdf-patch-validator)
 
 GitHub action for checking if Daedalus script symbols and resource files in a Gothic VDF patch adhere to the [naming conventions](https://github.com/szapp/Ninja/wiki/Inject-Changes#naming-conventions), if all symbol references are valid, and that no vital symbols are overwritten. This allows to determine the general compatibility of a patch.
 
