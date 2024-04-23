@@ -310,6 +310,7 @@ export class Parser {
    * Clears the temporary directory.
    */
   public static async clearTmpDir(): Promise<void> {
+    // istanbul ignore next
     const tmpPath = posix.join(process.env['RUNNER_TEMP'] ?? '', '.patch-validator-special')
     await io.rmRF(tmpPath)
   }

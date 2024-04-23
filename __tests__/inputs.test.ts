@@ -6,6 +6,7 @@ import { loadInputs, formatFilters } from '../src/inputs.ts'
 let getInputMock: jest.SpiedFunction<typeof core.getInput>
 let fsExistsSyncMock: jest.SpiedFunction<typeof fs.existsSync>
 let fsReadFileSyncMock: jest.SpiedFunction<typeof fs.readFileSync>
+let fsRealpathSyncNativeMock: jest.SpiedFunction<typeof fs.realpathSync.native>
 let yamlParseMock: jest.SpiedFunction<typeof YAML.parse>
 
 describe('loadInputs', () => {
@@ -13,6 +14,7 @@ describe('loadInputs', () => {
     getInputMock = jest.spyOn(core, 'getInput')
     fsExistsSyncMock = jest.spyOn(fs, 'existsSync')
     fsReadFileSyncMock = jest.spyOn(fs, 'readFileSync')
+    fsRealpathSyncNativeMock = jest.spyOn(fs.realpathSync, 'native').mockImplementation((path) => String(path))
     yamlParseMock = jest.spyOn(YAML, 'parse')
   })
 
@@ -31,7 +33,6 @@ describe('loadInputs', () => {
     getInputMock.mockReturnValueOnce('patchname')
     getInputMock.mockReturnValue('')
     fsExistsSyncMock.mockReturnValue(true)
-    fsExistsSyncMock.mockReturnValue(true)
     fsReadFileSyncMock.mockReturnValue('prefix:\n  - prefix-value1\n  - prefix-value2')
     yamlParseMock.mockReturnValue({ prefix: ['prefix-value1', 'prefix-value2'] })
 
@@ -47,7 +48,7 @@ describe('loadInputs', () => {
     })
     expect(getInputMock).toHaveBeenCalledWith('patchName')
     expect(getInputMock).toHaveBeenCalledWith('rootPath')
-    expect(fsExistsSyncMock).toHaveBeenCalledWith('/path/to/workspace/Ninja/patchname')
+    expect(fsRealpathSyncNativeMock).toHaveBeenCalledWith('/path/to/workspace/Ninja/patchname')
     expect(fsReadFileSyncMock).toHaveBeenCalledWith('/path/to/workspace/.validator.yml', 'utf8')
     expect(yamlParseMock).toHaveBeenCalledWith('prefix:\n  - prefix-value1\n  - prefix-value2')
   })
@@ -66,7 +67,6 @@ describe('loadInputs', () => {
     }
     getInputMock.mockReturnValue('')
     fsExistsSyncMock.mockReturnValue(true)
-    fsExistsSyncMock.mockReturnValue(true)
     fsReadFileSyncMock.mockReturnValue('ignore-declaration: ignore-value1\nignore-resource: ignore-value2')
     yamlParseMock.mockReturnValue({ 'ignore-declaration': 'ignore-value1', 'ignore-resource': 'ignore-value2' })
 
@@ -82,7 +82,7 @@ describe('loadInputs', () => {
     })
     expect(getInputMock).toHaveBeenCalledWith('patchName')
     expect(getInputMock).toHaveBeenCalledWith('rootPath')
-    expect(fsExistsSyncMock).toHaveBeenCalledWith('/path/to/workspace/Ninja/my-repo')
+    expect(fsRealpathSyncNativeMock).toHaveBeenCalledWith('/path/to/workspace/Ninja/my-repo')
     expect(fsReadFileSyncMock).toHaveBeenCalledWith('/path/to/workspace/.validator.yml', 'utf8')
     expect(yamlParseMock).toHaveBeenCalledWith('ignore-declaration: ignore-value1\nignore-resource: ignore-value2')
   })
@@ -112,7 +112,9 @@ describe('loadInputs', () => {
       },
     }
     getInputMock.mockReturnValue('')
-    fsExistsSyncMock.mockReturnValue(false)
+    fsRealpathSyncNativeMock.mockImplementation(() => {
+      throw new Error('Base path not found')
+    })
 
     // eslint-disable-next-line quotes
     expect(loadInputs).toThrow("Base path 'Ninja/my-repo' not found")
@@ -131,7 +133,7 @@ describe('loadInputs', () => {
       },
     }
     getInputMock.mockReturnValue('subdir')
-    fsExistsSyncMock.mockReturnValueOnce(true).mockReturnValueOnce(false)
+    fsExistsSyncMock.mockReturnValueOnce(false)
 
     // eslint-disable-next-line quotes
     expect(loadInputs).toThrow("Configuration file '/path/to/workspace/subdir/.validator.yml' not found")
@@ -158,7 +160,7 @@ describe('loadInputs', () => {
 
     expect(getInputMock).toHaveBeenCalledWith('patchName')
     expect(getInputMock).toHaveBeenCalledWith('rootPath')
-    expect(fsExistsSyncMock).toHaveBeenCalledWith('Ninja/my-repo')
+    expect(fsRealpathSyncNativeMock).toHaveBeenCalledWith('Ninja/my-repo')
     expect(fsReadFileSyncMock).toHaveBeenCalledWith('.validator.yml', 'utf8')
     expect(yamlParseMock).toHaveBeenCalledWith('prefix:\n  - prefix-value1\n  - ab')
   })

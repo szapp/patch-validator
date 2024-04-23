@@ -779,6 +779,7 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
       const filepath = '/path/to/file.src'
       const parser = new Parser(patchName, filepath)
 
+      jest.replaceProperty(process, 'env', { ...process.env, RUNNER_TEMP: undefined })
       tcDownloadToolMock.mockResolvedValue('/path/to/ikarus.tar.gz')
       tcExtractTarMock.mockResolvedValue('/path/to/ikarus')
       const posixJoin = jest.spyOn(posix, 'join')

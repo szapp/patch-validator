@@ -70912,6 +70912,7 @@ class parser_Parser {
      * Clears the temporary directory.
      */
     static async clearTmpDir() {
+        // istanbul ignore next
         const tmpPath = external_path_.posix.join(process.env['RUNNER_TEMP'] ?? '', '.patch-validator-special');
         await io.rmRF(tmpPath);
     }
@@ -78584,6 +78585,7 @@ esm_glob.glob = esm_glob;
 
 
 
+
 class Resource {
     name;
     workingDir;
@@ -78610,9 +78612,18 @@ class Resource {
         const resourceFiles = globSync(this.rscPath, { nocase: true, nodir: true, posix: true, ignore: this.ignoreFiles });
         this.numFiles = resourceFiles.length;
         for (const file of resourceFiles) {
-            const rel = normalizePath(external_path_default().relative(this.workingDir, file));
-            const ext = external_path_.posix.extname(file);
-            const baseName = external_path_.posix.basename(file, ext);
+            let fileCase;
+            try {
+                fileCase = external_fs_default().realpathSync.native(file); // Obtain correct case
+            }
+            catch {
+                // istanbul ignore next
+                continue;
+            }
+            console.log('File:', fileCase, 'WorkingDir:', this.workingDir, 'Relative:', external_path_default().relative(this.workingDir, fileCase));
+            const rel = normalizePath(external_path_default().relative(this.workingDir, fileCase));
+            const ext = external_path_.posix.extname(fileCase);
+            const baseName = external_path_.posix.basename(fileCase, ext);
             // Check for valid file extension
             const allowedExtensions = this.extensions.concat(Resource.ignore);
             const extL = ext.toLowerCase();
@@ -78671,9 +78682,13 @@ function loadInputs() {
     const relRootPath = external_path_.posix.normalize(core.toPosixPath(core.getInput('rootPath'))); // Relative path to patch root
     const relBasePath = external_path_.posix.join(relRootPath, 'Ninja', patchName); // Relative path to src files
     const rootPath = external_path_.posix.join(workingDir, relRootPath); // Absolute path to patch root
-    const basePath = external_path_.posix.join(workingDir, relBasePath); // Aboslute path to src files
-    if (!external_fs_default().existsSync(basePath))
+    let basePath = external_path_.posix.join(workingDir, relBasePath); // Aboslute path to src files
+    try {
+        basePath = external_fs_default().realpathSync.native(basePath); // Check if path exists (and correct case)
+    }
+    catch {
         throw new Error(`Base path '${relBasePath}' not found`);
+    }
     // Read config file
     const configPath = external_path_.posix.join(rootPath, '.validator.yml');
     if (!external_fs_default().existsSync(configPath))

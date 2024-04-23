@@ -23,8 +23,12 @@ export function loadInputs(): Inputs {
   const relRootPath = posix.normalize(core.toPosixPath(core.getInput('rootPath'))) // Relative path to patch root
   const relBasePath = posix.join(relRootPath, 'Ninja', patchName) // Relative path to src files
   const rootPath = posix.join(workingDir, relRootPath) // Absolute path to patch root
-  const basePath = posix.join(workingDir, relBasePath) // Aboslute path to src files
-  if (!fs.existsSync(basePath)) throw new Error(`Base path '${relBasePath}' not found`)
+  let basePath = posix.join(workingDir, relBasePath) // Aboslute path to src files
+  try {
+    basePath = fs.realpathSync.native(basePath) // Check if path exists (and correct case)
+  } catch {
+    throw new Error(`Base path '${relBasePath}' not found`)
+  }
 
   // Read config file
   const configPath = posix.join(rootPath, '.validator.yml')

@@ -1,5 +1,6 @@
 import path, { posix } from 'path'
 import { globSync } from 'glob'
+import fs from 'fs'
 import { normalizePath } from './utils.js'
 
 export type Violation = { file: string; name: string; line: number }
@@ -30,9 +31,18 @@ export class Resource {
     this.numFiles = resourceFiles.length
 
     for (const file of resourceFiles) {
-      const rel = normalizePath(path.relative(this.workingDir, file))
-      const ext = posix.extname(file)
-      const baseName = posix.basename(file, ext)
+      let fileCase: string
+      try {
+        fileCase = fs.realpathSync.native(file) // Obtain correct case
+      } catch {
+        // istanbul ignore next
+        continue
+      }
+      console.log('File:', fileCase, 'WorkingDir:', this.workingDir, 'Relative:', path.relative(this.workingDir, fileCase))
+
+      const rel = normalizePath(path.relative(this.workingDir, fileCase))
+      const ext = posix.extname(fileCase)
+      const baseName = posix.basename(fileCase, ext)
 
       // Check for valid file extension
       const allowedExtensions = this.extensions.concat(Resource.ignore)
