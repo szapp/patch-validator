@@ -2,7 +2,6 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import { posix } from 'path'
 import { normalizePath } from './utils.js'
-import { globSync } from 'glob'
 import fs from 'fs'
 import YAML from 'yaml'
 
@@ -66,10 +65,7 @@ export function formatFilters(
   const ignoreDForm = ignoreDecl.map((i) => i.toUpperCase())
   ignoreDecl = [...new Set([...ignoreDForm, `NINJA_${patchNameU}_INIT`, `NINJA_${patchNameU}_MENU`])]
   const rscRootPath = posix.resolve(basePath, '..', '..')
-  ignoreRsc = globSync(
-    ignoreRsc.map((i) => posix.join(rscRootPath, normalizePath(i))),
-    { nocase: true }
-  ).map((p) => normalizePath(p).toUpperCase())
+  ignoreRsc = ignoreRsc.map((i) => posix.join(rscRootPath, normalizePath(i)).toUpperCase())
 
   // Report filters
   core.info(`Prefixes:              ${prefix.join(', ')}`)

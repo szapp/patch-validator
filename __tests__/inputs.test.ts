@@ -1,14 +1,12 @@
 import * as core from '@actions/core'
 import fs from 'fs'
 import YAML from 'yaml'
-import * as glob from 'glob'
 import { loadInputs, formatFilters } from '../src/inputs.ts'
 
 let getInputMock: jest.SpiedFunction<typeof core.getInput>
 let fsExistsSyncMock: jest.SpiedFunction<typeof fs.existsSync>
 let fsReadFileSyncMock: jest.SpiedFunction<typeof fs.readFileSync>
 let yamlParseMock: jest.SpiedFunction<typeof YAML.parse>
-let globGlobSyncMock: jest.SpiedFunction<typeof glob.globSync>
 
 describe('loadInputs', () => {
   beforeEach(() => {
@@ -169,7 +167,6 @@ describe('loadInputs', () => {
 describe('formatFilters', () => {
   beforeEach(() => {
     jest.spyOn(core, 'info').mockImplementation()
-    globGlobSyncMock = jest.spyOn(glob, 'globSync')
   })
 
   it('formats and extends filters', () => {
@@ -179,14 +176,15 @@ describe('formatFilters', () => {
     const ignoreRsc = ['\\path\\to\\somefile', '/another/path/to/anotherfile']
     const basePath = '/path/to/workspace/Ninja/Patch1'
 
-    globGlobSyncMock.mockReturnValue(['\\path\\to\\somefile', '\\another\\path\\to\\anotherfile'])
     const result = formatFilters(patchName, prefix, ignoreDecl, ignoreRsc, basePath)
 
     expect(core.info).toHaveBeenCalledWith('Prefixes:              PRE1_, PRE2_, PATCH_PRE1_, PATCH_PRE2_, PATCH1_, PATCH_PATCH1_')
     expect(core.info).toHaveBeenCalledWith('Ignore declarations:   SYMBOL1, SYMBOL2, NINJA_PATCH1_INIT, NINJA_PATCH1_MENU')
-    expect(core.info).toHaveBeenCalledWith('Ignore resource files: /PATH/TO/SOMEFILE, /ANOTHER/PATH/TO/ANOTHERFILE')
+    expect(core.info).toHaveBeenCalledWith(
+      'Ignore resource files: /PATH/TO/WORKSPACE/PATH/TO/SOMEFILE, /PATH/TO/WORKSPACE/ANOTHER/PATH/TO/ANOTHERFILE'
+    )
     expect(result.prefix).toEqual(['PRE1_', 'PRE2_', 'PATCH_PRE1_', 'PATCH_PRE2_', 'PATCH1_', 'PATCH_PATCH1_'])
     expect(result.ignoreDecl).toEqual(['SYMBOL1', 'SYMBOL2', 'NINJA_PATCH1_INIT', 'NINJA_PATCH1_MENU'])
-    expect(result.ignoreRsc).toEqual(['/PATH/TO/SOMEFILE', '/ANOTHER/PATH/TO/ANOTHERFILE'])
+    expect(result.ignoreRsc).toEqual(['/PATH/TO/WORKSPACE/PATH/TO/SOMEFILE', '/PATH/TO/WORKSPACE/ANOTHER/PATH/TO/ANOTHERFILE'])
   })
 })

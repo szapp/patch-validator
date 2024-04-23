@@ -26,12 +26,10 @@ export class Resource {
 
   public validate(): void {
     const start = performance.now()
-    const resourceFiles = globSync(this.rscPath, { nocase: true })
+    const resourceFiles = globSync(this.rscPath, { nocase: true, nodir: true, posix: true, ignore: this.ignoreFiles })
     this.numFiles = resourceFiles.length
 
     for (const file of resourceFiles) {
-      if (this.ignoreFiles.includes(normalizePath(file).toUpperCase())) continue
-
       const rel = normalizePath(path.relative(this.workingDir, file))
       const ext = posix.extname(file)
       const baseName = posix.basename(file, ext)
@@ -58,7 +56,7 @@ export class Resource {
   public static from(workingDir: string, basePath: string, prefix: string[], ignoreList: string[]): Resource[] {
     workingDir = normalizePath(workingDir)
     basePath = normalizePath(basePath)
-    ignoreList = ignoreList.map((i) => normalizePath(i).toUpperCase())
+    ignoreList = ignoreList.map((i) => normalizePath(i))
 
     const resources = {
       Anims: ['.man', '.mdh', '.mdl', '.mdm', '.mmb', '.msb'],

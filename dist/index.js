@@ -78607,11 +78607,9 @@ class Resource {
     }
     validate() {
         const start = performance.now();
-        const resourceFiles = globSync(this.rscPath, { nocase: true });
+        const resourceFiles = globSync(this.rscPath, { nocase: true, nodir: true, posix: true, ignore: this.ignoreFiles });
         this.numFiles = resourceFiles.length;
         for (const file of resourceFiles) {
-            if (this.ignoreFiles.includes(normalizePath(file).toUpperCase()))
-                continue;
             const rel = normalizePath(external_path_default().relative(this.workingDir, file));
             const ext = external_path_.posix.extname(file);
             const baseName = external_path_.posix.basename(file, ext);
@@ -78635,7 +78633,7 @@ class Resource {
     static from(workingDir, basePath, prefix, ignoreList) {
         workingDir = normalizePath(workingDir);
         basePath = normalizePath(basePath);
-        ignoreList = ignoreList.map((i) => normalizePath(i).toUpperCase());
+        ignoreList = ignoreList.map((i) => normalizePath(i));
         const resources = {
             Anims: ['.man', '.mdh', '.mdl', '.mdm', '.mmb', '.msb'],
             Meshes: ['.mrm', '.msh'],
@@ -78658,7 +78656,6 @@ class Resource {
 // EXTERNAL MODULE: ./node_modules/yaml/dist/index.js
 var dist = __nccwpck_require__(4083);
 ;// CONCATENATED MODULE: ./src/inputs.ts
-
 
 
 
@@ -78702,7 +78699,7 @@ function formatFilters(patchName, prefix, ignoreDecl, ignoreRsc, basePath) {
     const ignoreDForm = ignoreDecl.map((i) => i.toUpperCase());
     ignoreDecl = [...new Set([...ignoreDForm, `NINJA_${patchNameU}_INIT`, `NINJA_${patchNameU}_MENU`])];
     const rscRootPath = external_path_.posix.resolve(basePath, '..', '..');
-    ignoreRsc = globSync(ignoreRsc.map((i) => external_path_.posix.join(rscRootPath, normalizePath(i))), { nocase: true }).map((p) => normalizePath(p).toUpperCase());
+    ignoreRsc = ignoreRsc.map((i) => external_path_.posix.join(rscRootPath, normalizePath(i)).toUpperCase());
     // Report filters
     core.info(`Prefixes:              ${prefix.join(', ')}`);
     core.info(`Ignore declarations:   ${ignoreDecl.join(', ')}`);

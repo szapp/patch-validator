@@ -43,7 +43,7 @@ describe('Resource', () => {
       const basePath = '/path/to/workspace/Ninja/patchname'
       const extensions = ['.tex', '.fnt']
       const prefix = ['PATCH_FOO_', 'FOO_']
-      const ignoreList = ['/PATH/TO/WORKSPACE/_WORK/DATA/TEXTURES/_COMPILED/FILEBASE_002-C.TEX']
+      const ignoreList: string[] = []
 
       posixResolveMock.mockReturnValue('/path/to/workspace/_work/data')
       globGlobSyncMock.mockReturnValue([
@@ -52,7 +52,6 @@ describe('Resource', () => {
         '/path/to/workspace/_work/data/Textures/_compiled/Foo_file-c.tex',
         '/path/to/workspace/_work/data/Textures/_compiled/PATCH_FOO_file.fnt',
         '/path/to/workspace/_work/data/Textures/_compiled/file-c.tex',
-        '/path/to/workspace/_work/data/Textures/_compiled/filebase_002-c.tex',
         '/path/to/workspace/_work/data/Textures/_compiled/file.fnt',
         '/path/to/workspace/_work/data/Textures/file.wrg',
         '/path/to/workspace/_work/data/Textures/_compiled/file.mo',
@@ -70,7 +69,7 @@ describe('Resource', () => {
         { file: '_work/data/Textures/_compiled/file-c.tex', name: 'file-c', line: 0 },
         { file: '_work/data/Textures/_compiled/file.fnt', name: 'file', line: 0 },
       ])
-      expect(resource['numFiles']).toBe(9)
+      expect(resource['numFiles']).toBe(8)
     })
 
     it('should handle empty violations', () => {
@@ -123,7 +122,7 @@ describe('Resource', () => {
       const workingDir = '/path/to/workspace'
       const basePath = '/path/to/workspace/Ninja/patchname'
       const prefix = ['PATCH_FOO_', 'FOO_']
-      const ignoreList = ['/PATH/TO/WORKSPACE/_WORK/DATA/TEXTURES/_COMPILED/FILEBASE_002-C.TEX']
+      const ignoreList = ['/patch/to/workspace/_work/data/Textures/file-c.tex'] // Ignored here just for coverage
 
       posixResolveMock.mockReturnValue('/path/to/workspace/_work/data')
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -176,7 +175,6 @@ describe('Resource', () => {
               '/path/to/workspace/_work/data/Textures/file.md',
               '/path/to/workspace/_work/data/Textures/_compiled/file-c.tex',
               '/path/to/workspace/_work/data/Textures/_compiled/file.fnt',
-              '/path/to/workspace/_work/data/Textures/_compiled/filebase_002-c.tex', // Igored
               '/path/to/workspace/_work/data/Textures/file.wrg',
               '/path/to/workspace/_work/data/Textures/_compiled/file.mo',
             ]
@@ -201,7 +199,7 @@ describe('Resource', () => {
       expect(resources[1].numFiles).toBe(8)
       expect(resources[2].numFiles).toBe(4)
       expect(resources[3].numFiles).toBe(7)
-      expect(resources[4].numFiles).toBe(7)
+      expect(resources[4].numFiles).toBe(6)
       expect(resources[5].numFiles).toBe(4)
 
       expect(resources[0].extViolations).toEqual([
