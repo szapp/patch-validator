@@ -38,7 +38,6 @@ export class Resource {
         // istanbul ignore next
         continue
       }
-      console.log('File:', fileCase, 'WorkingDir:', this.workingDir, 'Relative:', path.relative(this.workingDir, fileCase))
 
       const rel = normalizePath(path.relative(this.workingDir, fileCase))
       const ext = posix.extname(fileCase)

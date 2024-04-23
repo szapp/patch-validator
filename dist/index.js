@@ -78620,7 +78620,6 @@ class Resource {
                 // istanbul ignore next
                 continue;
             }
-            console.log('File:', fileCase, 'WorkingDir:', this.workingDir, 'Relative:', external_path_default().relative(this.workingDir, fileCase));
             const rel = normalizePath(external_path_default().relative(this.workingDir, fileCase));
             const ext = external_path_.posix.extname(fileCase);
             const baseName = external_path_.posix.basename(fileCase, ext);
