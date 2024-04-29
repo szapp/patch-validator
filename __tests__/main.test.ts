@@ -2,7 +2,7 @@ import * as core from '@actions/core'
 import * as main from '../src/main.ts'
 import { Parser } from '../src/parser.ts'
 import * as inputs from '../src/inputs.ts'
-import write from '../src/write.ts'
+import write, { Annotation } from '../src/write.ts'
 import * as cleanup from '../src/cleanup.ts'
 
 let runMock: jest.SpiedFunction<typeof main.run>
@@ -15,7 +15,7 @@ describe('run', () => {
     jest.spyOn(inputs, 'formatFilters').mockReturnValue({ prefix: [], ignoreDecl: [], ignoreRsc: [] })
     jest.spyOn(Parser, 'from').mockResolvedValue([new Parser('', '')])
     jest.spyOn(write, 'createCheckRun').mockResolvedValue({ details_url: '', check_id: 0 })
-    jest.spyOn(write, 'annotations').mockResolvedValue([])
+    jest.spyOn(write, 'annotations').mockResolvedValue([{} as Annotation])
     jest.spyOn(write, 'summary').mockImplementation()
     jest.spyOn(cleanup, 'workflow').mockResolvedValue(false)
     jest.spyOn(core, 'setFailed').mockImplementation()
@@ -34,7 +34,8 @@ describe('run', () => {
     expect(write.annotations).toHaveBeenCalledTimes(1)
     expect(write.summary).toHaveBeenCalledTimes(1)
     expect(core.setFailed).not.toHaveBeenCalled()
-    expect(result).toMatchObject({ summary: undefined, annotations: [] })
+    expect(result).toMatchObject({ summary: undefined, annotations: [{} as Annotation] })
+    expect(process.exitCode).toBe(core.ExitCode.Failure)
   })
 
   it('should run the cleanup function and return', async () => {

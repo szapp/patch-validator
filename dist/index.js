@@ -78937,6 +78937,10 @@ async function run(github = false) {
         const duration = performance.now() - startTime;
         const summary = await write.summary(parsers, resources, prefix, duration, details_url, github);
         const annotations = await write.annotations(parsers, resources, prefix, check_id, summary, github);
+        // Update exit code
+        if (github && annotations.length > 0) {
+            process.exitCode = core.ExitCode.Failure;
+        }
         // Return results
         return { summary, annotations };
     }
@@ -78946,6 +78950,8 @@ async function run(github = false) {
             core.setFailed(msg);
         else
             console.error(msg);
+    }
+    finally {
         await parser_Parser.clearTmpDir();
     }
 }
