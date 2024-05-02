@@ -45788,7 +45788,7 @@ const falseTag = {
     identify: value => value === false,
     default: true,
     tag: 'tag:yaml.org,2002:bool',
-    test: /^(?:N|n|[Nn]o|NO|[Ff]alse|FALSE|[Oo]ff|OFF)$/i,
+    test: /^(?:N|n|[Nn]o|NO|[Ff]alse|FALSE|[Oo]ff|OFF)$/,
     resolve: () => new Scalar.Scalar(false),
     stringify: boolStringify
 };
@@ -78706,9 +78706,9 @@ function loadInputs() {
 function formatFilters(patchName, prefix, ignoreDecl, ignoreRsc, basePath) {
     const patchNameU = patchName.toUpperCase();
     // Format and extend prefixes
-    const prefixForm = prefix.map((p) => p.replace(/_$/, '').toUpperCase() + '_');
+    const prefixForm = prefix.map((p) => p.toUpperCase());
     const prefixPatch = prefixForm.map((p) => 'PATCH_' + p);
-    prefix = [...new Set([...prefixForm, ...prefixPatch, patchNameU + '_', 'PATCH_' + patchNameU + '_'])];
+    prefix = [...new Set([...prefixPatch, 'PATCH_' + patchNameU, ...prefixForm, patchNameU])];
     // Format and extend ignore lists
     const ignoreDForm = ignoreDecl.map((i) => i.toUpperCase());
     ignoreDecl = [...new Set([...ignoreDForm, `NINJA_${patchNameU}_INIT`, `NINJA_${patchNameU}_MENU`])];
@@ -78744,7 +78744,10 @@ async function createCheckRun(startedAt, write = true) {
 }
 async function annotations(parsers, resources, prefix, check_id, summary, write = true) {
     // List first few prefixes
-    const prefixes = prefix.slice(0, 3).join(', ');
+    const prefixes = prefix
+        .slice(0, 3)
+        .map((s) => `${s}_`)
+        .join(', ');
     // Make a list of annotations
     const annotations = parsers
         .map((p) => {
@@ -78759,7 +78762,7 @@ async function annotations(parsers, resources, prefix, check_id, summary, write 
                 annotation_level: 'failure',
                 title: `Naming convention violation: ${v.name}`,
                 message: `The symbol "${v.name}" poses a compatibility risk. Add a prefix to its name (e.g. ${prefixes}). If overwriting this symbol is intended, add it to the ignore list.`,
-                raw_details: context.replace(new RegExp(`(?<![\\d\\w_])(${v.name})(?![\\d\\w_])`, 'gi'), `${prefix[0]}$1`),
+                raw_details: context.replace(new RegExp(`(?<![\\d\\w_])(${v.name})(?![\\d\\w_])`, 'gi'), `${prefix[0]}_$1`),
             };
         });
         // Reference violations
@@ -78806,7 +78809,7 @@ async function annotations(parsers, resources, prefix, check_id, summary, write 
             end_line: v.line,
             annotation_level: 'failure',
             title: `Naming convention violation: ${v.name}`,
-            message: `The resource file "${v.name}" poses a compatibility risk. Add a prefix to its name (e.g. ${prefixes}).`,
+            message: `The resource file "${v.name}" poses a compatibility risk. Add a prefix to its name (e.g. ${prefixes}). If overwriting this symbol is intended, add it to the ignore list.`,
         }));
         // Concatenate and return
         return [...extVio, ...nameVio];
@@ -78861,7 +78864,7 @@ async function summary(parsers, resources, prefixes, duration, details_url, writ
     const numViolations = parsers.reduce((acc, p) => acc + p.namingViolations.length + p.referenceViolations.length + p.overwriteViolations.length, 0) +
         resources.reduce((acc, r) => acc + r.extViolations.length + r.nameViolations.length, 0);
     const numSymbolsFiles = parsers.reduce((acc, p) => acc + p.numSymbols, 0) + resources.reduce((acc, r) => acc + r.numFiles, 0);
-    const prefixList = prefixes.map((p) => `<code>${p}</code>`);
+    const prefixList = prefixes.map((p) => `<code>${p}_</code>`);
     // Construct summary
     core.summary.addTable([
         [

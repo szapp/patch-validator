@@ -43,7 +43,10 @@ export async function annotations(
   write: boolean = true
 ): Promise<Annotation[]> {
   // List first few prefixes
-  const prefixes = prefix.slice(0, 3).join(', ')
+  const prefixes = prefix
+    .slice(0, 3)
+    .map((s) => `${s}_`)
+    .join(', ')
 
   // Make a list of annotations
   const annotations = parsers
@@ -59,7 +62,7 @@ export async function annotations(
           annotation_level: 'failure',
           title: `Naming convention violation: ${v.name}`,
           message: `The symbol "${v.name}" poses a compatibility risk. Add a prefix to its name (e.g. ${prefixes}). If overwriting this symbol is intended, add it to the ignore list.`,
-          raw_details: context.replace(new RegExp(`(?<![\\d\\w_])(${v.name})(?![\\d\\w_])`, 'gi'), `${prefix[0]}$1`),
+          raw_details: context.replace(new RegExp(`(?<![\\d\\w_])(${v.name})(?![\\d\\w_])`, 'gi'), `${prefix[0]}_$1`),
         } as Annotation
       })
 
@@ -122,7 +125,7 @@ export async function annotations(
               end_line: v.line,
               annotation_level: 'failure',
               title: `Naming convention violation: ${v.name}`,
-              message: `The resource file "${v.name}" poses a compatibility risk. Add a prefix to its name (e.g. ${prefixes}).`,
+              message: `The resource file "${v.name}" poses a compatibility risk. Add a prefix to its name (e.g. ${prefixes}). If overwriting this symbol is intended, add it to the ignore list.`,
             }) as Annotation
         )
 
@@ -197,7 +200,7 @@ export async function summary(
     parsers.reduce((acc, p) => acc + p.namingViolations.length + p.referenceViolations.length + p.overwriteViolations.length, 0) +
     resources.reduce((acc, r) => acc + r.extViolations.length + r.nameViolations.length, 0)
   const numSymbolsFiles = parsers.reduce((acc, p) => acc + p.numSymbols, 0) + resources.reduce((acc, r) => acc + r.numFiles, 0)
-  const prefixList = prefixes.map((p) => `<code>${p}</code>`)
+  const prefixList = prefixes.map((p) => `<code>${p}_</code>`)
 
   // Construct summary
   core.summary.addTable([

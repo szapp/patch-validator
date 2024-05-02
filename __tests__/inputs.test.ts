@@ -180,12 +180,12 @@ describe('formatFilters', () => {
 
     const result = formatFilters(patchName, prefix, ignoreDecl, ignoreRsc, basePath)
 
-    expect(core.info).toHaveBeenCalledWith('Prefixes:              PRE1_, PRE2_, PATCH_PRE1_, PATCH_PRE2_, PATCH1_, PATCH_PATCH1_')
+    expect(core.info).toHaveBeenCalledWith('Prefixes:              PATCH_PRE1, PATCH_PRE2, PATCH_PATCH1, PRE1, PRE2, PATCH1')
     expect(core.info).toHaveBeenCalledWith('Ignore declarations:   SYMBOL1, SYMBOL2, NINJA_PATCH1_INIT, NINJA_PATCH1_MENU')
     expect(core.info).toHaveBeenCalledWith(
       'Ignore resource files: /PATH/TO/WORKSPACE/PATH/TO/SOMEFILE, /PATH/TO/WORKSPACE/ANOTHER/PATH/TO/ANOTHERFILE'
     )
-    expect(result.prefix).toEqual(['PRE1_', 'PRE2_', 'PATCH_PRE1_', 'PATCH_PRE2_', 'PATCH1_', 'PATCH_PATCH1_'])
+    expect(result.prefix).toEqual(['PATCH_PRE1', 'PATCH_PRE2', 'PATCH_PATCH1', 'PRE1', 'PRE2', 'PATCH1'])
     expect(result.ignoreDecl).toEqual(['SYMBOL1', 'SYMBOL2', 'NINJA_PATCH1_INIT', 'NINJA_PATCH1_MENU'])
     expect(result.ignoreRsc).toEqual(['/PATH/TO/WORKSPACE/PATH/TO/SOMEFILE', '/PATH/TO/WORKSPACE/ANOTHER/PATH/TO/ANOTHERFILE'])
   })

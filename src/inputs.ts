@@ -61,9 +61,9 @@ export function formatFilters(
   const patchNameU = patchName.toUpperCase()
 
   // Format and extend prefixes
-  const prefixForm = prefix.map((p) => p.replace(/_$/, '').toUpperCase() + '_')
+  const prefixForm = prefix.map((p) => p.toUpperCase())
   const prefixPatch = prefixForm.map((p) => 'PATCH_' + p)
-  prefix = [...new Set([...prefixForm, ...prefixPatch, patchNameU + '_', 'PATCH_' + patchNameU + '_'])]
+  prefix = [...new Set([...prefixPatch, 'PATCH_' + patchNameU, ...prefixForm, patchNameU])]
 
   // Format and extend ignore lists
   const ignoreDForm = ignoreDecl.map((i) => i.toUpperCase())

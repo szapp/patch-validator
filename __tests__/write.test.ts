@@ -100,7 +100,7 @@ describe('annotations', () => {
         nameViolations: [{ file: 'path/to/file5', name: 'file5', line: 0 }],
       } as unknown as Resource,
     ]
-    const prefix = ['PATCH_']
+    const prefix = ['PATCH']
     const check_id = 42
     const summary = 'summary text'
 
@@ -152,7 +152,8 @@ describe('annotations', () => {
         end_line: 0,
         annotation_level: 'failure',
         title: 'Naming convention violation: file5',
-        message: 'The resource file "file5" poses a compatibility risk. Add a prefix to its name (e.g. PATCH_).',
+        message:
+          'The resource file "file5" poses a compatibility risk. Add a prefix to its name (e.g. PATCH_). If overwriting this symbol is intended, add it to the ignore list.',
       },
     ]
     const expectedOutput = {
@@ -203,7 +204,7 @@ const int Symbol3 = 0;
         nameViolations: [],
       } as unknown as Resource,
     ]
-    const prefix = ['PATCH_', 'FOO_', 'BAR_', 'BAZ_']
+    const prefix = ['PATCH', 'FOO', 'BAR', 'BAZ']
     const check_id = 42
     const summary = 'summary text'
     const writeVal = true
@@ -329,7 +330,7 @@ var int Symbol21; var int Symbol2;
         title: 'Naming convention violation: SYMBOL2',
         message:
           'The symbol "SYMBOL2" poses a compatibility risk. Add a prefix to its name (e.g. ). If overwriting this symbol is intended, add it to the ignore list.',
-        raw_details: 'var int Symbol21; var int undefinedSymbol2;',
+        raw_details: 'var int Symbol21; var int undefined_Symbol2;',
       },
     ]
 
@@ -364,7 +365,7 @@ describe('summary', () => {
       new Resource('Worlds', '', '', [], [], []),
     ]
     const duration = 4035
-    const prefixes = ['PATCH_', 'FOO_', 'BAR_']
+    const prefixes = ['PATCH', 'FOO', 'BAR']
     const details_url = 'https://example.com/details'
     parsers[0].numSymbols = 3
     parsers[1].numSymbols = 1
