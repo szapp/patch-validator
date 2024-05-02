@@ -78749,7 +78749,7 @@ async function annotations(parsers, resources, prefix, check_id, summary, write 
         .map((s) => `${s}_`)
         .join(', ');
     // Make a list of annotations
-    const annotations = parsers
+    let annotations = parsers
         .map((p) => {
         // Naming violations
         const nameVio = p.namingViolations.map((v) => {
@@ -78815,6 +78815,9 @@ async function annotations(parsers, resources, prefix, check_id, summary, write 
         return [...extVio, ...nameVio];
     }))
         .flat();
+    // Remove duplicates
+    // Duplicate annotations occur when the same file is parsed across game versions (e.g. in Content_G1.src and Content_G2.src)
+    annotations = annotations.filter((v, i, a) => a.findIndex((t) => t.path === v.path && t.start_line === v.start_line && t.title === v.title) === i);
     // Write to GitHub check run if enabled
     if (write) {
         // Collect details

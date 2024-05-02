@@ -298,6 +298,76 @@ var int Symbol21; var int Symbol2;
     expect(result).toEqual(expectedAnnotations)
   })
 
+  it('creates unique annotations without duplicates', async () => {
+    const parsers = [
+      {
+        numSymbols: 1,
+        namingViolations: [{ name: 'SYMBOL2', file: 'path/to/file2', line: 3 }],
+        referenceViolations: [],
+        overwriteViolations: [],
+      } as unknown as Parser,
+      {
+        numSymbols: 1,
+        namingViolations: [{ name: 'SYMBOL2', file: 'path/to/file2', line: 3 }],
+        referenceViolations: [],
+        overwriteViolations: [],
+      } as unknown as Parser,
+    ]
+    const resources = [
+      {
+        name: 'anims',
+        extensions: [],
+        numFiles: 0,
+        extViolations: [],
+        nameViolations: [],
+      } as unknown as Resource,
+    ]
+    const prefix = ['PATCH', 'FOO', 'BAR', 'BAZ']
+    const check_id = 42
+    const summary = 'summary text'
+    const writeVal = true
+
+    const expectedAnnotations = [
+      {
+        path: 'path/to/file2',
+        start_line: 3,
+        end_line: 3,
+        annotation_level: 'failure',
+        title: 'Naming convention violation: SYMBOL2',
+        message:
+          'The symbol "SYMBOL2" poses a compatibility risk. Add a prefix to its name (e.g. PATCH_, FOO_, BAR_). If overwriting this symbol is intended, add it to the ignore list.',
+        raw_details: 'var int Symbol21; var int PATCH_Symbol2;',
+      },
+    ]
+
+    const expectedOutput = {
+      title: '2 violations',
+      summary,
+      text:
+        'The patch validator checked 2 script symbols and 0 resource files.\n\n' +
+        'For more details, see [Ninja documentation](https://github.com/szapp/Ninja/wiki/Inject-Changes).',
+      annotations: expectedAnnotations,
+    }
+
+    fsReadFileSyncMock.mockReturnValue(`
+var int Symbol1;
+var int Symbol21; var int Symbol2;
+`)
+
+    const result = await write.annotations(parsers, resources, prefix, check_id, summary, writeVal)
+
+    expect(updateCheckMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ...github.context.repo,
+        check_run_id: check_id,
+        completed_at: expect.any(String),
+        conclusion: 'failure',
+        output: expectedOutput,
+      })
+    )
+    expect(result).toEqual(expectedAnnotations)
+  })
+
   it('does not create annotations if write is not truthy', async () => {
     const parsers = [
       {
