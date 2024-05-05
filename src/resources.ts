@@ -68,7 +68,7 @@ export class Resource {
     ignoreList = ignoreList.map((i) => normalizePath(i))
 
     const resources = {
-      Anims: ['.man', '.mdh', '.mdl', '.mdm', '.mmb', '.msb'],
+      Anims: ['.man', '.mdh', '.mdl', '.mdm', '.mds', '.mmb', '.msb'],
       Meshes: ['.mrm', '.msh'],
       Presets: ['.zen'],
       Sound: ['.wav', '.mp3', '.ogg'],
