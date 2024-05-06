@@ -19,6 +19,8 @@ import * as glob from '@actions/glob'
 import { posix } from 'path'
 import os from 'os'
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+let consoleLogMock: jest.SpiedFunction<typeof console.log>
 let fsExistsSyncMock: jest.SpiedFunction<typeof fs.existsSync>
 let fsReadFileSyncMock: jest.SpiedFunction<typeof fs.readFileSync>
 let trueCasePathSyncMock: jest.SpiedFunction<typeof tcp.trueCasePathSync>
@@ -29,6 +31,7 @@ let tcExtractTarMock: jest.SpiedFunction<typeof tc.extractTar>
 
 describe('Parser', () => {
   beforeEach(() => {
+    consoleLogMock = jest.spyOn(console, 'log').mockImplementation()
     fsExistsSyncMock = jest.spyOn(fs, 'existsSync')
     fsReadFileSyncMock = jest.spyOn(fs, 'readFileSync')
     trueCasePathSyncMock = jest.spyOn(tcp, 'trueCasePathSync')
@@ -44,7 +47,7 @@ describe('Parser', () => {
       const parser = new Parser(patchName, filepath, workingDir)
 
       expect(parser.filepath).toBe(filepath)
-      expect(parser.workingDir).toBe(workingDir)
+      expect(parser.workingDir).toBe(workingDir + '/')
       expect(parser.exists).toBe(false)
       expect(parser.filename).toBe('conTENT_g1.src')
       expect(parser.type).toBe('CONTENT')
@@ -272,7 +275,7 @@ describe('Parser', () => {
 
       await expect(parser['parseSrc'](filepath, true)).rejects.toThrow('Wildcards are not supported')
 
-      expect(fsReadFileSyncMock).toHaveBeenCalledWith('path/to/file.src', 'ascii')
+      expect(fsReadFileSyncMock).toHaveBeenCalledWith('/path/to/file.src', 'ascii')
       expect(fsReadFileSyncMock).toHaveReturnedWith('some/path/*\n')
     })
 
@@ -361,9 +364,10 @@ describe('Parser', () => {
 
     it('should not parse the file twice', () => {
       const patchName = 'test'
+      const workingDir = '/path/'
       const filepath = '/path/to/file.d'
-      const relPath = 'path/to/file.d'
-      const parser = new Parser(patchName, filepath)
+      const relPath = 'to/file.d'
+      const parser = new Parser(patchName, filepath, workingDir)
 
       const stripPath = jest.spyOn(parser as any, 'stripPath')
       trueCasePathSyncMock.mockImplementation((path) => String(path))

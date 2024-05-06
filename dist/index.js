@@ -70774,6 +70774,8 @@ class parser_Parser {
         this.patchName = patchName.toUpperCase();
         this.filepath = normalizePath(filepath);
         this.workingDir = normalizePath(workingDir);
+        if (this.workingDir.length > 0 && !this.workingDir.endsWith('/'))
+            this.workingDir += '/';
         this.exists = external_fs_default().existsSync(this.filepath);
         this.filename = external_path_.posix.basename(this.filepath);
         const baseName = external_path_.posix.basename(this.filepath, external_path_.posix.extname(this.filepath)).toUpperCase();
@@ -70817,7 +70819,7 @@ class parser_Parser {
      */
     stripPath(filepath) {
         const fullPath = normalizePath(filepath);
-        const relPath = fullPath.replace(this.workingDir, '').replace(/^\//, '');
+        const relPath = fullPath.replace(this.workingDir, '');
         return { fullPath, relPath };
     }
     /**
@@ -70886,6 +70888,7 @@ class parser_Parser {
         const tmpPath = external_path_.posix.join(process.env['RUNNER_TEMP'] ?? '', '.patch-validator-special');
         switch (pattern.toLowerCase()) {
             case 'ikarus':
+                console.log('Requesting Ikarus');
                 // Download Ikarus from the official repository (caution: not the compatibility version)
                 repoUrl = 'https://github.com/Lehona/Ikarus/archive/refs/heads/gameversions.tar.gz';
                 srcPath = external_path_.posix.join(tmpPath, 'Ikarus-gameversions', `Ikarus_G${this.version}.src`);
@@ -70912,6 +70915,7 @@ class parser_Parser {
                 ];
                 break;
             case 'lego':
+                console.log('Requesting LeGo');
                 // Download LeGo from the official repository (caution: not the compatibility version)
                 repoUrl = 'https://github.com/Lehona/LeGo/archive/refs/heads/gameversions.tar.gz';
                 srcPath = external_path_.posix.join(tmpPath, 'LeGo-gameversions', `Header_G${this.version}.src`);
@@ -70923,6 +70927,7 @@ class parser_Parser {
         }
         // Download the repository
         if (!external_fs_default().existsSync(srcPath)) {
+            console.log('Downloading repository');
             const archivePath = await tool_cache.downloadTool(repoUrl);
             await io.mkdirP(tmpPath);
             await tool_cache.extractTar(archivePath, tmpPath);
@@ -70955,6 +70960,7 @@ class parser_Parser {
         catch {
             return;
         }
+        console.log(`Reading ${relPath}`);
         const srcRootPath = external_path_.posix.dirname(fullPath);
         const input = external_fs_default().readFileSync(fullPath, 'ascii');
         let lines = input.split(/\r?\n/).filter((line) => line.trim() !== '');
@@ -71004,6 +71010,7 @@ class parser_Parser {
         if (this.filelist.includes(relPath))
             return;
         this.filelist.push(relPath);
+        console.log(`Parsing ${relPath}`);
         const input = external_fs_default().readFileSync(fullPath, 'ascii');
         this.parseStr(input, exclude ? '' : relPath);
     }
@@ -71076,7 +71083,7 @@ class parser_Parser {
     validateOverwrites() {
         if (this.type !== 'CONTENT')
             return;
-        // See: https://ninja.szapp.de/s/src/data/symbols.asm
+        // See: https://github.com/szapp/Ninja/blob/master/src/data/symbols.asm
         const illegal = [
             'INIT_GLOBAL',
             'INITPERCEPTIONS',

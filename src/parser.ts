@@ -45,6 +45,7 @@ export class Parser {
     this.patchName = patchName.toUpperCase()
     this.filepath = normalizePath(filepath)
     this.workingDir = normalizePath(workingDir)
+    if (this.workingDir.length > 0 && !this.workingDir.endsWith('/')) this.workingDir += '/'
     this.exists = fs.existsSync(this.filepath)
     this.filename = posix.basename(this.filepath)
     const baseName = posix.basename(this.filepath, posix.extname(this.filepath)).toUpperCase()
@@ -90,7 +91,7 @@ export class Parser {
    */
   private stripPath(filepath: string): { fullPath: string; relPath: string } {
     const fullPath = normalizePath(filepath)
-    const relPath = fullPath.replace(this.workingDir, '').replace(/^\//, '')
+    const relPath = fullPath.replace(this.workingDir, '')
     return { fullPath, relPath }
   }
 
@@ -170,6 +171,8 @@ export class Parser {
 
     switch (pattern.toLowerCase()) {
       case 'ikarus':
+        console.log('Requesting Ikarus')
+
         // Download Ikarus from the official repository (caution: not the compatibility version)
         repoUrl = 'https://github.com/Lehona/Ikarus/archive/refs/heads/gameversions.tar.gz'
         srcPath = posix.join(tmpPath, 'Ikarus-gameversions', `Ikarus_G${this.version}.src`)
@@ -197,6 +200,8 @@ export class Parser {
         ]
         break
       case 'lego':
+        console.log('Requesting LeGo')
+
         // Download LeGo from the official repository (caution: not the compatibility version)
         repoUrl = 'https://github.com/Lehona/LeGo/archive/refs/heads/gameversions.tar.gz'
         srcPath = posix.join(tmpPath, 'LeGo-gameversions', `Header_G${this.version}.src`)
@@ -210,6 +215,7 @@ export class Parser {
 
     // Download the repository
     if (!fs.existsSync(srcPath)) {
+      console.log('Downloading repository')
       const archivePath = await tc.downloadTool(repoUrl)
       await io.mkdirP(tmpPath)
       await tc.extractTar(archivePath, tmpPath)
@@ -246,6 +252,7 @@ export class Parser {
       return
     }
 
+    console.log(`Reading ${relPath}`)
     const srcRootPath = posix.dirname(fullPath)
     const input = fs.readFileSync(fullPath, 'ascii')
     let lines = input.split(/\r?\n/).filter((line) => line.trim() !== '')
@@ -297,6 +304,8 @@ export class Parser {
 
     if (this.filelist.includes(relPath)) return
     this.filelist.push(relPath)
+
+    console.log(`Parsing ${relPath}`)
 
     const input = fs.readFileSync(fullPath, 'ascii')
     this.parseStr(input, exclude ? '' : relPath)
@@ -376,7 +385,7 @@ export class Parser {
    */
   public validateOverwrites(): void {
     if (this.type !== 'CONTENT') return
-    // See: https://ninja.szapp.de/s/src/data/symbols.asm
+    // See: https://github.com/szapp/Ninja/blob/master/src/data/symbols.asm
     const illegal = [
       'INIT_GLOBAL',
       'INITPERCEPTIONS',
