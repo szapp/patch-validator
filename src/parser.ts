@@ -235,8 +235,14 @@ export class Parser {
    * @throws An error if wildcards are used in the filepath.
    */
   protected async parseSrc(filepath: string, root: boolean = false, exclude: boolean = false): Promise<void> {
-    const { fullPath } = this.stripPath(filepath)
-    if (!fs.existsSync(fullPath)) return
+    let { fullPath } = this.stripPath(filepath)
+
+    // Check if file exists and correct case
+    try {
+      fullPath = normalizePath(fs.realpathSync.native(fullPath))
+    } catch {
+      return
+    }
 
     const srcRootPath = posix.dirname(fullPath)
     const input = fs.readFileSync(fullPath, 'ascii')
@@ -275,11 +281,17 @@ export class Parser {
    *
    * @param filepath - The path of the file to parse.
    * @param exclude - Indicates whether the file is not part of the patch.
-   * @throws Error if wildcards are used in the filepath.
    */
   protected parseD(filepath: string, exclude: boolean = false): void {
-    const { fullPath, relPath } = this.stripPath(filepath)
-    if (!fs.existsSync(fullPath)) return
+    const { fullPath: _fullPath, relPath } = this.stripPath(filepath)
+
+    // Check if file exists and correct case
+    let fullPath: string
+    try {
+      fullPath = normalizePath(fs.realpathSync.native(_fullPath))
+    } catch {
+      return
+    }
 
     if (this.filelist.includes(relPath)) return
     this.filelist.push(relPath)

@@ -70842,9 +70842,14 @@ class parser_Parser {
      * @throws An error if wildcards are used in the filepath.
      */
     async parseSrc(filepath, root = false, exclude = false) {
-        const { fullPath } = this.stripPath(filepath);
-        if (!external_fs_default().existsSync(fullPath))
+        let { fullPath } = this.stripPath(filepath);
+        // Check if file exists and correct case
+        try {
+            fullPath = normalizePath(external_fs_default().realpathSync.native(fullPath));
+        }
+        catch {
             return;
+        }
         const srcRootPath = external_path_.posix.dirname(fullPath);
         const input = external_fs_default().readFileSync(fullPath, 'ascii');
         let lines = input.split(/\r?\n/).filter((line) => line.trim() !== '');
@@ -70880,12 +70885,17 @@ class parser_Parser {
      *
      * @param filepath - The path of the file to parse.
      * @param exclude - Indicates whether the file is not part of the patch.
-     * @throws Error if wildcards are used in the filepath.
      */
     parseD(filepath, exclude = false) {
-        const { fullPath, relPath } = this.stripPath(filepath);
-        if (!external_fs_default().existsSync(fullPath))
+        const { fullPath: _fullPath, relPath } = this.stripPath(filepath);
+        // Check if file exists and correct case
+        let fullPath;
+        try {
+            fullPath = normalizePath(external_fs_default().realpathSync.native(_fullPath));
+        }
+        catch {
             return;
+        }
         if (this.filelist.includes(relPath))
             return;
         this.filelist.push(relPath);
