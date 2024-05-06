@@ -91,6 +91,7 @@
     "antlr4ng": "^3.0.4",
     "glob": "^10.3.12",
     "humanize-duration": "^3.31.0",
+    "true-case-path": "^2.2.1",
     "yaml": "^2.4.1"
   },
   "devDependencies": {

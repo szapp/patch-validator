@@ -12,6 +12,7 @@ jest.mock('@actions/core', () => {
 
 import { Parser } from '../src/parser.js'
 import fs from 'fs'
+import tcp from 'true-case-path'
 import * as io from '@actions/io'
 import * as tc from '@actions/tool-cache'
 import * as glob from '@actions/glob'
@@ -20,7 +21,7 @@ import os from 'os'
 
 let fsExistsSyncMock: jest.SpiedFunction<typeof fs.existsSync>
 let fsReadFileSyncMock: jest.SpiedFunction<typeof fs.readFileSync>
-let fsRealpathSyncNativeMock: jest.SpiedFunction<typeof fs.realpathSync.native>
+let trueCasePathSyncMock: jest.SpiedFunction<typeof tcp.trueCasePathSync>
 let ioMkdirPMock: jest.SpiedFunction<typeof io.mkdirP>
 let ioRmRFMock: jest.SpiedFunction<typeof io.rmRF>
 let tcDownloadToolMock: jest.SpiedFunction<typeof tc.downloadTool>
@@ -30,7 +31,7 @@ describe('Parser', () => {
   beforeEach(() => {
     fsExistsSyncMock = jest.spyOn(fs, 'existsSync')
     fsReadFileSyncMock = jest.spyOn(fs, 'readFileSync')
-    fsRealpathSyncNativeMock = jest.spyOn(fs.realpathSync, 'native')
+    trueCasePathSyncMock = jest.spyOn(tcp, 'trueCasePathSync')
   })
 
   describe('constructor', () => {
@@ -138,7 +139,7 @@ describe('Parser', () => {
       } as unknown as Parser
 
       fsExistsSyncMock.mockReturnValue(false).mockReturnValueOnce(true)
-      fsRealpathSyncNativeMock.mockImplementation(() => {
+      trueCasePathSyncMock.mockImplementation(() => {
         throw new Error('ENOENT')
       })
       fsReadFileSyncMock.mockReturnValue('').mockReturnValueOnce('test.d\n')
@@ -147,7 +148,7 @@ describe('Parser', () => {
       expect(result).toHaveLength(1)
       expect(result[0]).toMatchObject(oneParser)
       expect(fsExistsSyncMock).toHaveBeenCalledTimes(candidates.length)
-      expect(fsRealpathSyncNativeMock).toHaveBeenCalledTimes(1)
+      expect(trueCasePathSyncMock).toHaveBeenCalledTimes(1)
       candidates.forEach((candidate) => {
         expect(fsExistsSyncMock).toHaveBeenCalledWith(candidate)
       })
@@ -197,11 +198,11 @@ describe('Parser', () => {
       const parseD = jest.spyOn(parser as any, 'parseD').mockImplementation()
       const parseSrc = jest.spyOn(parser as any, 'parseSrc')
 
-      fsRealpathSyncNativeMock
+      trueCasePathSyncMock
         .mockImplementation(() => {
           throw new Error('ENOENT')
         })
-        .mockImplementationOnce((path) => String(path))
+        .mockImplementationOnce((path) => '/path/to/' + String(path))
       fsReadFileSyncMock.mockReturnValue('sub\\file.d\nrecurse.src\n')
 
       await parser['parseSrc'](filepath)
@@ -219,7 +220,7 @@ describe('Parser', () => {
       const parseD = jest.spyOn(parser as any, 'parseD')
       const parseSrc = jest.spyOn(parser as any, 'parseSrc')
 
-      fsRealpathSyncNativeMock.mockImplementation((path) => String(path))
+      trueCasePathSyncMock.mockImplementation((path) => String(path))
       fsReadFileSyncMock.mockReturnValue('sub\\file.txt\n')
 
       await parser['parseSrc'](filepath, true)
@@ -233,7 +234,7 @@ describe('Parser', () => {
       const filepath = '/path/to/file.src'
       const parser = new Parser(patchName, filepath)
 
-      fsRealpathSyncNativeMock.mockImplementation(() => {
+      trueCasePathSyncMock.mockImplementation(() => {
         throw new Error('ENOENT')
       })
 
@@ -253,7 +254,7 @@ describe('Parser', () => {
       jest.spyOn(parser as any, 'stripPath').mockReturnValue({ fullPath: '/path/to/file.src', relPath: 'file.src' })
       const parseSpecial = jest.spyOn(parser as any, 'parseSpecial').mockImplementation()
 
-      fsRealpathSyncNativeMock.mockImplementation((path) => String(path))
+      trueCasePathSyncMock.mockImplementation((path) => String(path))
       fsReadFileSyncMock.mockReturnValue('non-path\n')
 
       await parser['parseSrc'](filepath, true)
@@ -266,12 +267,12 @@ describe('Parser', () => {
       const filepath = '/path/to/file.src'
       const parser = new Parser(patchName, filepath)
 
-      fsRealpathSyncNativeMock.mockImplementation((path) => String(path))
+      trueCasePathSyncMock.mockImplementation((path) => String(path))
       fsReadFileSyncMock.mockReturnValue('some/path/*\n')
 
       await expect(parser['parseSrc'](filepath, true)).rejects.toThrow('Wildcards are not supported')
 
-      expect(fsReadFileSyncMock).toHaveBeenCalledWith(filepath, 'ascii')
+      expect(fsReadFileSyncMock).toHaveBeenCalledWith('path/to/file.src', 'ascii')
       expect(fsReadFileSyncMock).toHaveReturnedWith('some/path/*\n')
     })
 
@@ -280,7 +281,7 @@ describe('Parser', () => {
       const filepath = 'path/to/file.src'
       const parser = new Parser(patchName, filepath)
 
-      fsRealpathSyncNativeMock.mockImplementation((path) => String(path))
+      trueCasePathSyncMock.mockImplementation((path) => String(path))
       fsReadFileSyncMock.mockReturnValue('some/path/*\n')
       jest.spyOn(posix, 'join')
       jest.spyOn(glob, 'create').mockResolvedValue({ glob: async () => ['some/path/glob.ext'] } as glob.Globber)
@@ -288,7 +289,7 @@ describe('Parser', () => {
       await parser['parseSrc'](filepath, false, true)
 
       expect(posix.join).toHaveBeenCalledWith('path/to', 'some/path/*')
-      expect(fsRealpathSyncNativeMock).toHaveBeenCalledWith(filepath)
+      expect(trueCasePathSyncMock).toHaveBeenCalledWith(filepath)
       expect(fsReadFileSyncMock).toHaveBeenCalledWith(filepath, 'ascii')
       expect(glob.create).toHaveBeenCalledWith('path/to/some/path/*')
       expect(posix.join).toHaveBeenCalledWith('path/to', 'some/path/glob.ext')
@@ -307,7 +308,7 @@ describe('Parser', () => {
       const parser = new Parser(patchName, filepath, workingDir)
 
       const stripPath = jest.spyOn(parser as any, 'stripPath')
-      fsRealpathSyncNativeMock.mockImplementation((path) => String(path))
+      trueCasePathSyncMock.mockImplementation((path) => '/path/' + String(path))
       fsReadFileSyncMock.mockReturnValueOnce('const int Symbol1 = 0;')
 
       parser['parseD'](filepath, true)
@@ -328,7 +329,7 @@ describe('Parser', () => {
       const parser = new Parser(patchName, filepath, workingDir)
 
       const stripPath = jest.spyOn(parser as any, 'stripPath')
-      fsRealpathSyncNativeMock.mockImplementation((path) => String(path))
+      trueCasePathSyncMock.mockImplementation((path) => '/path/' + String(path))
       fsReadFileSyncMock.mockReturnValueOnce('const int Symbol1 = 0;')
 
       parser['parseD'](filepath, false)
@@ -346,7 +347,7 @@ describe('Parser', () => {
       const filepath = '/path/to/nonexistent.d'
       const parser = new Parser(patchName, filepath)
 
-      fsRealpathSyncNativeMock.mockImplementation(() => {
+      trueCasePathSyncMock.mockImplementation(() => {
         throw new Error('ENOENT')
       })
 
@@ -365,7 +366,7 @@ describe('Parser', () => {
       const parser = new Parser(patchName, filepath)
 
       const stripPath = jest.spyOn(parser as any, 'stripPath')
-      fsRealpathSyncNativeMock.mockImplementation((path) => String(path))
+      trueCasePathSyncMock.mockImplementation((path) => String(path))
       ;(parser as any).filelist = [relPath]
 
       parser['parseD'](filepath)

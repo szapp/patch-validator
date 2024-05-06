@@ -14470,6 +14470,107 @@ function coerce (version, options) {
 
 /***/ }),
 
+/***/ 6979:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
+
+const { readdir: _readdir, readdirSync } = __nccwpck_require__(7147)
+const { platform } = __nccwpck_require__(2037)
+const { isAbsolute, normalize } = __nccwpck_require__(1017)
+const { promisify: pify } = __nccwpck_require__(3837)
+
+const readdir = pify(_readdir)
+const isWindows = platform() === 'win32'
+const delimiter = isWindows ? '\\' : '/'
+
+module.exports = {
+  trueCasePath: _trueCasePath({ sync: false }),
+  trueCasePathSync: _trueCasePath({ sync: true })
+}
+
+function getRelevantFilePathSegments(filePath) {
+  return filePath.split(delimiter).filter((s) => s !== '')
+}
+
+function escapeString(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function matchCaseInsensitive(fileOrDirectory, directoryContents, filePath) {
+  const caseInsensitiveRegex = new RegExp(
+    `^${escapeString(fileOrDirectory)}$`,
+    'i'
+  )
+  for (const file of directoryContents) {
+    if (caseInsensitiveRegex.test(file)) return file
+  }
+  throw new Error(
+    `[true-case-path]: Called with ${filePath}, but no matching file exists`
+  )
+}
+
+function _trueCasePath({ sync }) {
+  return (filePath, basePath) => {
+    if (basePath) {
+      if (!isAbsolute(basePath)) {
+        throw new Error(
+          `[true-case-path]: basePath argument must be absolute. Received "${basePath}"`
+        )
+      }
+      basePath = normalize(basePath)
+    }
+    filePath = normalize(filePath)
+    const segments = getRelevantFilePathSegments(filePath)
+    if (isAbsolute(filePath)) {
+      if (basePath) {
+        throw new Error(
+          '[true-case-path]: filePath must be relative when used with basePath'
+        )
+      }
+      basePath = isWindows
+        ? segments.shift().toUpperCase() // drive letter
+        : ''
+    } else if (!basePath) {
+      basePath = process.cwd()
+    }
+    return sync
+      ? iterateSync(basePath, filePath, segments)
+      : iterateAsync(basePath, filePath, segments)
+  }
+}
+
+function iterateSync(basePath, filePath, segments) {
+  return segments.reduce(
+    (realPath, fileOrDirectory) =>
+      realPath +
+      delimiter +
+      matchCaseInsensitive(
+        fileOrDirectory,
+        readdirSync(realPath + delimiter),
+        filePath
+      ),
+    basePath
+  )
+}
+
+async function iterateAsync(basePath, filePath, segments) {
+  return await segments.reduce(
+    async (realPathPromise, fileOrDirectory) =>
+      (await realPathPromise) +
+      delimiter +
+      matchCaseInsensitive(
+        fileOrDirectory,
+        await readdir((await realPathPromise) + delimiter),
+        filePath
+      ),
+    basePath
+  )
+}
+
+
+/***/ }),
+
 /***/ 4294:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -70623,10 +70724,13 @@ var glob = __nccwpck_require__(8090);
 var external_fs_ = __nccwpck_require__(7147);
 var external_fs_namespaceObject = /*#__PURE__*/__nccwpck_require__.t(external_fs_, 2);
 var external_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_fs_);
+// EXTERNAL MODULE: ./node_modules/true-case-path/index.js
+var true_case_path = __nccwpck_require__(6979);
 // EXTERNAL MODULE: external "path"
 var external_path_ = __nccwpck_require__(1017);
 var external_path_default = /*#__PURE__*/__nccwpck_require__.n(external_path_);
 ;// CONCATENATED MODULE: ./src/parser.ts
+
 
 
 
@@ -70842,10 +70946,11 @@ class parser_Parser {
      * @throws An error if wildcards are used in the filepath.
      */
     async parseSrc(filepath, root = false, exclude = false) {
-        let { fullPath } = this.stripPath(filepath);
+        const { relPath } = this.stripPath(filepath);
         // Check if file exists and correct case
+        let fullPath;
         try {
-            fullPath = normalizePath(external_fs_default().realpathSync.native(fullPath));
+            fullPath = normalizePath((0,true_case_path.trueCasePathSync)(relPath));
         }
         catch {
             return;
@@ -70887,11 +70992,11 @@ class parser_Parser {
      * @param exclude - Indicates whether the file is not part of the patch.
      */
     parseD(filepath, exclude = false) {
-        const { fullPath: _fullPath, relPath } = this.stripPath(filepath);
+        const { relPath } = this.stripPath(filepath);
         // Check if file exists and correct case
         let fullPath;
         try {
-            fullPath = normalizePath(external_fs_default().realpathSync.native(_fullPath));
+            fullPath = normalizePath((0,true_case_path.trueCasePathSync)(relPath));
         }
         catch {
             return;
@@ -78624,7 +78729,7 @@ class Resource {
         for (const file of resourceFiles) {
             let fileCase;
             try {
-                fileCase = external_fs_default().realpathSync.native(file); // Obtain correct case
+                fileCase = (0,true_case_path.trueCasePathSync)(file); // Obtain correct case
             }
             catch {
                 // istanbul ignore next

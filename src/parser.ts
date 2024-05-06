@@ -9,6 +9,7 @@ import * as io from '@actions/io'
 import * as tc from '@actions/tool-cache'
 import * as glob from '@actions/glob'
 import fs from 'fs'
+import { trueCasePathSync } from 'true-case-path'
 import path, { posix } from 'path'
 
 const wildcards: RegExp = /\*|\?/
@@ -235,11 +236,12 @@ export class Parser {
    * @throws An error if wildcards are used in the filepath.
    */
   protected async parseSrc(filepath: string, root: boolean = false, exclude: boolean = false): Promise<void> {
-    let { fullPath } = this.stripPath(filepath)
+    const { relPath } = this.stripPath(filepath)
 
     // Check if file exists and correct case
+    let fullPath: string
     try {
-      fullPath = normalizePath(fs.realpathSync.native(fullPath))
+      fullPath = normalizePath(trueCasePathSync(relPath))
     } catch {
       return
     }
@@ -283,12 +285,12 @@ export class Parser {
    * @param exclude - Indicates whether the file is not part of the patch.
    */
   protected parseD(filepath: string, exclude: boolean = false): void {
-    const { fullPath: _fullPath, relPath } = this.stripPath(filepath)
+    const { relPath } = this.stripPath(filepath)
 
     // Check if file exists and correct case
     let fullPath: string
     try {
-      fullPath = normalizePath(fs.realpathSync.native(_fullPath))
+      fullPath = normalizePath(trueCasePathSync(relPath))
     } catch {
       return
     }

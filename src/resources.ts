@@ -1,6 +1,6 @@
 import path, { posix } from 'path'
 import { globSync } from 'glob'
-import fs from 'fs'
+import { trueCasePathSync } from 'true-case-path'
 import { normalizePath } from './utils.js'
 
 export type Violation = { file: string; name: string; line: number }
@@ -33,7 +33,7 @@ export class Resource {
     for (const file of resourceFiles) {
       let fileCase: string
       try {
-        fileCase = fs.realpathSync.native(file) // Obtain correct case
+        fileCase = trueCasePathSync(file) // Obtain correct case
       } catch {
         // istanbul ignore next
         continue
