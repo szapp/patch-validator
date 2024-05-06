@@ -78726,6 +78726,36 @@ function formatFilters(patchName, prefix, ignoreDecl, ignoreRsc, basePath) {
 
 
 
+const commonClasses = [
+    'C_MISSION',
+    'C_FOCUS',
+    'C_ITEMREACT',
+    'C_SPELL',
+    'C_SVM',
+    'C_GILVALUES',
+    'C_FIGHTAI',
+    'CCAMSYS',
+    'C_MENU_ITEM',
+    'C_MENU',
+    'C_PARTICLEFXEMITKEY',
+    'CFX_BASE',
+    'C_SFX',
+    'C_SNDSYS_CFG',
+    'C_MUSICSYS_CFG',
+    'C_MUSICTHEME',
+    'C_MUSICJINGLE',
+];
+const commonPrototypes = [
+    'NPC_DEFAULT',
+    'C_SPELL_PROTO',
+    'CCAMSYS_DEF',
+    'C_MENU_ITEM_DEF',
+    'C_MENU_DEF',
+    'C_MUSICTHEME_DEF',
+    'C_MUSICJINGLE_DEF',
+    'C_SFX_DEF',
+    'CFX_BASE_PROTO',
+];
 async function createCheckRun(startedAt, write = true) {
     // Return empty details if writing is disabled
     if (!write)
@@ -78766,20 +78796,47 @@ async function annotations(parsers, resources, prefix, check_id, summary, write 
             };
         });
         // Reference violations
-        const refVio = p.referenceViolations.map((v) => ({
-            path: v.file,
-            start_line: v.line,
-            end_line: v.line,
-            annotation_level: 'failure',
-            title: `Reference violation: ${v.name}`,
-            message: `The symbol "${v.name}" might not exist ("Unknown identifier"). Reference only symbols that are declared in the patch or safely search for other symbols by their name.`,
-            raw_details: `if (MEM_FindParserSymbol("${v.name}") != -1) {
+        const refVio = p.referenceViolations.map((v) => {
+            let raw_details;
+            let suggestion;
+            if (commonClasses.includes(v.name)) {
+                // Check for common classes and suggest a fix
+                suggestion =
+                    'Although that class is very standard, it technically does not have to exist or might even have a different name!\nIt is safer to define a copy of that class and use that instead to ensure compatibility.';
+                raw_details = `// Copy of ${v.name} to ensure it exists
+class ${prefix[0]}_${v.name} {
+    // ...
+};`;
+            }
+            else if (commonPrototypes.includes(v.name)) {
+                // Check for common protoypes and suggest a fix
+                suggestion =
+                    'Although that prototype is very standard, it technically does not have to exist or might even have a different name!\nIt is safer to define a copy of the prototype and use that instead to ensure compatibility.';
+                raw_details = `// Copy of ${v.name} to ensure it exists
+prototype ${prefix[0]}_${v.name}( /* class name */ ) {
+    // ...
+};`;
+            }
+            else {
+                // Give general advice on how to handle unknown identifiers
+                suggestion = 'Reference only symbols that are declared in the patch or safely search for other symbols by their name.';
+                raw_details = `if (MEM_FindParserSymbol("${v.name}") != -1) {
     var zCPar_Symbol symb; symb = _^(MEM_GetSymbol("${v.name}"));
     // Access content with symb.content
 } else {
     // Fallback to a default if the symbol does not exist
-};`,
-        }));
+};`;
+            }
+            return {
+                path: v.file,
+                start_line: v.line,
+                end_line: v.line,
+                annotation_level: 'failure',
+                title: `Reference violation: ${v.name}`,
+                message: `The symbol "${v.name}" might not exist ("Unknown identifier").\n${suggestion}`,
+                raw_details,
+            };
+        });
         // Overwrite violations
         const overVio = p.overwriteViolations.map((v) => ({
             path: v.file,
