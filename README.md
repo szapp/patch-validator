@@ -24,7 +24,9 @@ on:
   push:
     paths:
       - '**.src'
+      - '**.SRC'
       - '**.d'
+      - '**.D'
 
 # These permissions are necessary for creating the check runs
 permissions:
@@ -109,7 +111,9 @@ on:
   push:
     paths:
       - '**.src'
+      - '**.SRC'
       - '**.d'
+      - '**.D'
   check_run:
     types: completed
 
