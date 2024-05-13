@@ -7,10 +7,9 @@ import externals from './externals.js'
 import symbols from './symbols.js'
 import * as io from '@actions/io'
 import * as tc from '@actions/tool-cache'
-import * as glob from '@actions/glob'
 import fs from 'fs'
 import { trueCasePathSync } from 'true-case-path'
-import path, { posix } from 'path'
+import { posix } from 'path'
 
 const wildcards: RegExp = /\*|\?/
 
@@ -255,7 +254,7 @@ export class Parser {
     console.log(`Reading ${relPath}`)
     const srcRootPath = posix.dirname(fullPath)
     const input = fs.readFileSync(fullPath, 'ascii')
-    let lines = input.split(/\r?\n/).filter((line) => line.trim() !== '')
+    const lines = input.split(/\r?\n/).filter((line) => line.trim() !== '')
 
     // Iterate over the lines in the file
     while (lines.length > 0) {
@@ -263,13 +262,7 @@ export class Parser {
       const subfile = normalizePath(line)
       const fullPath = posix.join(srcRootPath, subfile)
 
-      if (wildcards.test(line)) {
-        if (!exclude) throw new Error('Wildcards are not supported')
-        const nativeSrcRootPath = path.resolve(srcRootPath) + path.sep
-        const resolved = await glob.create(fullPath).then((g) => g.glob().then((f) => f.map((h) => h.replace(nativeSrcRootPath, ''))))
-        lines = resolved.concat(lines)
-        continue
-      }
+      if (wildcards.test(line)) throw new Error('Wildcards are not supported')
 
       const ext = posix.extname(subfile).toLowerCase()
       switch (ext) {

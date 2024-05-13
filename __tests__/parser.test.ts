@@ -15,7 +15,6 @@ import fs from 'fs'
 import tcp from 'true-case-path'
 import * as io from '@actions/io'
 import * as tc from '@actions/tool-cache'
-import * as glob from '@actions/glob'
 import { posix } from 'path'
 import os from 'os'
 
@@ -278,28 +277,6 @@ describe('Parser', () => {
       expect(fsReadFileSyncMock).toHaveBeenCalledWith('/path/to/file.src', 'ascii')
       expect(fsReadFileSyncMock).toHaveReturnedWith('some/path/*\n')
     })
-
-    it('should resolve wildcards when for excluded sources', async () => {
-      const patchName = 'test'
-      const filepath = 'path/to/file.src'
-      const parser = new Parser(patchName, filepath)
-
-      trueCasePathSyncMock.mockImplementation((path) => String(path))
-      fsReadFileSyncMock.mockReturnValue('some/path/*\n')
-      jest.spyOn(posix, 'join')
-      jest.spyOn(glob, 'create').mockResolvedValue({ glob: async () => ['some/path/glob.ext'] } as glob.Globber)
-
-      await parser['parseSrc'](filepath, false, true)
-
-      expect(posix.join).toHaveBeenCalledWith('path/to', 'some/path/*')
-      expect(trueCasePathSyncMock).toHaveBeenCalledWith(filepath)
-      expect(fsReadFileSyncMock).toHaveBeenCalledWith(filepath, 'ascii')
-      expect(glob.create).toHaveBeenCalledWith('path/to/some/path/*')
-      expect(posix.join).toHaveBeenCalledWith('path/to', 'some/path/glob.ext')
-      expect(parser.filelist).toEqual([])
-      expect(parser.symbolTable).toEqual([])
-      expect(parser.referenceTable).toEqual([])
-    })
   })
 
   describe('parseD', () => {
@@ -436,6 +413,7 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
   Symbol4[0] = 0; // Assignment
   var Symbol5 Symbol21; // Indentifier declaration
   Symbol21.Symbol6 = 0; // Member assignment
+  Symbol11(Symbol15); // Function call (syntactically incorrect)
 };
 `
       parser['parseStr'](input, relPath)
@@ -488,6 +466,8 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
         { name: 'SYMBOL11.SYMBOL3', file: 'file.d', line: 29 },
         { name: 'SYMBOL11.SYMBOL4', file: 'file.d', line: 30 },
         { name: 'SYMBOL11.SYMBOL21.SYMBOL6', file: 'file.d', line: 32 },
+        { name: 'Symbol11', file: 'file.d', line: 33 },
+        { name: 'SYMBOL11.SYMBOL15', file: 'file.d', line: 33 },
       ])
     })
   })

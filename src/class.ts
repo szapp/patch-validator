@@ -12,6 +12,7 @@ import {
   ParameterDeclContext,
   ParentReferenceContext,
   ReferenceContext,
+  FuncCallContext,
   VarDeclContext,
 } from './generated/DaedalusParser.js'
 import { DaedalusVisitor } from './generated/DaedalusVisitor.js'
@@ -83,8 +84,19 @@ export class SymbolVisitor extends DaedalusVisitor<Tables> {
       .toUpperCase()
     if (name) {
       name = this.getScope() + name
-      // istanbul ignore next: Unnecessary to test emty line
-      this.referenceTable.push({ name, file: this.file, line: ctx.start?.line ?? 0 })
+      // istanbul ignore next: Unnecessary to test empty line
+      const line = ctx.start?.line ?? 0
+      this.referenceTable.push({ name, file: this.file, line })
+    }
+    return this.visitChildren(ctx) as Tables
+  }
+
+  public visitFuncCall = (ctx: FuncCallContext): Tables => {
+    const name = ctx.nameNode().anyIdentifier().Identifier()?.getSymbol()?.text
+    if (name) {
+      // istanbul ignore next: Unnecessary to test empty line
+      const line = ctx.start?.line ?? 0
+      this.referenceTable.push({ name, file: this.file, line })
     }
     return this.visitChildren(ctx) as Tables
   }
