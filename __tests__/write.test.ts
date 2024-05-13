@@ -127,11 +127,27 @@ describe('annotations', () => {
         title: 'Reference violation: SYMBOL2',
         message:
           'The symbol "SYMBOL2" might not exist ("Unknown identifier").\nReference only symbols that are declared in the patch or safely search for other symbols by their name.',
-        raw_details: `if (MEM_FindParserSymbol("SYMBOL2") != -1) {
+        raw_details: `// If SYMBOL2 is a variable/constant
+if (MEM_FindParserSymbol("SYMBOL2") != -1) {
     var zCPar_Symbol symb; symb = _^(MEM_GetSymbol("SYMBOL2"));
     // Access content with symb.content
 } else {
     // Fallback to a default if the symbol does not exist
+};
+
+// -----
+
+// OR: If SYMBOL2 is a function
+if (MEM_FindParserSymbol("SYMBOL2") != -1) {
+    // Push any necessary arguments onto the stack in the order of the function's parameters
+    //MEM_PushIntParam(1);
+    //MEM_PushInstParam(hero);
+    //MEM_PushStringParam("Hello world!");
+
+    // Call the function in a safe way
+    MEM_CallByString("SYMBOL2");
+} else {
+    // Optionally provide a fallback if the function does not exist
 };`,
       },
       {

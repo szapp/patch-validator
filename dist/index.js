@@ -76577,11 +76577,27 @@ prototype ${prefix[0]}_${v.name}( /* class name */ ) {
             else {
                 // Give general advice on how to handle unknown identifiers
                 suggestion = 'Reference only symbols that are declared in the patch or safely search for other symbols by their name.';
-                raw_details = `if (MEM_FindParserSymbol("${v.name}") != -1) {
+                raw_details = `// If ${v.name} is a variable/constant
+if (MEM_FindParserSymbol("${v.name}") != -1) {
     var zCPar_Symbol symb; symb = _^(MEM_GetSymbol("${v.name}"));
     // Access content with symb.content
 } else {
     // Fallback to a default if the symbol does not exist
+};
+
+// -----
+
+// OR: If ${v.name} is a function
+if (MEM_FindParserSymbol("${v.name}") != -1) {
+    // Push any necessary arguments onto the stack in the order of the function's parameters
+    //MEM_PushIntParam(1);
+    //MEM_PushInstParam(hero);
+    //MEM_PushStringParam("Hello world!");
+
+    // Call the function in a safe way
+    MEM_CallByString("${v.name}");
+} else {
+    // Optionally provide a fallback if the function does not exist
 };`;
             }
             return {
