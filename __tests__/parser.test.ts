@@ -466,7 +466,7 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
         { name: 'SYMBOL11.SYMBOL3', file: 'file.d', line: 29 },
         { name: 'SYMBOL11.SYMBOL4', file: 'file.d', line: 30 },
         { name: 'SYMBOL11.SYMBOL21.SYMBOL6', file: 'file.d', line: 32 },
-        { name: 'Symbol11', file: 'file.d', line: 33 },
+        { name: 'SYMBOL11', file: 'file.d', line: 33 },
         { name: 'SYMBOL11.SYMBOL15', file: 'file.d', line: 33 },
       ])
     })

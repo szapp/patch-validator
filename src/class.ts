@@ -92,7 +92,7 @@ export class SymbolVisitor extends DaedalusVisitor<Tables> {
   }
 
   public visitFuncCall = (ctx: FuncCallContext): Tables => {
-    const name = ctx.nameNode().anyIdentifier().Identifier()?.getSymbol()?.text
+    const name = ctx.nameNode().anyIdentifier().Identifier()?.getSymbol()?.text?.toUpperCase()
     if (name) {
       // istanbul ignore next: Unnecessary to test empty line
       const line = ctx.start?.line ?? 0
