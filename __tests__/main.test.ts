@@ -9,6 +9,7 @@ let runMock: jest.SpiedFunction<typeof main.run>
 
 describe('run', () => {
   beforeEach(() => {
+    jest.spyOn(Parser, 'downloadSpecial').mockResolvedValue()
     jest
       .spyOn(inputs, 'loadInputs')
       .mockReturnValue({ workingDir: '', basePath: '', patchName: '', prefixList: [], ignoreListDecl: [], ignoreListRsc: [] })
@@ -27,6 +28,7 @@ describe('run', () => {
     const result = await main.run(true)
     expect(runMock).toHaveReturned()
     expect(cleanup.workflow).toHaveBeenCalledTimes(1)
+    expect(Parser.downloadSpecial).toHaveBeenCalledTimes(1)
     expect(inputs.loadInputs).toHaveBeenCalledTimes(1)
     expect(inputs.formatFilters).toHaveBeenCalledTimes(1)
     expect(Parser.from).toHaveBeenCalledTimes(1)
@@ -43,6 +45,7 @@ describe('run', () => {
     await main.run(true)
     expect(runMock).toHaveReturned()
     expect(cleanup.workflow).toHaveBeenCalledTimes(1)
+    expect(Parser.downloadSpecial).not.toHaveBeenCalled()
     expect(inputs.loadInputs).not.toHaveBeenCalled()
     expect(inputs.formatFilters).not.toHaveBeenCalled()
     expect(Parser.from).not.toHaveBeenCalled()
@@ -60,6 +63,7 @@ describe('run', () => {
     await main.run(true)
     expect(runMock).toHaveReturned()
     expect(cleanup.workflow).toThrow('test error')
+    expect(Parser.downloadSpecial).not.toHaveBeenCalled()
     expect(inputs.loadInputs).not.toHaveBeenCalled()
     expect(inputs.formatFilters).not.toHaveBeenCalled()
     expect(Parser.from).not.toHaveBeenCalled()
@@ -79,6 +83,7 @@ describe('run', () => {
     await main.run(true)
     expect(runMock).toHaveReturned()
     expect(cleanup.workflow).toThrow('test error')
+    expect(Parser.downloadSpecial).not.toHaveBeenCalled()
     expect(inputs.loadInputs).not.toHaveBeenCalled()
     expect(inputs.formatFilters).not.toHaveBeenCalled()
     expect(Parser.from).not.toHaveBeenCalled()
@@ -101,6 +106,7 @@ describe('run', () => {
 
     expect(runMock).toHaveReturned()
     expect(cleanup.workflow).not.toHaveBeenCalled()
+    expect(Parser.downloadSpecial).toHaveBeenCalledTimes(1)
     expect(inputs.loadInputs).toThrow('test error')
     expect(console.error).toHaveBeenCalledWith('test error')
     expect(inputs.formatFilters).not.toHaveBeenCalled()

@@ -16,6 +16,9 @@ export async function run(github: boolean = false): Promise<{ summary: string; a
     const startedAt = new Date()
     const startTime = performance.now()
 
+    // Download extras
+    await Parser.downloadSpecial()
+
     // Format inputs
     const { workingDir, basePath, patchName, prefixList, ignoreListDecl, ignoreListRsc } = loadInputs()
     const { prefix, ignoreDecl, ignoreRsc } = formatFilters(patchName, prefixList, ignoreListDecl, ignoreListRsc, basePath)

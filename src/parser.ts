@@ -164,16 +164,12 @@ export class Parser {
     if (this.type !== 'CONTENT') return
 
     let symbols: string[] = []
-    let repoUrl: string = ''
     let srcPath: string = ''
     const tmpPath = posix.join(process.env['RUNNER_TEMP'] ?? '', '.patch-validator-special')
 
     switch (pattern.toLowerCase()) {
       case 'ikarus':
         console.log('Requesting Ikarus')
-
-        // Download Ikarus from the official repository (caution: not the compatibility version)
-        repoUrl = 'https://github.com/Lehona/Ikarus/archive/refs/heads/gameversions.tar.gz'
         srcPath = posix.join(tmpPath, 'Ikarus-gameversions', `Ikarus_G${this.version}.src`)
 
         // Provisionally add Ninja-specific compatibility symbols
@@ -200,9 +196,6 @@ export class Parser {
         break
       case 'lego':
         console.log('Requesting LeGo')
-
-        // Download LeGo from the official repository (caution: not the compatibility version)
-        repoUrl = 'https://github.com/Lehona/LeGo/archive/refs/heads/gameversions.tar.gz'
         srcPath = posix.join(tmpPath, 'LeGo-gameversions', `Header_G${this.version}.src`)
 
         // Provisionally add Ninja-specific compatibility symbols
@@ -210,15 +203,6 @@ export class Parser {
         break
       default:
         return
-    }
-
-    // Download the repository
-    if (!fs.existsSync(srcPath)) {
-      console.log('Downloading repository')
-      const archivePath = await tc.downloadTool(repoUrl)
-      await io.mkdirP(tmpPath)
-      await tc.extractTar(archivePath, tmpPath)
-      await io.rmRF(archivePath)
     }
 
     // Parse the files
@@ -320,6 +304,29 @@ export class Parser {
     // Collect symbol tables
     const visitor = new SymbolVisitor(filename, this.symbolTable, filename ? this.referenceTable : undefined)
     visitor.visit(tree)
+  }
+
+  /**
+   * Download special
+   */
+  public static async downloadSpecial(): Promise<void> {
+    // istanbul ignore next
+    const tmpPath = posix.join(process.env['RUNNER_TEMP'] ?? '', '.patch-validator-special')
+
+    // Download Ikarus and LeGo from the official repositories (caution: not the compatibility versions)
+    const repoUrls = [
+      'https://github.com/Lehona/Ikarus/archive/refs/heads/gameversions.tar.gz',
+      'https://github.com/Lehona/LeGo/archive/refs/heads/gameversions.tar.gz',
+    ]
+
+    await Promise.all(
+      repoUrls.map(async (repoUrl) => {
+        const archivePath = await tc.downloadTool(repoUrl)
+        await io.mkdirP(tmpPath)
+        await tc.extractTar(archivePath, tmpPath)
+        await io.rmRF(archivePath)
+      })
+    )
   }
 
   /**

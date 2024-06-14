@@ -14,7 +14,6 @@ import { Parser } from '../src/parser.js'
 import fs from 'fs'
 import tcp from 'true-case-path'
 import * as io from '@actions/io'
-import * as tc from '@actions/tool-cache'
 import { posix } from 'path'
 import os from 'os'
 
@@ -23,10 +22,6 @@ let consoleLogMock: jest.SpiedFunction<typeof console.log>
 let fsExistsSyncMock: jest.SpiedFunction<typeof fs.existsSync>
 let fsReadFileSyncMock: jest.SpiedFunction<typeof fs.readFileSync>
 let trueCasePathSyncMock: jest.SpiedFunction<typeof tcp.trueCasePathSync>
-let ioMkdirPMock: jest.SpiedFunction<typeof io.mkdirP>
-let ioRmRFMock: jest.SpiedFunction<typeof io.rmRF>
-let tcDownloadToolMock: jest.SpiedFunction<typeof tc.downloadTool>
-let tcExtractTarMock: jest.SpiedFunction<typeof tc.extractTar>
 
 describe('Parser', () => {
   beforeEach(() => {
@@ -742,16 +737,21 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
   })
 
   describe('parseSpecial', () => {
-    beforeEach(() => {
-      ioMkdirPMock = jest.spyOn(io, 'mkdirP').mockResolvedValue()
-      ioRmRFMock = jest.spyOn(io, 'rmRF').mockResolvedValue()
-      tcDownloadToolMock = jest.spyOn(tc, 'downloadTool')
-      tcExtractTarMock = jest.spyOn(tc, 'extractTar')
-
+    beforeAll(async () => {
       // Fix path in environment variables
       if (!('PATH' in process.env) && 'Path' in process.env) {
         jest.replaceProperty(process, 'env', { ...process.env, PATH: process.env['Path'] })
       }
+
+      const tmpDir = posix.join(os.tmpdir(), '.patch-validator-tmp')
+      jest.replaceProperty(process, 'env', { ...process.env, RUNNER_TEMP: tmpDir })
+
+      await Parser.downloadSpecial()
+    })
+
+    beforeEach(() => {
+      const tmpDir = posix.join(os.tmpdir(), '.patch-validator-tmp')
+      jest.replaceProperty(process, 'env', { ...process.env, RUNNER_TEMP: tmpDir })
     })
 
     afterAll(async () => {
@@ -766,8 +766,6 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
       const parser = new Parser(patchName, filepath)
 
       jest.replaceProperty(process, 'env', { ...process.env, RUNNER_TEMP: undefined })
-      tcDownloadToolMock.mockResolvedValue('/path/to/ikarus.tar.gz')
-      tcExtractTarMock.mockResolvedValue('/path/to/ikarus')
       const posixJoin = jest.spyOn(posix, 'join')
       const parseSrc = jest.spyOn(parser as any, 'parseSrc').mockImplementation()
       ;(parser as any)['type'] = 'CONTENT'
@@ -775,10 +773,6 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
       await parser['parseSpecial']('Ikarus')
 
       expect(posixJoin).toHaveBeenCalledWith(expect.stringMatching(/\.patch-validator-special$/), 'Ikarus-gameversions', 'Ikarus_G1.src')
-      expect(tcDownloadToolMock).toHaveBeenCalledWith('https://github.com/Lehona/Ikarus/archive/refs/heads/gameversions.tar.gz')
-      expect(ioMkdirPMock).toHaveBeenCalledWith(expect.stringMatching(/\.patch-validator-special$/))
-      expect(tcExtractTarMock).toHaveBeenCalledWith('/path/to/ikarus.tar.gz', expect.stringMatching(/\.patch-validator-special$/))
-      expect(ioRmRFMock).toHaveBeenCalledWith('/path/to/ikarus.tar.gz')
       expect(parseSrc).toHaveBeenCalledWith(
         expect.stringMatching(/\.patch-validator-special\/Ikarus-gameversions\/Ikarus_G1.src$/),
         false,
@@ -815,17 +809,11 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
 
       const posixJoin = jest.spyOn(posix, 'join')
       const parseSrc = jest.spyOn(parser as any, 'parseSrc').mockImplementation()
-      tcDownloadToolMock.mockResolvedValue('/path/to/lego.tar.gz')
-      tcExtractTarMock.mockResolvedValue('/path/to/lego')
       ;(parser as any)['type'] = 'CONTENT'
       ;(parser as any)['version'] = 2
       await parser['parseSpecial']('LeGo')
 
       expect(posixJoin).toHaveBeenCalledWith(expect.stringMatching(/\.patch-validator-special$/), 'LeGo-gameversions', 'Header_G2.src')
-      expect(tcDownloadToolMock).toHaveBeenCalledWith('https://github.com/Lehona/LeGo/archive/refs/heads/gameversions.tar.gz')
-      expect(ioMkdirPMock).toHaveBeenCalledWith(expect.stringMatching(/\.patch-validator-special$/))
-      expect(tcExtractTarMock).toHaveBeenCalledWith('/path/to/lego.tar.gz', expect.stringMatching(/\.patch-validator-special$/))
-      expect(ioRmRFMock).toHaveBeenCalledWith('/path/to/lego.tar.gz')
       expect(parseSrc).toHaveBeenCalledWith(
         expect.stringMatching(/\.patch-validator-special\/LeGo-gameversions\/Header_G2.src$/),
         false,
@@ -868,14 +856,6 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
       const filepath = '/path/to/Content_G130.src'
       const parser = new Parser(patchName, filepath)
 
-      ioMkdirPMock.mockRestore()
-      ioRmRFMock.mockRestore()
-      tcDownloadToolMock.mockRestore()
-      tcExtractTarMock.mockRestore()
-
-      const tmpDir = posix.join(os.tmpdir(), '.patch-validator-tmp')
-      jest.replaceProperty(process, 'env', { ...process.env, RUNNER_TEMP: tmpDir })
-
       await parser['parseSpecial']('Ikarus')
 
       expect(parser.symbolTable.length).toBeGreaterThan(5000)
@@ -889,14 +869,6 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
       const patchName = 'test'
       const filepath = '/path/to/Content_G112.src'
       const parser = new Parser(patchName, filepath)
-
-      ioMkdirPMock.mockRestore()
-      ioRmRFMock.mockRestore()
-      tcDownloadToolMock.mockRestore()
-      tcExtractTarMock.mockRestore()
-
-      const tmpDir = posix.join(os.tmpdir(), '.patch-validator-tmp')
-      jest.replaceProperty(process, 'env', { ...process.env, RUNNER_TEMP: tmpDir })
 
       await parser['parseSpecial']('LeGo')
 
