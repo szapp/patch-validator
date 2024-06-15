@@ -21,6 +21,7 @@ describe('run', () => {
     jest.spyOn(cleanup, 'workflow').mockResolvedValue(false)
     jest.spyOn(core, 'setFailed').mockImplementation()
     jest.spyOn(core, 'error').mockImplementation()
+    jest.spyOn(core, 'debug').mockImplementation()
     runMock = jest.spyOn(main, 'run')
   })
 

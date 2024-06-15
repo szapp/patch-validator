@@ -26,6 +26,18 @@ export async function run(github: boolean = false): Promise<{ summary: string; a
     // Collect symbol tables
     const parsers = await Parser.from(patchName, basePath, workingDir)
 
+    // Print debugging information
+    if (github) {
+      core.debug('Symbol tables:')
+      for (const parser of parsers) {
+        core.debug(`${parser.filename} (${parser.symbolTable.length} symbols)`)
+        core.debug('')
+        // istanbul ignore next
+        for (const { name } of parser.symbolTable) core.debug(name)
+        core.debug('')
+      }
+    }
+
     // Validate symbol tables
     for (const parser of parsers) {
       parser.validateNames(prefix, ignoreDecl)
