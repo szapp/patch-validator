@@ -319,6 +319,7 @@ export class Parser {
       'https://github.com/Lehona/LeGo/archive/refs/heads/gameversions.tar.gz',
     ]
 
+    console.log('Downloading Ikarus and LeGo')
     await Promise.all(
       repoUrls.map(async (repoUrl) => {
         const archivePath = await tc.downloadTool(repoUrl)
