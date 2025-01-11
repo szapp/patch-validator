@@ -144,3 +144,16 @@ jobs:
 
 > [!Note]
 > This procedure only works reasonably well if `patch-validator` is only called once in the workflow file.
+
+## Development
+
+This project uses automatic linting, formatting, and tests.
+
+Before setting up the dependencies with `npm ci`, an installation of Java is required for `antlr4ng-cli`.  
+The correct versions are best installed with [`antlr4-tools`](https://github.com/antlr/antlr4-tools).
+In brief, run the following commands within a Python 3 installation/environment.
+
+```bash
+pip install antlr4-tools
+antlr4
+```
