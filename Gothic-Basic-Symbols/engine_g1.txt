@@ -1,0 +1,161 @@
+g1
+===
+// Basically only classes and instances are interesting here
+// Constants can just be indirectly checked and read
+// Actually, all instances and classes can and should just be recreated. Classes under a difference name,
+
+
+FIGHT
+-----
+-
+    (never mentioned)
+        C_FightAI
+
+CAMERA
+------
+-
+    (not strictly necessary)
+        CCAMSYS
+
+MENU
+----
+-
+    (never mentioned)
+        C_MENU_ITEM
+        C_MENU
+
+PFX
+---
+C_PARTICLEFX // Generates a list of all instances <- dangerous because the member names might be different
+
+VFX
+---
+-
+    (not strictly necessary)
+        C_PARTICLEFXEMITKEY
+        CFX_BASE
+
+SFX
+---
+-
+    (not strictly necessary)
+        C_SFX
+        C_SNDSYS_CFG
+        SNDSYSCONFIG
+
+MUSIC
+-----
+-
+    (not strictly necessary)
+        C_MUSICSYS_CFG
+        C_MUSICTHEME
+        C_MUSICJINGLE
+        MUSICSYSCONFIG
+
+CONTENT
+-------
+C_NPC // NPCs need to be of type C_NPC <- dangerous because the member names might be different
+C_ITEM // ? <- dangerous
+C_INFO // Generates a list of all instances <- dangerous
+SELF
+OTHER
+VICTIM
+HERO
+ITEM
+
+
+////// TO CHECK //////
+C_Focus // No can be any class
+C_Spell // No can be any class
+C_GilValues // No can be any class
+FOCUS_NORMAL // Not really necessary
+////// TO CHECK //////
+
+
+// Not needed as you can just search for the symbol and read the values - or better yet the corresponding engine entries
+GIL_VALUES // is an instance and needs a class... but class is not required
+
+// constants
+SVM_MODULES
+TXT_GUILDS
+Gil_Attitudes
+spellFxInstanceNames
+spellFXAniLetters
+TXT_SPELLS
+TXT_TALENTS
+TXT_TALENTS_SKILLS
+TXT_INV_CAT
+
+// Need to decide on configuration constants
+// Because it's okay if they don't exist, but if they don't there is no (straight forward way) to alter their value
+// No, because these are constants, they should not be referenced/assigned directly anyway.
+// If they don't already exist in the underlying mod, the patch won't (shouldn't/can't) change that.
+NPC_ATTACK_FINISH_DISTANCE
+NPC_BURN_TICKS_PER_DAMAGE_POINT
+DAM_CRITICAL_MULTIPLIER
+BLOOD_SIZE_DIVISOR
+BLOOD_DAMAGE_MAX
+DAMAGE_FLY_CM_MAX
+DAMAGE_FLY_CM_MIN
+DAMAGE_FLY_CM_PER_POINT
+NPC_DAM_DIVE_TIME
+NPC_MINIMAL_DAMAGE
+NPC_VOICE_VARIATION_MAX
+MOB_SIT
+MOB_LIE
+MOB_CLIMB
+MOB_NOTINTERRUPTABLE
+
+// Need to decide on body states.
+// Technically the body state constants need to exist (0-BS_MAX), otherwise they would not work
+
+-----
+
+///// ???
+TXT_DAYTIMES
+TXT_GUILDS
+TXT_ATTRIBUTES
+TXT_FIGHT_TALENTS
+TXT_TALENTS
+TXT_ATR_ST
+TXT_ATR_KO
+TXT_ATR_DK
+TXT_ATR_WK
+TXT_ATR_AG
+TXT_ATR_WI
+TXT_ATR_HP
+TXT_ATTITUDE
+TXT_SPELLS
+TXT_NEWS_INTRO
+TXT_NEWS_STOLE
+TXT_NEWS_STOLE_10
+TXT_NEWS_STOLE_30
+TXT_NEWS_STOLE_50
+TXT_NEWS_STOLE_70
+TXT_NEWS_STOLE_90
+TXT_NEWS_STOLE_100
+TXT_NEWS_ATTACKED
+TXT_NEWS_KILLED
+TXT_YNEWS_INTRO
+TXT_YNEWS_STOLE
+TXT_YNEWS_STOLE_10
+TXT_YNEWS_STOLE_30
+TXT_YNEWS_STOLE_50
+TXT_YNEWS_STOLE_70
+TXT_YNEWS_STOLE_90
+TXT_YNEWS_STOLE_100
+TXT_YNEWS_ATTACKED
+TXT_YNEWS_KILLED
+TXT_PC_GREETING_PHRASE
+TXT_PC_FIRST_PHRASE
+TXT_PC_SECOND_PHRASE
+TXT_PC_TRADE_PHRASE
+TXT_NPC_LAST_PHRASE
+TXT_PC_TRADE_THREAT
+TXT_NPC_TRADE_THREAT
+TXT_PC_INFO_THREAT
+TXT_NPC_INFO_THREAT
+TXT_INTIMIDATION
+TXT_INVCAT
+TXT_HELP
+
