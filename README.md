@@ -39,7 +39,7 @@ jobs:
     name: Run validator on scripts
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Check for validity
         uses: szapp/patch-validator@v1
         with:
@@ -133,7 +133,7 @@ jobs:
         with:
           app-id: ${{ vars.APP_ID }} # GitHub App ID
           private-key: ${{ secrets.APP_KEY }} # GitHub App private key
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Check for validity
         uses: szapp/patch-validator@v1
         with:
