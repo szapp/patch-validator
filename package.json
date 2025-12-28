@@ -1,7 +1,7 @@
 {
   "name": "patch-validator",
   "description": "Checks Daedalus script symbols and resource file names in a Gothic VDF patch for validity",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "Sören Zapp",
   "homepage": "https://github.com/szapp/patch-validator#readme",
   "repository": {
