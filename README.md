@@ -28,6 +28,7 @@ on:
       - '**.Src'
       - '**.d'
       - '**.D'
+      - '**/_work/Data/**/*'
 
 # These permissions are necessary for creating the check runs
 permissions:
@@ -116,6 +117,7 @@ on:
       - '**.Src'
       - '**.d'
       - '**.D'
+      - '**/_work/Data/**/*'
   check_run:
     types: completed
 
