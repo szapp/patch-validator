@@ -42,7 +42,11 @@ export class Parser {
    */
   constructor(patchName: string, filepath: string, workingDir: string = '') {
     this.patchName = patchName.toUpperCase()
-    this.filepath = normalizePath(filepath)
+    try {
+      this.filepath = normalizePath(trueCasePathSync(filepath))
+    } catch {
+      this.filepath = normalizePath(filepath)
+    }
     this.workingDir = normalizePath(workingDir)
     if (this.workingDir.length > 0 && !this.workingDir.endsWith('/')) this.workingDir += '/'
     this.exists = fs.existsSync(this.filepath)

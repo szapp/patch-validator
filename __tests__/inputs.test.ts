@@ -1,35 +1,36 @@
 import * as core from '@actions/core'
+import * as github from '@actions/github'
 import fs from 'fs'
+import { trueCasePathSync } from 'true-case-path'
+import path from 'path'
 import YAML from 'yaml'
 import { loadInputs, formatFilters } from '../src/inputs.ts'
+import { normalizePath } from '../src/utils.ts'
+
+jest.mock('@actions/github')
+jest.mock('true-case-path')
 
 let getInputMock: jest.SpiedFunction<typeof core.getInput>
 let fsExistsSyncMock: jest.SpiedFunction<typeof fs.existsSync>
 let fsReadFileSyncMock: jest.SpiedFunction<typeof fs.readFileSync>
-let fsRealpathSyncNativeMock: jest.SpiedFunction<typeof fs.realpathSync.native>
 let yamlParseMock: jest.SpiedFunction<typeof YAML.parse>
 
 describe('loadInputs', () => {
+  const githubContextMock = github.context as jest.MockedObjectDeep<typeof github.context>
+  const trueCasePathSyncMock = trueCasePathSync as jest.MockedFunction<typeof trueCasePathSync>
+
   beforeEach(() => {
     getInputMock = jest.spyOn(core, 'getInput')
     fsExistsSyncMock = jest.spyOn(fs, 'existsSync')
     fsReadFileSyncMock = jest.spyOn(fs, 'readFileSync')
-    fsRealpathSyncNativeMock = jest.spyOn(fs.realpathSync, 'native').mockImplementation((path) => String(path))
     yamlParseMock = jest.spyOn(YAML, 'parse')
+
+    jest.replaceProperty(process, 'env', { GITHUB_WORKSPACE: '/path/to/workspace' })
+    githubContextMock.payload.repository = { name: 'my-repo', owner: { login: 'owner' } }
+    trueCasePathSyncMock.mockImplementation((path: string) => path)
   })
 
   it('should load inputs correctly without ignore lists', () => {
-    jest.replaceProperty(process, 'env', { GITHUB_WORKSPACE: '/path/to/workspace' })
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const github = require('@actions/github')
-    github.context = {
-      payload: {
-        repository: {
-          name: 'my-repo',
-          owner: { login: 'owner' },
-        },
-      },
-    }
     getInputMock.mockReturnValueOnce('patchname')
     getInputMock.mockReturnValue('')
     fsExistsSyncMock.mockReturnValue(true)
@@ -48,23 +49,12 @@ describe('loadInputs', () => {
     })
     expect(getInputMock).toHaveBeenCalledWith('patchName')
     expect(getInputMock).toHaveBeenCalledWith('rootPath')
-    expect(fsRealpathSyncNativeMock).toHaveBeenCalledWith('/path/to/workspace/Ninja/patchname')
+    expect(trueCasePathSyncMock).toHaveBeenCalledWith('/path/to/workspace/Ninja/patchname')
     expect(fsReadFileSyncMock).toHaveBeenCalledWith('/path/to/workspace/.validator.yml', 'utf8')
     expect(yamlParseMock).toHaveBeenCalledWith('prefix:\n  - prefix-value1\n  - prefix-value2')
   })
 
   it('should load inputs correctly without prefix', () => {
-    jest.replaceProperty(process, 'env', { GITHUB_WORKSPACE: '/path/to/workspace' })
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const github = require('@actions/github')
-    github.context = {
-      payload: {
-        repository: {
-          name: 'my-repo',
-          owner: { login: 'owner' },
-        },
-      },
-    }
     getInputMock.mockReturnValue('')
     fsExistsSyncMock.mockReturnValue(true)
     fsReadFileSyncMock.mockReturnValue('ignore-declaration: ignore-value1\nignore-resource: ignore-value2')
@@ -82,37 +72,20 @@ describe('loadInputs', () => {
     })
     expect(getInputMock).toHaveBeenCalledWith('patchName')
     expect(getInputMock).toHaveBeenCalledWith('rootPath')
-    expect(fsRealpathSyncNativeMock).toHaveBeenCalledWith('/path/to/workspace/Ninja/my-repo')
+    expect(trueCasePathSyncMock).toHaveBeenCalledWith('/path/to/workspace/Ninja/my-repo')
     expect(fsReadFileSyncMock).toHaveBeenCalledWith('/path/to/workspace/.validator.yml', 'utf8')
     expect(yamlParseMock).toHaveBeenCalledWith('ignore-declaration: ignore-value1\nignore-resource: ignore-value2')
   })
 
   it('should throw an error if repository name is not available', () => {
-    jest.replaceProperty(process, 'env', { GITHUB_WORKSPACE: '/path/to/workspace' })
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const github = require('@actions/github')
-    github.context = {
-      payload: {
-        repository: undefined,
-      },
-    }
+    github.context.payload.repository = undefined
     expect(loadInputs).toThrow('Patch name is not available. Please provide it as an input to the action')
   })
 
   it('should throw an error if base path is not found', () => {
     jest.replaceProperty(process, 'env', { GITHUB_WORKSPACE: undefined })
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const github = require('@actions/github')
-    github.context = {
-      payload: {
-        repository: {
-          name: 'my-repo',
-          owner: { login: 'owner' },
-        },
-      },
-    }
     getInputMock.mockReturnValue('')
-    fsRealpathSyncNativeMock.mockImplementation(() => {
+    trueCasePathSyncMock.mockImplementation(() => {
       throw new Error('Base path not found')
     })
 
@@ -121,17 +94,6 @@ describe('loadInputs', () => {
   })
 
   it('should throw an error if configuration file is not found', () => {
-    jest.replaceProperty(process, 'env', { GITHUB_WORKSPACE: '/path/to/workspace' })
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const github = require('@actions/github')
-    github.context = {
-      payload: {
-        repository: {
-          name: 'my-repo',
-          owner: { login: 'owner' },
-        },
-      },
-    }
     getInputMock.mockReturnValue('subdir')
     fsExistsSyncMock.mockReturnValueOnce(false)
 
@@ -141,16 +103,6 @@ describe('loadInputs', () => {
 
   it('should throw an error if prefix is shorter than three characters', () => {
     jest.replaceProperty(process, 'env', { GITHUB_WORKSPACE: undefined })
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const github = require('@actions/github')
-    github.context = {
-      payload: {
-        repository: {
-          name: 'my-repo',
-          owner: { login: 'owner' },
-        },
-      },
-    }
     getInputMock.mockReturnValue('')
     fsExistsSyncMock.mockReturnValue(true)
     fsReadFileSyncMock.mockReturnValue('prefix:\n  - prefix-value1\n  - ab')
@@ -160,8 +112,8 @@ describe('loadInputs', () => {
 
     expect(getInputMock).toHaveBeenCalledWith('patchName')
     expect(getInputMock).toHaveBeenCalledWith('rootPath')
-    expect(fsRealpathSyncNativeMock).toHaveBeenCalledWith('Ninja/my-repo')
-    expect(fsReadFileSyncMock).toHaveBeenCalledWith('.validator.yml', 'utf8')
+    expect(trueCasePathSyncMock).toHaveBeenCalledWith(normalizePath(path.resolve('./Ninja/my-repo')))
+    expect(fsReadFileSyncMock).toHaveBeenCalledWith(normalizePath(path.resolve('./.validator.yml')), 'utf8')
     expect(yamlParseMock).toHaveBeenCalledWith('prefix:\n  - prefix-value1\n  - ab')
   })
 })

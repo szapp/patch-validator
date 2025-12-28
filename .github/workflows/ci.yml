@@ -81,5 +81,5 @@ jobs:
       - name: Test Local Action
         uses: ./
         with:
-          patchName: testing
+          patchName: Testing
           rootPath: .github/workflows/live

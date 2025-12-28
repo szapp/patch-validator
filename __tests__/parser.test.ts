@@ -145,8 +145,9 @@ describe('Parser', () => {
       expect(result).toHaveLength(1)
       expect(result[0]).toMatchObject(oneParser)
       expect(fsExistsSyncMock).toHaveBeenCalledTimes(candidates.length)
-      expect(trueCasePathSyncMock).toHaveBeenCalledTimes(1)
+      expect(trueCasePathSyncMock).toHaveBeenCalledTimes(1 + candidates.length)
       candidates.forEach((candidate) => {
+        expect(trueCasePathSyncMock).toHaveBeenCalledWith(candidate)
         expect(fsExistsSyncMock).toHaveBeenCalledWith(candidate)
       })
       expect(fsReadFileSyncMock).not.toHaveBeenCalled()

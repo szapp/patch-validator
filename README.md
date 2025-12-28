@@ -25,6 +25,7 @@ on:
     paths:
       - '**.src'
       - '**.SRC'
+      - '**.Src'
       - '**.d'
       - '**.D'
 
@@ -112,6 +113,7 @@ on:
     paths:
       - '**.src'
       - '**.SRC'
+      - '**.Src'
       - '**.d'
       - '**.D'
   check_run:

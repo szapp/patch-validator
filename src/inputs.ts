@@ -1,8 +1,9 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import { posix } from 'path'
+import path, { posix } from 'path'
 import { normalizePath } from './utils.js'
 import fs from 'fs'
+import { trueCasePathSync } from 'true-case-path'
 import YAML from 'yaml'
 
 type Inputs = {
@@ -15,20 +16,22 @@ type Inputs = {
 }
 
 export function loadInputs(): Inputs {
-  const workingDir = core.toPosixPath(process.env['GITHUB_WORKSPACE'] ?? '')
+  const workingDir = normalizePath(path.resolve(process.env['GITHUB_WORKSPACE'] ?? ''))
   const patchName = core.getInput('patchName') || github.context.payload.repository?.name
   if (!patchName) throw new Error('Patch name is not available. Please provide it as an input to the action')
 
   // Make paths
-  const relRootPath = posix.normalize(core.toPosixPath(core.getInput('rootPath'))) // Relative path to patch root
+  const relRootPath = posix.normalize(normalizePath(core.getInput('rootPath'))) // Relative path to patch root
   const relBasePath = posix.join(relRootPath, 'Ninja', patchName) // Relative path to src files
-  const rootPath = posix.join(workingDir, relRootPath) // Absolute path to patch root
-  let basePath = posix.join(workingDir, relBasePath) // Aboslute path to src files
+
+  // Ensure absolute paths exist and correct case
+  let basePath: string // Aboslute path to src files
   try {
-    basePath = fs.realpathSync.native(basePath) // Check if path exists (and correct case)
+    basePath = normalizePath(trueCasePathSync(posix.join(workingDir, relBasePath)))
   } catch {
     throw new Error(`Base path '${relBasePath}' not found`)
   }
+  const rootPath = posix.resolve(basePath, '..', '..') // Absolute path to patch root
 
   // Read config file
   const configPath = posix.join(rootPath, '.validator.yml')

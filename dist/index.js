@@ -72109,7 +72109,12 @@ class parser_Parser {
      */
     constructor(patchName, filepath, workingDir = '') {
         this.patchName = patchName.toUpperCase();
-        this.filepath = normalizePath(filepath);
+        try {
+            this.filepath = normalizePath((0,true_case_path.trueCasePathSync)(filepath));
+        }
+        catch {
+            this.filepath = normalizePath(filepath);
+        }
         this.workingDir = normalizePath(workingDir);
         if (this.workingDir.length > 0 && !this.workingDir.endsWith('/'))
             this.workingDir += '/';
@@ -80573,22 +80578,24 @@ var dist = __nccwpck_require__(8815);
 
 
 
+
 function loadInputs() {
-    const workingDir = core.toPosixPath(process.env['GITHUB_WORKSPACE'] ?? '');
+    const workingDir = normalizePath(external_path_default().resolve(process.env['GITHUB_WORKSPACE'] ?? ''));
     const patchName = core.getInput('patchName') || github.context.payload.repository?.name;
     if (!patchName)
         throw new Error('Patch name is not available. Please provide it as an input to the action');
     // Make paths
-    const relRootPath = external_path_.posix.normalize(core.toPosixPath(core.getInput('rootPath'))); // Relative path to patch root
+    const relRootPath = external_path_.posix.normalize(normalizePath(core.getInput('rootPath'))); // Relative path to patch root
     const relBasePath = external_path_.posix.join(relRootPath, 'Ninja', patchName); // Relative path to src files
-    const rootPath = external_path_.posix.join(workingDir, relRootPath); // Absolute path to patch root
-    let basePath = external_path_.posix.join(workingDir, relBasePath); // Aboslute path to src files
+    // Ensure absolute paths exist and correct case
+    let basePath; // Aboslute path to src files
     try {
-        basePath = external_fs_default().realpathSync.native(basePath); // Check if path exists (and correct case)
+        basePath = normalizePath((0,true_case_path.trueCasePathSync)(external_path_.posix.join(workingDir, relBasePath)));
     }
     catch {
         throw new Error(`Base path '${relBasePath}' not found`);
     }
+    const rootPath = external_path_.posix.resolve(basePath, '..', '..'); // Absolute path to patch root
     // Read config file
     const configPath = external_path_.posix.join(rootPath, '.validator.yml');
     if (!external_fs_default().existsSync(configPath))
