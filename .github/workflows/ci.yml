@@ -40,11 +40,8 @@ jobs:
       - name: Generate Antlr4 Parser and Lexer
         run: npm run antlr4ng
 
-      - name: Check Format
-        run: npm run format:check
-
-      - name: Lint
-        run: npm run lint
+      - name: Check Format and linting
+        run: npm run ci
 
       - name: Test
         run: npm run test
@@ -65,7 +62,7 @@ jobs:
       - if: ${{ failure() && steps.diff.outcome == 'failure' }}
         name: Upload Artifact
         id: upload
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/

@@ -1,39 +1,72 @@
-import write, { Annotation } from '../src/write.ts'
+import fs from 'node:fs'
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import { Parser } from '../src/parser.ts'
-import { Resource } from '../src/resources.ts'
-import fs from 'fs'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { Parser } from './parser.js'
+import { Resource } from './resources.js'
 
-let createCheckMock: jest.Mock
-let updateCheckMock: jest.Mock
-let fsReadFileSyncMock: jest.SpiedFunction<typeof fs.readFileSync>
+const fsReadFileSyncMock = vi.spyOn(fs, 'readFileSync')
+
+// Mock github's core functions
+const { getInputMock } = vi.hoisted(() => ({
+  getInputMock: vi.fn(),
+}))
+vi.mock(import('@actions/core'), async (importOriginal) => {
+  const originalModule = await importOriginal()
+  return {
+    ...originalModule,
+    getInput: getInputMock,
+    summary: {
+      addHeading: vi.fn(() => originalModule.summary),
+      addTable: vi.fn(() => originalModule.summary),
+      addRaw: vi.fn(() => originalModule.summary),
+      addEOL: vi.fn(() => originalModule.summary),
+      addList: vi.fn(() => originalModule.summary),
+      stringify: vi.fn(() => 'summary text'),
+      emptyBuffer: vi.fn(),
+      write: vi.fn(async () => Promise.resolve()),
+    } as unknown as typeof originalModule.summary,
+  }
+})
+
+// Mock github's context in an accessible way
+const { createCheckMock, updateCheckMock } = vi.hoisted(() => ({
+  createCheckMock: vi.fn(async () => Promise.resolve({ data: { html_url: 'https://example.com', id: 42 } })),
+  updateCheckMock: vi.fn(async () => Promise.resolve({ data: { html_url: 'https://example.com' } })),
+}))
+vi.mock(import('@actions/github'), async (importOriginal) => {
+  const originalModule = await importOriginal()
+  return {
+    ...originalModule,
+    context: {
+      repo: { owner: 'owner', repo: 'repo' },
+      sha: 'sha',
+      workflow: 'workflow.yml',
+    } as typeof originalModule.context,
+    getOctokit: vi.fn(
+      () =>
+        ({
+          rest: {
+            checks: {
+              create: createCheckMock,
+              update: updateCheckMock,
+            },
+          },
+        }) as unknown as ReturnType<typeof originalModule.getOctokit>,
+    ),
+  }
+})
+
+import write, { type Annotation } from './write.js'
 
 describe('createCheckRun', () => {
   beforeEach(() => {
-    jest.spyOn(core, 'getInput').mockReturnValue('dummy-token')
+    vi.resetAllMocks()
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    createCheckMock = jest.fn((_params) => ({ data: { html_url: 'https://example.com', id: 42 } }))
-
-    jest.spyOn(github, 'getOctokit').mockReturnValue({
-      rest: {
-        checks: {
-          create: createCheckMock,
-        },
-      },
-    } as unknown as ReturnType<typeof github.getOctokit>)
-    jest.replaceProperty(github, 'context', {
-      repo: {
-        owner: 'owner',
-        repo: 'repo',
-      },
-      sha: 'sha',
-      workflow: 'workflow.yml',
-    } as unknown as typeof github.context)
+    getInputMock.mockReturnValue('dummy-token')
   })
 
-  it('creates check run', async () => {
+  test('creates check run', async () => {
     const result = await write.createCheckRun(new Date())
 
     expect(createCheckMock).toHaveBeenCalledWith(
@@ -44,12 +77,12 @@ describe('createCheckRun', () => {
         external_id: 'workflow.yml',
         started_at: expect.any(String),
         status: 'in_progress',
-      })
+      }),
     )
     expect(result).toEqual({ details_url: 'https://example.com', check_id: 42 })
   })
 
-  it('does not create a check run if write is not truthy', async () => {
+  test('does not create a check run if write is not truthy', async () => {
     const result = await write.createCheckRun(new Date(), false)
 
     expect(createCheckMock).not.toHaveBeenCalled()
@@ -59,30 +92,12 @@ describe('createCheckRun', () => {
 
 describe('annotations', () => {
   beforeEach(() => {
-    fsReadFileSyncMock = jest.spyOn(fs, 'readFileSync')
-    jest.spyOn(core, 'getInput').mockReturnValue('dummy-token')
+    vi.resetAllMocks()
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    updateCheckMock = jest.fn((_params) => ({ data: { html_url: 'https://example.com' } }))
-
-    jest.spyOn(github, 'getOctokit').mockReturnValue({
-      rest: {
-        checks: {
-          update: updateCheckMock,
-        },
-      },
-    } as unknown as ReturnType<typeof github.getOctokit>)
-    jest.replaceProperty(github, 'context', {
-      repo: {
-        owner: 'owner',
-        repo: 'repo',
-      },
-      sha: 'sha',
-      workflow: 'workflow.yml',
-    } as unknown as typeof github.context)
+    getInputMock.mockReturnValue('dummy-token')
   })
 
-  it('creates annotations for invalid symbol and file names', async () => {
+  test('creates annotations for invalid symbol and file names', async () => {
     const parsers = [
       {
         numSymbols: 4,
@@ -226,13 +241,13 @@ const int Symbol3 = 0;
         completed_at: expect.any(String),
         conclusion: 'failure',
         output: expectedOutput,
-      })
+      }),
     )
 
     expect(result).toEqual(expectedAnnotations)
   })
 
-  it('creates annotations for one invalid symbol', async () => {
+  test('creates annotations for one invalid symbol', async () => {
     const parsers = [
       {
         numSymbols: 1,
@@ -291,12 +306,12 @@ var int Symbol21; var int Symbol2;
         completed_at: expect.any(String),
         conclusion: 'failure',
         output: expectedOutput,
-      })
+      }),
     )
     expect(result).toEqual(expectedAnnotations)
   })
 
-  it('creates annotations for one valid symbol', async () => {
+  test('creates annotations for one valid symbol', async () => {
     const parsers = [
       {
         numSymbols: 1,
@@ -339,12 +354,12 @@ var int Symbol21; var int Symbol2;
         completed_at: expect.any(String),
         conclusion: 'success',
         output: expectedOutput,
-      })
+      }),
     )
     expect(result).toEqual(expectedAnnotations)
   })
 
-  it('creates unique annotations without duplicates', async () => {
+  test('creates unique annotations without duplicates', async () => {
     const parsers = [
       {
         numSymbols: 1,
@@ -409,12 +424,12 @@ var int Symbol21; var int Symbol2;
         completed_at: expect.any(String),
         conclusion: 'failure',
         output: expectedOutput,
-      })
+      }),
     )
     expect(result).toEqual(expectedAnnotations)
   })
 
-  it('does not create annotations if write is not truthy', async () => {
+  test('does not create annotations if write is not truthy', async () => {
     const parsers = [
       {
         numSymbols: 1,
@@ -463,43 +478,38 @@ var int Symbol21; var int Symbol2;
 
 describe('summary', () => {
   beforeEach(() => {
-    jest.spyOn(core.summary, 'addHeading').mockImplementation(() => core.summary)
-    jest.spyOn(core.summary, 'addTable').mockImplementation(() => core.summary)
-    jest.spyOn(core.summary, 'addRaw').mockImplementation(() => core.summary)
-    jest.spyOn(core.summary, 'addEOL').mockImplementation(() => core.summary)
-    jest.spyOn(core.summary, 'addList').mockImplementation(() => core.summary)
-    jest.spyOn(core.summary, 'stringify').mockImplementation(() => 'summary text')
-    jest.spyOn(core.summary, 'emptyBuffer').mockImplementation()
-    jest.spyOn(core.summary, 'write').mockImplementation()
+    vi.resetAllMocks()
   })
 
-  it('builds summary, writes it to GitHub and returns it', async () => {
-    const parsers = [new Parser('', 'path/to/File1.src'), new Parser('', 'File2.src'), new Parser('', 'File3.src')]
-    const resources = [
-      new Resource('Anims', '', '', [], [], []),
-      new Resource('Textures', '', '', [], [], []),
-      new Resource('Worlds', '', '', [], [], []),
-    ]
+  test('builds summary, writes it to GitHub and returns it', async () => {
+    const parser1 = new Parser('', 'path/to/File1.src')
+    const parser2 = new Parser('', 'File2.src')
+    const parser3 = new Parser('', 'File3.src')
+    const parsers = [parser1, parser2, parser3]
+    const resource1 = new Resource('Anims', '', '', [], [], [])
+    const resource2 = new Resource('Textures', '', '', [], [], [])
+    const resource3 = new Resource('Worlds', '', '', [], [], [])
+    const resources = [resource1, resource2, resource3]
     const duration = 4035
     const prefixes = ['PATCH', 'FOO', 'BAR']
     const details_url = 'https://example.com/details'
-    parsers[0].numSymbols = 3
-    parsers[1].numSymbols = 1
-    parsers[2].numSymbols = 5
-    parsers[0].duration = 42
-    parsers[1].duration = 20
-    parsers[2].duration = 2040
-    parsers[0].namingViolations = [{ name: 'Symbol1', file: 'path/to/file1', line: 10 }]
-    parsers[2].referenceViolations = [{ name: 'Symbol2', file: 'path/to/file2', line: 20 }]
-    parsers[2].overwriteViolations = [{ name: 'Symbol3', file: 'path/to/file3', line: 30 }]
-    resources[0].numFiles = 3
-    resources[1].numFiles = 1
-    resources[2].numFiles = 2
-    resources[0].duration = 9
-    resources[1].duration = 3
-    resources[2].duration = 5
-    resources[0].extViolations = [{ name: '.ext', file: 'path/to/file4', line: 0 }]
-    resources[2].nameViolations = [{ name: 'file5', file: 'path/to/file5', line: 0 }]
+    parser1.numSymbols = 3
+    parser2.numSymbols = 1
+    parser3.numSymbols = 5
+    parser1.duration = 42
+    parser2.duration = 20
+    parser3.duration = 2040
+    parser1.namingViolations = [{ name: 'Symbol1', file: 'path/to/file1', line: 10 }]
+    parser3.referenceViolations = [{ name: 'Symbol2', file: 'path/to/file2', line: 20 }]
+    parser3.overwriteViolations = [{ name: 'Symbol3', file: 'path/to/file3', line: 30 }]
+    resource1.numFiles = 3
+    resource2.numFiles = 1
+    resource3.numFiles = 2
+    resource1.duration = 9
+    resource2.duration = 3
+    resource3.duration = 5
+    resource1.extViolations = [{ name: '.ext', file: 'path/to/file4', line: 0 }]
+    resource3.nameViolations = [{ name: 'file5', file: 'path/to/file5', line: 0 }]
 
     const result = await write.summary(parsers, resources, prefixes, duration, details_url)
 
@@ -530,7 +540,7 @@ describe('summary', () => {
     expect(core.summary.addList).toHaveBeenCalledWith(expect.arrayContaining([expect.any(String)]))
     expect(core.summary.addRaw).toHaveBeenCalledWith(
       'Naming violations can be corrected by prefixing the names of all global symbols (i.e. symbols declared outside of functions, classes, instances, and prototypes) and the names of resource files (i.e. files under "_work/Data/") with one of the following prefixes (add more in the <a href="https://github.com/szapp/patch-validator/#configuration">configuration</a>).',
-      true
+      true,
     )
     expect(core.summary.addList).toHaveBeenCalledWith(['<code>PATCH_</code>', '<code>FOO_</code>', '<code>BAR_</code>'])
     expect(core.summary.stringify).toHaveBeenCalled()
@@ -539,19 +549,19 @@ describe('summary', () => {
     expect(result).toBe('summary text')
   })
 
-  it('builds summary for no violations and no details_url and does not write it to GitHub', async () => {
-    const parsers = [new Parser('', 'path/to/File1.src')]
-    const resources = [new Resource('Anims', '', '', [], [], [])]
+  test('builds summary for no violations and no details_url and does not write it to GitHub', async () => {
+    const parser = new Parser('', 'path/to/File1.src')
+    const resource = new Resource('Anims', '', '', [], [], [])
     const duration = 1024
     const prefixes: string[] = []
     const details_url = null
     const writeVal = false
-    parsers[0].numSymbols = 1
-    parsers[0].duration = 20
-    resources[0].numFiles = 1
-    resources[0].duration = 9
+    parser.numSymbols = 1
+    parser.duration = 20
+    resource.numFiles = 1
+    resource.duration = 9
 
-    const result = await write.summary(parsers, resources, prefixes, duration, details_url, writeVal)
+    const result = await write.summary([parser], [resource], prefixes, duration, details_url, writeVal)
 
     expect(core.summary.addTable).toHaveBeenCalledWith([
       [
@@ -576,7 +586,7 @@ describe('summary', () => {
     expect(core.summary.addList).toHaveBeenCalledWith(expect.arrayContaining([expect.any(String)]))
     expect(core.summary.addRaw).toHaveBeenCalledWith(
       'Naming violations can be corrected by prefixing the names of all global symbols (i.e. symbols declared outside of functions, classes, instances, and prototypes) and the names of resource files (i.e. files under "_work/Data/") with one of the following prefixes (add more in the <a href="https://github.com/szapp/patch-validator/#configuration">configuration</a>).',
-      true
+      true,
     )
     expect(core.summary.addList).toHaveBeenCalledWith([])
     expect(core.summary.stringify).toHaveBeenCalled()

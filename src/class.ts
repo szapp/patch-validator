@@ -1,19 +1,19 @@
-import { Token } from 'antlr4ng'
-import {
+import type { Token } from 'antlr4ng'
+import type {
   ClassDefContext,
-  PrototypeDefContext,
-  InstanceDefContext,
-  FunctionDefContext,
-  ConstValueDefContext,
   ConstArrayDefContext,
-  VarValueDeclContext,
-  VarArrayDeclContext,
+  ConstValueDefContext,
+  FuncCallContext,
+  FunctionDefContext,
   InstanceDeclContext,
+  InstanceDefContext,
   ParameterDeclContext,
   ParentReferenceContext,
+  PrototypeDefContext,
   ReferenceContext,
-  FuncCallContext,
+  VarArrayDeclContext,
   VarDeclContext,
+  VarValueDeclContext,
 } from './generated/DaedalusParser.js'
 import { DaedalusVisitor } from './generated/DaedalusVisitor.js'
 
@@ -32,7 +32,7 @@ export class SymbolVisitor extends DaedalusVisitor<Tables> {
     protected readonly symbolTable: SymbolTable,
     protected readonly referenceTable: SymbolTable = [],
     protected scope: string = '',
-    protected type: string = ''
+    protected type: string = '',
   ) {
     super()
   }
@@ -58,7 +58,7 @@ export class SymbolVisitor extends DaedalusVisitor<Tables> {
   }
 
   private getScope(): string {
-    const scope = this.scope ? this.scope + '.' : ''
+    const scope = this.scope ? `${this.scope}.` : ''
     return scope
   }
 
@@ -93,6 +93,7 @@ export class SymbolVisitor extends DaedalusVisitor<Tables> {
 
   public visitFuncCall = (ctx: FuncCallContext): Tables => {
     const name = ctx.nameNode().anyIdentifier().Identifier()?.getSymbol()?.text?.toUpperCase()
+    // istanbul ignore else
     if (name) {
       // istanbul ignore next: Unnecessary to test empty line
       const line = ctx.start?.line ?? 0
@@ -101,14 +102,15 @@ export class SymbolVisitor extends DaedalusVisitor<Tables> {
     return this.visitChildren(ctx) as Tables
   }
 
-  // Fill protottypes and instances with class symbols (extends SymbolTable)
+  // Fill prototypes and instances with class symbols (extends SymbolTable)
   public visitParentReference = (ctx: ParentReferenceContext): Tables => {
     const symbol = ctx.Identifier().getSymbol()
     const refName = symbol.text?.toUpperCase()
+    // istanbul ignore else
     if (refName) {
       this.referenceTable.push({ name: refName, file: this.file, line: symbol.line })
       this.symbolTable
-        .filter((s) => s.name.startsWith(refName + '.'))
+        .filter((s) => s.name.startsWith(`${refName}.`))
         .forEach((s) => {
           this.addSymbol({ text: s.name.substring(refName.length + 1), line: symbol.line } as Token)
         })
@@ -117,17 +119,18 @@ export class SymbolVisitor extends DaedalusVisitor<Tables> {
   }
 
   private visitDecl = (
-    ctx: ConstValueDefContext | ConstArrayDefContext | VarValueDeclContext | VarArrayDeclContext | ParameterDeclContext
+    ctx: ConstValueDefContext | ConstArrayDefContext | VarValueDeclContext | VarArrayDeclContext | ParameterDeclContext,
   ): Tables => {
     const identifier = ctx.nameNode().anyIdentifier().Identifier()
     if (identifier) {
       const symbol = identifier.getSymbol()
       const symbolName = symbol.text?.toUpperCase()
+      // istanbul ignore else
       if (symbolName) {
         this.addSymbol(symbol)
         if (this.type) {
           this.symbolTable
-            .filter((s) => s.name.startsWith(this.type + '.'))
+            .filter((s) => s.name.startsWith(`${this.type}.`))
             .forEach((s) => {
               const subName = s.name.substring(this.type.length + 1)
               this.addSymbol({ text: `${symbolName}.${subName}`, line: symbol.line } as Token)
@@ -139,13 +142,15 @@ export class SymbolVisitor extends DaedalusVisitor<Tables> {
   }
 
   private visitDef = (
-    ctx: ClassDefContext | PrototypeDefContext | InstanceDefContext | FunctionDefContext | InstanceDeclContext
+    ctx: ClassDefContext | PrototypeDefContext | InstanceDefContext | FunctionDefContext | InstanceDeclContext,
   ): Tables => {
     const nodes = [ctx.nameNode()].flat()
-    nodes.forEach((node) => {
+    nodes.map((node) => {
       const identifier = node.anyIdentifier().Identifier()
+      // istanbul ignore else: Unlikely
       if (identifier) {
         const symbol = identifier.getSymbol()
+        // istanbul ignore else: Unlikely
         if (symbol.text) {
           this.addSymbol(symbol)
           return this.withScope(() => this.visitChildren(ctx), symbol.text) as Tables
@@ -197,6 +202,7 @@ export class SymbolVisitor extends DaedalusVisitor<Tables> {
     if (identifier) {
       const symbol = identifier.getSymbol()
       const refName = symbol.text?.toUpperCase()
+      // istanbul ignore else
       if (refName) return this.withType(() => this.visitDecl(ctx), refName) as Tables
     }
     return this.visitDecl(ctx)
@@ -207,6 +213,7 @@ export class SymbolVisitor extends DaedalusVisitor<Tables> {
     if (identifier) {
       const symbol = identifier.getSymbol()
       const refName = symbol.text?.toUpperCase()
+      // istanbul ignore else
       if (refName) return this.withType(() => this.visitChildren(ctx), refName) as Tables
     }
     return this.visitChildren(ctx) as Tables

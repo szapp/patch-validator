@@ -1,15 +1,15 @@
-import { CharStream, CommonTokenStream } from 'antlr4ng'
-import { DaedalusLexer } from './generated/DaedalusLexer.js'
-import { DaedalusParser } from './generated/DaedalusParser.js'
-import { SymbolVisitor, SymbolTable } from './class.js'
-import { normalizePath } from './utils.js'
-import externals from './externals.js'
-import symbols from './symbols.js'
+import fs from 'node:fs'
+import { posix } from 'node:path'
 import * as io from '@actions/io'
 import * as tc from '@actions/tool-cache'
-import fs from 'fs'
+import { CharStream, CommonTokenStream } from 'antlr4ng'
 import { trueCasePathSync } from 'true-case-path'
-import { posix } from 'path'
+import { type SymbolTable, SymbolVisitor } from './class.js'
+import externals from './externals.js'
+import { DaedalusLexer } from './generated/DaedalusLexer.js'
+import { DaedalusParser } from './generated/DaedalusParser.js'
+import symbols from './symbols.js'
+import { normalizePath } from './utils.js'
 
 const wildcards: RegExp = /\*|\?/
 
@@ -53,7 +53,7 @@ export class Parser {
     this.filename = posix.basename(this.filepath)
     const baseName = posix.basename(this.filepath, posix.extname(this.filepath)).toUpperCase()
     this.type = baseName.replace(/(?:_G\d+)?$/, '')
-    this.version = parseInt(baseName.match(/_G(\d+)/)?.[1] ?? '-1')
+    this.version = parseInt(baseName.match(/_G(\d+)/)?.[1] ?? '-1', 10)
     this.symbolTable = []
     this.referenceTable = []
     this.namingViolations = []
@@ -75,12 +75,10 @@ export class Parser {
   public static async from(patchName: string, basePath: string, workingDir: string): Promise<Parser[]> {
     const candidateNames = ['Content', 'Menu', 'PFX', 'SFX', 'VFX', 'Music', 'Camera', 'Fight']
     const suffixes = ['_G1', '_G112', '_G130', '_G2']
-    const candidates = candidateNames
-      .map((name) => {
-        const suffix = name !== 'Content' ? suffixes.concat(['']) : suffixes
-        return suffix.map((s) => posix.join(basePath, name + s + '.src'))
-      })
-      .flat()
+    const candidates = candidateNames.flatMap((name) => {
+      const suffix = name !== 'Content' ? suffixes.concat(['']) : suffixes
+      return suffix.map((s) => posix.join(basePath, `${name}${s}.src`))
+    })
     const parsers = candidates.map((candidate) => new Parser(patchName, candidate, workingDir)).filter((parser) => parser.exists)
     await Promise.all(parsers.map((parser) => parser.parse()))
     return parsers
@@ -139,6 +137,7 @@ export class Parser {
     ])
 
     // Add symbols to the symbol table(helperSymbols)
+    // istanbul ignore else
     if (basicSymbols.length > 0) {
       basicSymbols.forEach((symbol) => {
         this.symbolTable.push({ name: symbol.toUpperCase(), file: '', line: 0 })
@@ -169,7 +168,7 @@ export class Parser {
 
     let symbols: string[] = []
     let srcPath: string = ''
-    const tmpPath = posix.join(process.env['RUNNER_TEMP'] ?? '', '.patch-validator-special')
+    const tmpPath = posix.join(process.env.RUNNER_TEMP ?? '', '.patch-validator-special')
 
     switch (pattern.toLowerCase()) {
       case 'ikarus':
@@ -213,6 +212,7 @@ export class Parser {
     await this.parseSrc(srcPath, false, true)
 
     // Completement the symbol table
+    // istanbul ignore else
     if (symbols.length > 0) {
       symbols.forEach((symbol) => {
         this.symbolTable.push({ name: symbol.toUpperCase(), file: '', line: 0 })
@@ -246,7 +246,8 @@ export class Parser {
 
     // Iterate over the lines in the file
     while (lines.length > 0) {
-      const line = lines.shift()!.trim()
+      /* istanbul ignore next */
+      const line = lines.shift()?.trim() ?? ''
       const subfile = normalizePath(line)
       const fullPath = posix.join(srcRootPath, subfile)
 
@@ -315,7 +316,7 @@ export class Parser {
    */
   public static async downloadSpecial(): Promise<void> {
     // istanbul ignore next
-    const tmpPath = posix.join(process.env['RUNNER_TEMP'] ?? '', '.patch-validator-special')
+    const tmpPath = posix.join(process.env.RUNNER_TEMP ?? '', '.patch-validator-special')
 
     // Download Ikarus and LeGo from the official repositories (caution: not the compatibility versions)
     const repoUrls = [
@@ -330,7 +331,7 @@ export class Parser {
         await io.mkdirP(tmpPath)
         await tc.extractTar(archivePath, tmpPath)
         await io.rmRF(archivePath)
-      })
+      }),
     )
   }
 
@@ -339,7 +340,7 @@ export class Parser {
    */
   public static async clearTmpDir(): Promise<void> {
     // istanbul ignore next
-    const tmpPath = posix.join(process.env['RUNNER_TEMP'] ?? '', '.patch-validator-special')
+    const tmpPath = posix.join(process.env.RUNNER_TEMP ?? '', '.patch-validator-special')
     await io.rmRF(tmpPath)
   }
 
@@ -377,7 +378,8 @@ export class Parser {
       if (!isDefined && scope !== -1) {
         const unscopedName = symbol.name.substring(scope + 1)
         isDefined = this.symbolTable.some((s) => s.name === unscopedName)
-        this.referenceTable[idx].name = unscopedName // Fix name
+        // istanbul ignore next
+        if (this.referenceTable[idx]) this.referenceTable[idx].name = unscopedName // Fix name
       }
 
       // Add violation

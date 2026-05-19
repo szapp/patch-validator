@@ -3,17 +3,20 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "NodeNext",
-    "rootDir": "./src",
     "moduleResolution": "NodeNext",
-    "baseUrl": "./",
-    "sourceMap": true,
+    "rootDir": "./src",
     "outDir": "./dist",
-    "noImplicitAny": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
+    "types": ["node"],
     "strict": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "sourceMap": true,
     "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
     "newLine": "lf"
   },
-  "exclude": ["./dist", "./node_modules", "./__tests__", "./coverage", "./_work"]
+  "include": ["src"],
+  "exclude": ["dist", "coverage", "node_modules"]
 }

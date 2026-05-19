@@ -1,33 +1,38 @@
 import * as core from '@actions/core'
-import * as main from '../src/main.ts'
-import { Parser } from '../src/parser.ts'
-import * as inputs from '../src/inputs.ts'
-import write, { Annotation } from '../src/write.ts'
-import * as cleanup from '../src/cleanup.ts'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
+import * as cleanup from './cleanup.js'
+import * as inputs from './inputs.js'
+import * as main from './main.js'
+import { Parser } from './parser.js'
+import write, { type Annotation } from './write.js'
 
-let runMock: jest.SpiedFunction<typeof main.run>
+vi.mock('./main.js', { spy: true })
+vi.mock('@actions/core')
 
 describe('run', () => {
   beforeEach(() => {
-    jest.spyOn(Parser, 'downloadSpecial').mockResolvedValue()
-    jest
-      .spyOn(inputs, 'loadInputs')
-      .mockReturnValue({ workingDir: '', basePath: '', patchName: '', prefixList: [], ignoreListDecl: [], ignoreListRsc: [] })
-    jest.spyOn(inputs, 'formatFilters').mockReturnValue({ prefix: [], ignoreDecl: [], ignoreRsc: [] })
-    jest.spyOn(Parser, 'from').mockResolvedValue([new Parser('', '')])
-    jest.spyOn(write, 'createCheckRun').mockResolvedValue({ details_url: '', check_id: 0 })
-    jest.spyOn(write, 'annotations').mockResolvedValue([{} as Annotation])
-    jest.spyOn(write, 'summary').mockImplementation()
-    jest.spyOn(cleanup, 'workflow').mockResolvedValue(false)
-    jest.spyOn(core, 'setFailed').mockImplementation()
-    jest.spyOn(core, 'error').mockImplementation()
-    jest.spyOn(core, 'debug').mockImplementation()
-    runMock = jest.spyOn(main, 'run')
+    vi.resetAllMocks()
+
+    vi.spyOn(Parser, 'downloadSpecial').mockResolvedValue()
+    vi.spyOn(inputs, 'loadInputs').mockReturnValue({
+      workingDir: '',
+      basePath: '',
+      patchName: '',
+      prefixList: [],
+      ignoreListDecl: [],
+      ignoreListRsc: [],
+    })
+    vi.spyOn(inputs, 'formatFilters').mockReturnValue({ prefix: [], ignoreDecl: [], ignoreRsc: [] })
+    vi.spyOn(Parser, 'from').mockResolvedValue([new Parser('', '')])
+    vi.spyOn(write, 'createCheckRun').mockResolvedValue({ details_url: '', check_id: 0 })
+    vi.spyOn(write, 'annotations').mockResolvedValue([{} as Annotation])
+    vi.spyOn(write, 'summary').mockResolvedValue('test')
+    vi.spyOn(cleanup, 'workflow').mockResolvedValue(false)
   })
 
-  it('should run the main function successfully', async () => {
+  test('should run the main function successfully', async () => {
     const result = await main.run(true)
-    expect(runMock).toHaveReturned()
+    expect(main.run).toHaveReturned()
     expect(cleanup.workflow).toHaveBeenCalledTimes(1)
     expect(Parser.downloadSpecial).toHaveBeenCalledTimes(1)
     expect(inputs.loadInputs).toHaveBeenCalledTimes(1)
@@ -37,14 +42,14 @@ describe('run', () => {
     expect(write.annotations).toHaveBeenCalledTimes(1)
     expect(write.summary).toHaveBeenCalledTimes(1)
     expect(core.setFailed).not.toHaveBeenCalled()
-    expect(result).toMatchObject({ summary: undefined, annotations: [{} as Annotation] })
+    expect(result).toMatchObject({ summary: 'test', annotations: [{} as Annotation] })
     expect(process.exitCode).toBe(core.ExitCode.Failure)
   })
 
-  it('should run the cleanup function and return', async () => {
-    jest.spyOn(cleanup, 'workflow').mockResolvedValue(true)
+  test('should run the cleanup function and return', async () => {
+    vi.spyOn(cleanup, 'workflow').mockResolvedValue(true)
     await main.run(true)
-    expect(runMock).toHaveReturned()
+    expect(main.run).toHaveReturned()
     expect(cleanup.workflow).toHaveBeenCalledTimes(1)
     expect(Parser.downloadSpecial).not.toHaveBeenCalled()
     expect(inputs.loadInputs).not.toHaveBeenCalled()
@@ -56,13 +61,13 @@ describe('run', () => {
     expect(core.setFailed).not.toHaveBeenCalled()
   })
 
-  it('should handle errors and set the appropriate outputs (Error)', async () => {
-    jest.spyOn(cleanup, 'workflow').mockImplementation(() => {
+  test('should handle errors and set the appropriate outputs (Error)', async () => {
+    vi.spyOn(cleanup, 'workflow').mockImplementation(() => {
       throw new Error('test error')
     })
 
     await main.run(true)
-    expect(runMock).toHaveReturned()
+    expect(main.run).toHaveReturned()
     expect(cleanup.workflow).toThrow('test error')
     expect(Parser.downloadSpecial).not.toHaveBeenCalled()
     expect(inputs.loadInputs).not.toHaveBeenCalled()
@@ -76,13 +81,13 @@ describe('run', () => {
     expect(core.setFailed).toHaveReturned()
   })
 
-  it('should handle errors and set the appropriate outputs (non-Error)', async () => {
-    jest.spyOn(cleanup, 'workflow').mockImplementation(() => {
+  test('should handle errors and set the appropriate outputs (non-Error)', async () => {
+    vi.spyOn(cleanup, 'workflow').mockImplementation(() => {
       throw 'test error'
     })
 
     await main.run(true)
-    expect(runMock).toHaveReturned()
+    expect(main.run).toHaveReturned()
     expect(cleanup.workflow).toThrow('test error')
     expect(Parser.downloadSpecial).not.toHaveBeenCalled()
     expect(inputs.loadInputs).not.toHaveBeenCalled()
@@ -96,16 +101,16 @@ describe('run', () => {
     expect(core.setFailed).toHaveReturned()
   })
 
-  it('should handle errors when run in non-github mode', async () => {
-    jest.spyOn(inputs, 'loadInputs').mockImplementation(() => {
+  test('should handle errors when run in non-github mode', async () => {
+    vi.spyOn(inputs, 'loadInputs').mockImplementation(() => {
       throw new Error('test error')
     })
-    jest.spyOn(console, 'error').mockImplementation()
+    vi.spyOn(console, 'error').mockReturnValueOnce()
 
     await main.run()
-    expect(runMock).toHaveReturned()
+    expect(main.run).toHaveReturned()
 
-    expect(runMock).toHaveReturned()
+    expect(main.run).toHaveReturned()
     expect(cleanup.workflow).not.toHaveBeenCalled()
     expect(Parser.downloadSpecial).toHaveBeenCalledTimes(1)
     expect(inputs.loadInputs).toThrow('test error')

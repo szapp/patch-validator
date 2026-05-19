@@ -1,6 +1,6 @@
 // Basic class content
 function expandClass(names: string[], members: string[]) {
-  return names.concat(names.map((c) => members.map((m) => `${c}.${m}`)).flat())
+  return names.concat(names.flatMap((c) => members.map((m) => `${c}.${m}`)))
 }
 const members_C_NPC = [
   'ID',

@@ -1,4 +1,4 @@
-import path, { posix } from 'path'
+import path, { posix } from 'node:path'
 import { globSync } from 'glob'
 import { trueCasePathSync } from 'true-case-path'
 import { normalizePath } from './utils.js'
@@ -19,7 +19,7 @@ export class Resource {
     basePath: string,
     public readonly extensions: string[],
     protected readonly prefix: string[],
-    protected readonly ignoreFiles: string[]
+    protected readonly ignoreFiles: string[],
   ) {
     const dataPath = posix.resolve(basePath, '..', '..', '_work', 'data')
     this.rscPath = posix.join(dataPath, name.toLowerCase(), '**/*')

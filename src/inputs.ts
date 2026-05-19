@@ -1,10 +1,10 @@
+import fs from 'node:fs'
+import path, { posix } from 'node:path'
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import path, { posix } from 'path'
-import { normalizePath } from './utils.js'
-import fs from 'fs'
 import { trueCasePathSync } from 'true-case-path'
 import YAML from 'yaml'
+import { normalizePath } from './utils.js'
 
 type Inputs = {
   workingDir: string
@@ -16,7 +16,7 @@ type Inputs = {
 }
 
 export function loadInputs(): Inputs {
-  const workingDir = normalizePath(path.resolve(process.env['GITHUB_WORKSPACE'] ?? ''))
+  const workingDir = normalizePath(path.resolve(process.env.GITHUB_WORKSPACE ?? ''))
   const patchName = core.getInput('patchName') || github.context.payload.repository?.name
   if (!patchName) throw new Error('Patch name is not available. Please provide it as an input to the action')
 
@@ -25,7 +25,7 @@ export function loadInputs(): Inputs {
   const relBasePath = posix.join(relRootPath, 'Ninja', patchName) // Relative path to src files
 
   // Ensure absolute paths exist and correct case
-  let basePath: string // Aboslute path to src files
+  let basePath: string // Absolute path to src files
   try {
     basePath = normalizePath(trueCasePathSync(posix.join(workingDir, relBasePath)))
   } catch {
@@ -59,14 +59,14 @@ export function formatFilters(
   prefix: string[],
   ignoreDecl: string[],
   ignoreRsc: string[],
-  basePath: string
+  basePath: string,
 ): { prefix: string[]; ignoreDecl: string[]; ignoreRsc: string[] } {
   const patchNameU = patchName.toUpperCase()
 
   // Format and extend prefixes
   const prefixForm = prefix.map((p) => p.toUpperCase())
-  const prefixPatch = prefixForm.map((p) => 'PATCH_' + p)
-  prefix = [...new Set([...prefixPatch, 'PATCH_' + patchNameU, ...prefixForm, patchNameU])]
+  const prefixPatch = prefixForm.map((p) => `PATCH_${p}`)
+  prefix = [...new Set([...prefixPatch, `PATCH_${patchNameU}`, ...prefixForm, patchNameU])]
 
   // Format and extend ignore lists
   const ignoreDForm = ignoreDecl.map((i) => i.toUpperCase())

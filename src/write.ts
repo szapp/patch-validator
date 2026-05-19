@@ -1,9 +1,9 @@
+import fs from 'node:fs'
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import { Parser } from './parser.js'
+import type { Parser } from './parser.js'
+import type { Resource } from './resources.js'
 import { formatDuration } from './utils.js'
-import { Resource } from './resources.js'
-import fs from 'fs'
 
 const commonClasses = [
   'C_MISSION',
@@ -71,7 +71,7 @@ export async function annotations(
   prefix: string[],
   check_id: number,
   summary: string,
-  write: boolean = true
+  write: boolean = true,
 ): Promise<Annotation[]> {
   // List first few prefixes
   const prefixes = prefix
@@ -85,7 +85,8 @@ export async function annotations(
       // Naming violations
       const nameVio = p.namingViolations.map((v) => {
         const content = fs.readFileSync(v.file, 'ascii')
-        const context = content.split('\n')[v.line - 1]
+        // istanbul ignore next: Empty string
+        const context = content.split('\n')[v.line - 1] ?? ''
         return {
           path: v.file,
           start_line: v.line,
@@ -165,7 +166,7 @@ if (MEM_FindParserSymbol("${v.name}") != -1) {
             annotation_level: 'failure',
             title: `Overwrite violation: ${v.name}`,
             message: `The symbol "${v.name}" is not allowed to be re-declared / defined.`,
-          }) as Annotation
+          }) as Annotation,
       )
 
       // Concatenate and return
@@ -183,7 +184,7 @@ if (MEM_FindParserSymbol("${v.name}") != -1) {
               annotation_level: 'failure',
               title: `Invalid file extension: ${v.name}`,
               message: `The file extension "${v.name}" is not allowed for ${r.name} resources. Use one of the following: ${r.extensions.join(', ')}.`,
-            }) as Annotation
+            }) as Annotation,
         )
 
         // Naming violations
@@ -196,19 +197,19 @@ if (MEM_FindParserSymbol("${v.name}") != -1) {
               annotation_level: 'failure',
               title: `Naming convention violation: ${v.name}`,
               message: `The resource file "${v.name}" poses a compatibility risk. Add a prefix to its name (e.g. ${prefixes}). If overwriting this symbol is intended, add it to the ignore list.`,
-            }) as Annotation
+            }) as Annotation,
         )
 
         // Concatenate and return
         return [...extVio, ...nameVio]
-      })
+      }),
     )
     .flat()
 
   // Remove duplicates
   // Duplicate annotations occur when the same file is parsed across game versions (e.g. in Content_G1.src and Content_G2.src)
   annotations = annotations.filter(
-    (v, i, a) => a.findIndex((t) => t.path === v.path && t.start_line === v.start_line && t.title === v.title) === i
+    (v, i, a) => a.findIndex((t) => t.path === v.path && t.start_line === v.start_line && t.title === v.title) === i,
   )
 
   // Write to GitHub check run if enabled
@@ -248,7 +249,7 @@ export async function summary(
   prefixes: string[],
   duration: number,
   details_url: string | null,
-  write: boolean = true
+  write: boolean = true,
 ): Promise<string> {
   const rows = parsers
     .map((p) => [
@@ -269,7 +270,7 @@ export async function summary(
         '-',
         String(r.numFiles),
         formatDuration(r.duration),
-      ])
+      ]),
     )
 
   const numViolations =
@@ -309,7 +310,7 @@ export async function summary(
   ])
   core.summary.addRaw(
     'Naming violations can be corrected by prefixing the names of all global symbols (i.e. symbols declared outside of functions, classes, instances, and prototypes) and the names of resource files (i.e. files under "_work/Data/") with one of the following prefixes (add more in the <a href="https://github.com/szapp/patch-validator/#configuration">configuration</a>).',
-    true
+    true,
   )
   core.summary.addList(prefixList)
 

@@ -1,11 +1,11 @@
 import * as core from '@actions/core'
 import { workflow } from './cleanup.js'
+import { formatFilters, loadInputs } from './inputs.js'
 import { Parser } from './parser.js'
 import { Resource } from './resources.js'
-import { loadInputs, formatFilters } from './inputs.js'
-import write, { Annotation } from './write.js'
+import write, { type Annotation } from './write.js'
 
-export async function run(github: boolean = false): Promise<{ summary: string; annotations: Annotation[] } | void> {
+export async function run(github: boolean = false): Promise<{ summary: string; annotations: Annotation[] } | undefined> {
   try {
     // Clean up
     if (github) {
@@ -27,6 +27,7 @@ export async function run(github: boolean = false): Promise<{ summary: string; a
     const parsers = await Parser.from(patchName, basePath, workingDir)
 
     // Print debugging information
+    // istanbul ignore else: Only contains debug output
     if (github) {
       core.debug('Symbol tables:')
       for (const parser of parsers) {
@@ -57,6 +58,7 @@ export async function run(github: boolean = false): Promise<{ summary: string; a
     const annotations = await write.annotations(parsers, resources, prefix, check_id, summary, github)
 
     // Update exit code
+    // istanbul ignore else
     if (github && annotations.length > 0) {
       process.exitCode = core.ExitCode.Failure
     }
