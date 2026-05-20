@@ -7,20 +7,10 @@ import { posix } from 'node:path'
 import * as io from '@actions/io'
 import tcp from 'true-case-path'
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
-
-// Avoid some console outputs during tests
-vi.mock(import('@actions/core'), async (importOriginal) => {
-  const core = importOriginal()
-  return {
-    ...core,
-    debug: vi.fn(),
-    error: vi.fn(),
-  }
-})
-
 import { Parser } from './parser.js'
 
-const consoleLogMock = vi.spyOn(console, 'log')
+const originalWrite = process.stdout.write.bind(process.stdout)
+const writeMock = vi.spyOn(process.stdout, 'write')
 const fsExistsSyncMock = vi.spyOn(fs, 'existsSync')
 const fsReadFileSyncMock = vi.spyOn(fs, 'readFileSync')
 const trueCasePathSyncMock = vi.spyOn(tcp, 'trueCasePathSync')
@@ -29,7 +19,12 @@ describe('Parser', () => {
   beforeEach(() => {
     vi.resetAllMocks()
 
-    consoleLogMock.mockImplementation(() => {})
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+    vi.spyOn(console, 'debug').mockImplementation(() => {})
+  })
+
+  afterAll(() => {
+    vi.resetAllMocks()
   })
 
   describe('constructor', () => {
@@ -747,6 +742,13 @@ func void Symbol11(var int Symbol12, var string Symbol13, var Symbol5 Symbol14) 
 
       const tmpDir = posix.join(os.tmpdir(), '.patch-validator-tmp')
       vi.stubEnv('RUNNER_TEMP', tmpDir)
+
+      // Suppress specific outputs from @actions/tool-cache during download and extraction
+      writeMock.mockImplementation((chunk: any, ...args: any[]) => {
+        const text = String(chunk)
+        if (text.startsWith('::debug::') || text.startsWith('[command]')) return true
+        return originalWrite(chunk, ...args)
+      })
 
       await Parser.downloadSpecial()
     })
