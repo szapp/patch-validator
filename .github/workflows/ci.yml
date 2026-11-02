@@ -10,12 +10,14 @@ on:
       - main
 
 permissions:
-  checks: write
+  contents: read
 
 jobs:
-  test-typescript:
+  test_typescript:
     name: TypeScript Tests
     runs-on: ubuntu-latest
+    outputs:
+      dist_changed: ${{ steps.diff.outputs.changed }}
 
     steps:
       - name: Checkout
@@ -51,15 +53,19 @@ jobs:
 
       - name: Compare Directories
         id: diff
+        continue-on-error: ${{ github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]' }}
         run: |
           if [ "$(git diff --ignore-space-at-eol --text dist/ | wc -l)" -gt "0" ]; then
             echo "Detected uncommitted changes after build. See status below:"
             git diff --ignore-space-at-eol --text dist/
+            echo "changed=true" >> "$GITHUB_OUTPUT"
             exit 1
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
 
       # If `dist/` was different than expected, upload the expected version as artifact
-      - if: ${{ failure() && steps.diff.outcome == 'failure' }}
+      - if: ${{ !cancelled() && steps.diff.outcome == 'failure' }}
         name: Upload Artifact
         id: upload
         uses: actions/upload-artifact@v7
@@ -67,16 +73,68 @@ jobs:
           name: dist
           path: dist/
 
-  test-action:
+  test_action:
     name: GitHub Actions Test
     runs-on: ubuntu-latest
-
+    needs:
+      - test_typescript
+    permissions:
+      checks: write
+    
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      # If `dist/` was different than expected, download the actual build
+      - if: needs.test_typescript.outputs.dist_changed == 'true'
+        name: Remove old dist
+        run: rm -rf dist/
+
+      - if: needs.test_typescript.outputs.dist_changed == 'true'
+        name: Download built
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
 
       - name: Test Local Action
         uses: ./
         with:
           patchName: Testing
           rootPath: .github/workflows/live
+
+  dependabot-commit-build:
+    name: Commit build to Dependabot PR
+    runs-on: ubuntu-latest
+    needs:
+      - test_typescript
+      - test_action
+    permissions:
+      contents: write
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      needs.test_typescript.outputs.dist_changed == 'true'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Remove old dist
+        run: rm -rf dist/
+
+      - name: Download built
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+
+      - name: Commit build artifacts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dist/
+          git commit -m "Update build"
+          git push
