@@ -52,7 +52,7 @@
     "@actions/io": "^3.0.2",
     "@actions/tool-cache": "^4.0.0",
     "antlr4ng": "^3.0.16",
-    "glob": "^13.0.6",
+    "glob": "^14.0.2",
     "humanize-duration": "^3.33.2",
     "true-case-path": "^2.2.1",
     "yaml": "^2.9.0"
