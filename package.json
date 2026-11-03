@@ -30,9 +30,9 @@
     "node": ">=24"
   },
   "scripts": {
-    "antlr4ng": "antlr4ng -Dlanguage=TypeScript -o ./src/generated/ -visitor -no-listener -Xexact-output-dir ./g4/Daedalus.g4 && crlf --set=LF ./src/generated/*",
+    "antlrgen": "antlr-ng -Dlanguage=TypeScript -o ./src/generated/ -v -l false --exact-output-dir -- ./g4/Daedalus.g4 && node scripts/normalize-line-endings.mjs",
     "build": "tsc --noEmit",
-    "bundle": "npm run antlr4ng && npm run check && npm run package",
+    "bundle": "npm run antlrgen && npm run check && npm run package",
     "coverage": "make-coverage-badge --output-path ./badges/coverage.svg",
     "format": "biome format --write",
     "lint": "biome lint --write",
@@ -41,7 +41,7 @@
     "package": "ncc build src/index.ts -o dist --source-map --license licenses.txt",
     "test": "vitest run --coverage",
     "test:watch": "vitest",
-    "all": "npm run antlr4ng && npm run check && npm run test && npm run coverage && npm run package"
+    "all": "npm run antlrgen && npm run check && npm run test && npm run coverage && npm run package"
   },
   "volta": {
     "node": "24.15.0"
@@ -63,8 +63,7 @@
     "@types/node": "^25.8.0",
     "@vercel/ncc": "^0.38.4",
     "@vitest/coverage-istanbul": "^4.1.6",
-    "antlr4ng-cli": "^2.0.0",
-    "crlf": "^1.1.1",
+    "antlr-ng": "^1.0.10",
     "make-coverage-badge": "^1.2.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.11"

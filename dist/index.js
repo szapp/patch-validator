@@ -68296,7 +68296,6 @@ var UnbufferedTokenStream = class {
 
 
 ;// CONCATENATED MODULE: ./src/generated/DaedalusParser.ts
-// Generated from ./g4/Daedalus.g4 by ANTLR 4.13.1
 
 
 
@@ -71819,46 +71818,43 @@ class ExpressionContext extends ParserRuleContext {
         super.copyFrom(ctx);
     }
 }
-class BitMoveExpressionContext extends ExpressionContext {
+class BracketExpressionContext extends ExpressionContext {
     constructor(ctx) {
         super(ctx.parent, ctx.invokingState);
         super.copyFrom(ctx);
     }
-    expression(i) {
-        if (i === undefined) {
-            return this.getRuleContexts(ExpressionContext);
-        }
-        return this.getRuleContext(i, ExpressionContext);
+    LeftParen() {
+        return this.getToken(DaedalusParser.LeftParen, 0);
     }
-    bitMoveOperator() {
-        return this.getRuleContext(0, BitMoveOperatorContext);
+    expression() {
+        return this.getRuleContext(0, ExpressionContext);
+    }
+    RightParen() {
+        return this.getToken(DaedalusParser.RightParen, 0);
     }
     accept(visitor) {
-        if (visitor.visitBitMoveExpression) {
-            return visitor.visitBitMoveExpression(this);
+        if (visitor.visitBracketExpression) {
+            return visitor.visitBracketExpression(this);
         }
         else {
             return visitor.visitChildren(this);
         }
     }
 }
-class EqExpressionContext extends ExpressionContext {
+class UnaryOperationContext extends ExpressionContext {
     constructor(ctx) {
         super(ctx.parent, ctx.invokingState);
         super.copyFrom(ctx);
     }
-    expression(i) {
-        if (i === undefined) {
-            return this.getRuleContexts(ExpressionContext);
-        }
-        return this.getRuleContext(i, ExpressionContext);
+    unaryOperator() {
+        return this.getRuleContext(0, UnaryOperatorContext);
     }
-    eqOperator() {
-        return this.getRuleContext(0, EqOperatorContext);
+    expression() {
+        return this.getRuleContext(0, ExpressionContext);
     }
     accept(visitor) {
-        if (visitor.visitEqExpression) {
-            return visitor.visitEqExpression(this);
+        if (visitor.visitUnaryOperation) {
+            return visitor.visitUnaryOperation(this);
         }
         else {
             return visitor.visitChildren(this);
@@ -71876,6 +71872,29 @@ class ValExpressionContext extends ExpressionContext {
     accept(visitor) {
         if (visitor.visitValExpression) {
             return visitor.visitValExpression(this);
+        }
+        else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
+class MultExpressionContext extends ExpressionContext {
+    constructor(ctx) {
+        super(ctx.parent, ctx.invokingState);
+        super.copyFrom(ctx);
+    }
+    expression(i) {
+        if (i === undefined) {
+            return this.getRuleContexts(ExpressionContext);
+        }
+        return this.getRuleContext(i, ExpressionContext);
+    }
+    multOperator() {
+        return this.getRuleContext(0, MultOperatorContext);
+    }
+    accept(visitor) {
+        if (visitor.visitMultExpression) {
+            return visitor.visitMultExpression(this);
         }
         else {
             return visitor.visitChildren(this);
@@ -71905,6 +71924,29 @@ class AddExpressionContext extends ExpressionContext {
         }
     }
 }
+class BitMoveExpressionContext extends ExpressionContext {
+    constructor(ctx) {
+        super(ctx.parent, ctx.invokingState);
+        super.copyFrom(ctx);
+    }
+    expression(i) {
+        if (i === undefined) {
+            return this.getRuleContexts(ExpressionContext);
+        }
+        return this.getRuleContext(i, ExpressionContext);
+    }
+    bitMoveOperator() {
+        return this.getRuleContext(0, BitMoveOperatorContext);
+    }
+    accept(visitor) {
+        if (visitor.visitBitMoveExpression) {
+            return visitor.visitBitMoveExpression(this);
+        }
+        else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
 class CompExpressionContext extends ExpressionContext {
     constructor(ctx) {
         super(ctx.parent, ctx.invokingState);
@@ -71928,7 +71970,7 @@ class CompExpressionContext extends ExpressionContext {
         }
     }
 }
-class LogOrExpressionContext extends ExpressionContext {
+class EqExpressionContext extends ExpressionContext {
     constructor(ctx) {
         super(ctx.parent, ctx.invokingState);
         super.copyFrom(ctx);
@@ -71939,12 +71981,12 @@ class LogOrExpressionContext extends ExpressionContext {
         }
         return this.getRuleContext(i, ExpressionContext);
     }
-    logOrOperator() {
-        return this.getRuleContext(0, LogOrOperatorContext);
+    eqOperator() {
+        return this.getRuleContext(0, EqOperatorContext);
     }
     accept(visitor) {
-        if (visitor.visitLogOrExpression) {
-            return visitor.visitLogOrExpression(this);
+        if (visitor.visitEqExpression) {
+            return visitor.visitEqExpression(this);
         }
         else {
             return visitor.visitChildren(this);
@@ -71997,72 +72039,6 @@ class BinOrExpressionContext extends ExpressionContext {
         }
     }
 }
-class MultExpressionContext extends ExpressionContext {
-    constructor(ctx) {
-        super(ctx.parent, ctx.invokingState);
-        super.copyFrom(ctx);
-    }
-    expression(i) {
-        if (i === undefined) {
-            return this.getRuleContexts(ExpressionContext);
-        }
-        return this.getRuleContext(i, ExpressionContext);
-    }
-    multOperator() {
-        return this.getRuleContext(0, MultOperatorContext);
-    }
-    accept(visitor) {
-        if (visitor.visitMultExpression) {
-            return visitor.visitMultExpression(this);
-        }
-        else {
-            return visitor.visitChildren(this);
-        }
-    }
-}
-class BracketExpressionContext extends ExpressionContext {
-    constructor(ctx) {
-        super(ctx.parent, ctx.invokingState);
-        super.copyFrom(ctx);
-    }
-    LeftParen() {
-        return this.getToken(DaedalusParser.LeftParen, 0);
-    }
-    expression() {
-        return this.getRuleContext(0, ExpressionContext);
-    }
-    RightParen() {
-        return this.getToken(DaedalusParser.RightParen, 0);
-    }
-    accept(visitor) {
-        if (visitor.visitBracketExpression) {
-            return visitor.visitBracketExpression(this);
-        }
-        else {
-            return visitor.visitChildren(this);
-        }
-    }
-}
-class UnaryOperationContext extends ExpressionContext {
-    constructor(ctx) {
-        super(ctx.parent, ctx.invokingState);
-        super.copyFrom(ctx);
-    }
-    unaryOperator() {
-        return this.getRuleContext(0, UnaryOperatorContext);
-    }
-    expression() {
-        return this.getRuleContext(0, ExpressionContext);
-    }
-    accept(visitor) {
-        if (visitor.visitUnaryOperation) {
-            return visitor.visitUnaryOperation(this);
-        }
-        else {
-            return visitor.visitChildren(this);
-        }
-    }
-}
 class LogAndExpressionContext extends ExpressionContext {
     constructor(ctx) {
         super(ctx.parent, ctx.invokingState);
@@ -72080,6 +72056,29 @@ class LogAndExpressionContext extends ExpressionContext {
     accept(visitor) {
         if (visitor.visitLogAndExpression) {
             return visitor.visitLogAndExpression(this);
+        }
+        else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
+class LogOrExpressionContext extends ExpressionContext {
+    constructor(ctx) {
+        super(ctx.parent, ctx.invokingState);
+        super.copyFrom(ctx);
+    }
+    expression(i) {
+        if (i === undefined) {
+            return this.getRuleContexts(ExpressionContext);
+        }
+        return this.getRuleContext(i, ExpressionContext);
+    }
+    logOrOperator() {
+        return this.getRuleContext(0, LogOrOperatorContext);
+    }
+    accept(visitor) {
+        if (visitor.visitLogOrExpression) {
+            return visitor.visitLogOrExpression(this);
         }
         else {
             return visitor.visitChildren(this);
@@ -72192,23 +72191,6 @@ class StringLiteralValueContext extends ValueContext {
         }
     }
 }
-class NofuncLiteralValueContext extends ValueContext {
-    constructor(ctx) {
-        super(ctx.parent, ctx.invokingState);
-        super.copyFrom(ctx);
-    }
-    NoFunc() {
-        return this.getToken(DaedalusParser.NoFunc, 0);
-    }
-    accept(visitor) {
-        if (visitor.visitNofuncLiteralValue) {
-            return visitor.visitNofuncLiteralValue(this);
-        }
-        else {
-            return visitor.visitChildren(this);
-        }
-    }
-}
 class NullLiteralValueContext extends ValueContext {
     constructor(ctx) {
         super(ctx.parent, ctx.invokingState);
@@ -72220,6 +72202,23 @@ class NullLiteralValueContext extends ValueContext {
     accept(visitor) {
         if (visitor.visitNullLiteralValue) {
             return visitor.visitNullLiteralValue(this);
+        }
+        else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
+class NofuncLiteralValueContext extends ValueContext {
+    constructor(ctx) {
+        super(ctx.parent, ctx.invokingState);
+        super.copyFrom(ctx);
+    }
+    NoFunc() {
+        return this.getToken(DaedalusParser.NoFunc, 0);
+    }
+    accept(visitor) {
+        if (visitor.visitNofuncLiteralValue) {
+            return visitor.visitNofuncLiteralValue(this);
         }
         else {
             return visitor.visitChildren(this);
@@ -72681,7 +72680,6 @@ class LogOrOperatorContext extends ParserRuleContext {
 }
 
 ;// CONCATENATED MODULE: ./src/generated/DaedalusVisitor.ts
-// Generated from ./g4/Daedalus.g4 by ANTLR 4.13.1
 
 
 
@@ -72954,19 +72952,19 @@ class DaedalusVisitor extends AbstractParseTreeVisitor {
      */
     visitExpressionBlock;
     /**
-     * Visit a parse tree produced by the `bitMoveExpression`
+     * Visit a parse tree produced by the `bracketExpression`
      * labeled alternative in `DaedalusParser.expression`.
      * @param ctx the parse tree
      * @return the visitor result
      */
-    visitBitMoveExpression;
+    visitBracketExpression;
     /**
-     * Visit a parse tree produced by the `eqExpression`
+     * Visit a parse tree produced by the `unaryOperation`
      * labeled alternative in `DaedalusParser.expression`.
      * @param ctx the parse tree
      * @return the visitor result
      */
-    visitEqExpression;
+    visitUnaryOperation;
     /**
      * Visit a parse tree produced by the `valExpression`
      * labeled alternative in `DaedalusParser.expression`.
@@ -72975,12 +72973,26 @@ class DaedalusVisitor extends AbstractParseTreeVisitor {
      */
     visitValExpression;
     /**
+     * Visit a parse tree produced by the `multExpression`
+     * labeled alternative in `DaedalusParser.expression`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitMultExpression;
+    /**
      * Visit a parse tree produced by the `addExpression`
      * labeled alternative in `DaedalusParser.expression`.
      * @param ctx the parse tree
      * @return the visitor result
      */
     visitAddExpression;
+    /**
+     * Visit a parse tree produced by the `bitMoveExpression`
+     * labeled alternative in `DaedalusParser.expression`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitBitMoveExpression;
     /**
      * Visit a parse tree produced by the `compExpression`
      * labeled alternative in `DaedalusParser.expression`.
@@ -72989,12 +73001,12 @@ class DaedalusVisitor extends AbstractParseTreeVisitor {
      */
     visitCompExpression;
     /**
-     * Visit a parse tree produced by the `logOrExpression`
+     * Visit a parse tree produced by the `eqExpression`
      * labeled alternative in `DaedalusParser.expression`.
      * @param ctx the parse tree
      * @return the visitor result
      */
-    visitLogOrExpression;
+    visitEqExpression;
     /**
      * Visit a parse tree produced by the `binAndExpression`
      * labeled alternative in `DaedalusParser.expression`.
@@ -73010,33 +73022,19 @@ class DaedalusVisitor extends AbstractParseTreeVisitor {
      */
     visitBinOrExpression;
     /**
-     * Visit a parse tree produced by the `multExpression`
-     * labeled alternative in `DaedalusParser.expression`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitMultExpression;
-    /**
-     * Visit a parse tree produced by the `bracketExpression`
-     * labeled alternative in `DaedalusParser.expression`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitBracketExpression;
-    /**
-     * Visit a parse tree produced by the `unaryOperation`
-     * labeled alternative in `DaedalusParser.expression`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitUnaryOperation;
-    /**
      * Visit a parse tree produced by the `logAndExpression`
      * labeled alternative in `DaedalusParser.expression`.
      * @param ctx the parse tree
      * @return the visitor result
      */
     visitLogAndExpression;
+    /**
+     * Visit a parse tree produced by the `logOrExpression`
+     * labeled alternative in `DaedalusParser.expression`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitLogOrExpression;
     /**
      * Visit a parse tree produced by `DaedalusParser.arrayIndex`.
      * @param ctx the parse tree
@@ -73776,7 +73774,6 @@ const list = { G1, G112, G130, G2 };
 /* harmony default export */ const externals = (list);
 
 ;// CONCATENATED MODULE: ./src/generated/DaedalusLexer.ts
-// Generated from ./g4/Daedalus.g4 by ANTLR 4.13.1
 
 
 class DaedalusLexer extends Lexer {

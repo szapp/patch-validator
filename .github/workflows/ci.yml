@@ -40,7 +40,7 @@ jobs:
         run: npm ci
 
       - name: Generate Antlr4 Parser and Lexer
-        run: npm run antlr4ng
+        run: npm run antlrgen
 
       - name: Check Format and linting
         run: npm run ci
