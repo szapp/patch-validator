@@ -100,7 +100,7 @@ Unfortunately, the creation of the superfluous workflow check status cannot be s
 One workaround is to delete the entire workflow after the checks have been performed, effectively removing the check status from the commit.
 However, this is not possible with the default `GITHUB_TOKEN`, to avoid recursive workflow runs.
 To remove the additional status check, call this GitHub Action with an authentication `token` of a GitHub App and enable the `check_run` event with `completed` (see below).
-For more details the issue, see [here](https://github.com/peter-murray/workflow-application-token-action#readme).
+For more details on the issue, see [peter-murray/workflow-application-token-action](https://github.com/peter-murray/workflow-application-token-action#readme).
 Always leave the additional input `cleanup-token` at its default.
 
 > [!Tip]
@@ -148,16 +148,3 @@ jobs:
 
 > [!Note]
 > This procedure only works reasonably well if `patch-validator` is only called once in the workflow file.
-
-## Development
-
-This project uses automatic linting, formatting, and tests.
-
-Before setting up the dependencies with `npm ci`, an installation of Java is required for `antlr4ng-cli`.  
-The correct versions are best installed with [`antlr4-tools`](https://github.com/antlr/antlr4-tools).
-In brief, run the following commands within a Python 3 installation/environment.
-
-```bash
-pip install antlr4-tools
-antlr4
-```
